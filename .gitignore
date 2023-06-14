@@ -1,2 +1,7 @@
+# Ignore Pycharm and Python files
 .idea/
 __pycache__
+
+# Ignore rules of pure "Treada" folder
+TreadaTx_C/**
+!TreadaTx_C/README.txt
