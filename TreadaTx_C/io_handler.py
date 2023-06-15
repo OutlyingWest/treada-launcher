@@ -14,7 +14,6 @@ async def main():
     # Tasks for asynchronous execution
     tasks = [
         capturer.stream_manage(path_to_txt=output_path),
-        # capturer.wait_configer.shortcut_wait(),
     ]
     await asyncio.gather(*tasks)
 
@@ -29,31 +28,17 @@ def exe_runner(exe_path: str) -> subprocess.Popen:
     return subprocess.Popen(exe_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
-class KeyboardWaitConfiger:
-    def __init__(self, shortcut: str):
-        self.keyboard_shortcut = shortcut
-        self.running_flag = True
-        keyboard.add_hotkey(self.keyboard_shortcut, self.on_push_shortcut)
-
-    @staticmethod
-    async def shortcut_wait():
-        keyboard.wait()
-
-    def on_push_shortcut(self):
-        self.running_flag = False
-
-
 class StdoutCapturer:
     def __init__(self, process: subprocess.Popen):
         # Running of the executable file
         self.process = process
         # Shut down shortcut configure
         self.running_flag = True
-        # self.wait_configer = KeyboardWaitConfiger('ctrl+x')
 
     async def stream_manage(self, path_to_txt: str):
         """
         Divides data from *.exe stdout to its own stdout and file with name *_output.txt.
+        Ends by KeyboardInterrupt or ending condition satisfaction
         """
         str_counter = 0
         num_of_str = int(sys.argv[2])
