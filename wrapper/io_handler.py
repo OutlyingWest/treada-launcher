@@ -12,11 +12,16 @@ def main():
     capturer.stream_management(path_to_txt=output_path)
 
 
-def treada_runner(config):
+def treada_runner(config, stage: int):
     exec_process = exe_runner(exe_path=config.paths.treada_exe)
     capturer = StdoutCapturer(process=exec_process)
     output_path = os.path.split(config.paths.treada_exe)[0]
-    capturer.stream_management(path_to_txt=output_path)
+    if stage == 'light_off':
+        capturer.stream_management()
+    elif stage == 'light_on':
+        capturer.stream_management(path_to_txt=output_path)
+    else:
+        raise ValueError(f'Incorrect stage number: {stage}')
 
 
 def exe_runner(exe_path: str) -> subprocess.Popen:
