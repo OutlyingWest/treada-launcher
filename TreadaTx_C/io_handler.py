@@ -1,8 +1,7 @@
-import asyncio
+import os
 import sys
 import subprocess
 import time
-import keyboard
 
 
 def main():
@@ -16,7 +15,16 @@ def main():
     #     capturer.stream_manage(path_to_txt=output_path),
     # ]
     # await asyncio.gather(*tasks)
-    capturer.stream_manage(path_to_txt=output_path)
+    capturer.stream_management(path_to_txt=output_path)
+
+
+def treada_runner(config):
+    exec_process = exe_runner(exe_path=config.paths.treada_exe)
+    print(config.paths.treada_exe)
+    capturer = StdoutCapturer(process=exec_process)
+    output_path = os.path.split(config.paths.treada_exe)[0]
+    print(output_path)
+    capturer.stream_management(path_to_txt=output_path)
 
 
 def exe_runner(exe_path: str) -> subprocess.Popen:
@@ -26,7 +34,10 @@ def exe_runner(exe_path: str) -> subprocess.Popen:
     :param exe_path: Path to the executable program file
     :return: subprocess.Popen
     """
-    return subprocess.Popen(exe_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        return subprocess.Popen(exe_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except FileNotFoundError:
+        print('Executable file not found, Path:', exe_path)
 
 
 class StdoutCapturer:
@@ -36,7 +47,7 @@ class StdoutCapturer:
         # Shut down shortcut configure
         self.running_flag = True
 
-    def stream_manage(self, path_to_txt=None):
+    def stream_management(self, path_to_txt=None):
         """
         Divides data from *.exe stdout to its own stdout and file with name *_output.txt.
         Ends by KeyboardInterrupt or ending condition satisfaction
@@ -63,14 +74,21 @@ class StdoutCapturer:
     def __io_loop(self, output_file=None):
 
         str_counter = 0
-        num_of_str = int(sys.argv[2])
+        if sys.argv[1:]:
+            num_of_str = int(sys.argv[2])
+        else:
+            num_of_str = None
 
         start_time = time.time()
-        while num_of_str > str_counter and self.running_flag:
+        while self.running_flag:
+            if num_of_str:
+                if num_of_str > str_counter:
+                    break
             try:
                 # Get line from process object
                 treada_output: bytes = self.process.stdout.readline()
                 if treada_output == b'' and self.process.poll() is not None:
+                    print("Program's stdout is empty. Process is shut down.")
                     break
                 if treada_output:
                     try:
@@ -99,6 +117,4 @@ class StdoutCapturer:
 
 
 if __name__ == '__main__':
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete((main()))
     main()
