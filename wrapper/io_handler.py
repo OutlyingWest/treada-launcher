@@ -6,37 +6,39 @@ import time
 
 def main():
     path_to_executable = sys.argv[1]
-    exec_process = exe_runner(exe_path=path_to_executable)
+    runner = TreadaRunner
+    exec_process = runner.exe_runner(exe_path=path_to_executable)
     capturer = StdoutCapturer(process=exec_process)
     output_path = path_to_executable.strip('. ').split('.')[0]
     capturer.stream_management(path_to_txt=output_path)
 
 
-def treada_runner(config, stage: int):
-    exec_process = exe_runner(exe_path=config.paths.treada_exe)
-    capturer = StdoutCapturer(process=exec_process)
-    output_path = os.path.split(config.paths.treada_exe)[0]
-    if stage == 'light_off':
-        capturer.stream_management()
-    elif stage == 'light_on':
-        capturer.stream_management(path_to_txt=output_path)
-    else:
-        raise ValueError(f'Incorrect stage number: {stage}')
+class TreadaRunner:
+    def __init__(self, config):
+        self.exec_process = self.exe_runner(exe_path=config.paths.treada_exe)
+        self.capturer = StdoutCapturer(process=self.exec_process)
+        self.output_path = config.paths.treada_exe
 
+    def light_off(self):
+        self.capturer.stream_management()
 
-def exe_runner(exe_path: str) -> subprocess.Popen:
-    """
-    Runs *.exe and returns itself like subprocess.Popen object.
+    def light_on(self):
+        self.capturer.stream_management(path_to_txt=self.output_path)
 
-    :param exe_path: Path to the executable program file
-    :return: subprocess.Popen
-    """
-    try:
-        working_directory_path = os.path.split(exe_path)[0]
-        return subprocess.Popen(exe_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                cwd=working_directory_path)
-    except FileNotFoundError:
-        print('Executable file not found, Path:', exe_path)
+    @staticmethod
+    def exe_runner(exe_path: str) -> subprocess.Popen:
+        """
+        Runs *.exe and returns itself like subprocess.Popen object.
+
+        :param exe_path: Path to the executable program file
+        :return: subprocess.Popen
+        """
+        try:
+            working_directory_path = os.path.split(exe_path)[0]
+            return subprocess.Popen(exe_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    cwd=working_directory_path)
+        except FileNotFoundError:
+            print('Executable file not found, Path:', exe_path)
 
 
 class StdoutCapturer:
@@ -63,12 +65,13 @@ class StdoutCapturer:
             with open(f'{path_to_txt.split(".")[0]}_raw_output.txt', "w") as output_file:
                 self.__io_loop(output_file)
 
-        # Terminate main executable process
-        self.process.terminate()
         # Errors' catching
         error = self.process.stderr.read().decode('utf-8')
         if error:
             print('ERRORS:', error.strip())
+
+        # Terminate main executable process
+        self.process.terminate()
 
     def __io_loop(self, output_file=None):
 
