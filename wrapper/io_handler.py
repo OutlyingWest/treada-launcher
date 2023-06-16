@@ -9,21 +9,13 @@ def main():
     exec_process = exe_runner(exe_path=path_to_executable)
     capturer = StdoutCapturer(process=exec_process)
     output_path = path_to_executable.strip('. ').split('.')[0]
-
-    # Tasks for asynchronous execution
-    # tasks = [
-    #     capturer.stream_manage(path_to_txt=output_path),
-    # ]
-    # await asyncio.gather(*tasks)
     capturer.stream_management(path_to_txt=output_path)
 
 
 def treada_runner(config):
     exec_process = exe_runner(exe_path=config.paths.treada_exe)
-    print(config.paths.treada_exe)
     capturer = StdoutCapturer(process=exec_process)
     output_path = os.path.split(config.paths.treada_exe)[0]
-    print(output_path)
     capturer.stream_management(path_to_txt=output_path)
 
 
@@ -35,7 +27,9 @@ def exe_runner(exe_path: str) -> subprocess.Popen:
     :return: subprocess.Popen
     """
     try:
-        return subprocess.Popen(exe_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        working_directory_path = os.path.split(exe_path)[0]
+        return subprocess.Popen(exe_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                cwd=working_directory_path)
     except FileNotFoundError:
         print('Executable file not found, Path:', exe_path)
 
@@ -81,14 +75,12 @@ class StdoutCapturer:
 
         start_time = time.time()
         while self.running_flag:
-            if num_of_str:
-                if num_of_str > str_counter:
-                    break
             try:
+                if num_of_str and num_of_str > str_counter:
+                    break
                 # Get line from process object
                 treada_output: bytes = self.process.stdout.readline()
                 if treada_output == b'' and self.process.poll() is not None:
-                    print("Program's stdout is empty. Process is shut down.")
                     break
                 if treada_output:
                     try:
