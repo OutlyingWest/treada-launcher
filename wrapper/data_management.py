@@ -241,10 +241,12 @@ class ResultBuilder:
 
     def file_name_build(self, result_path: str):
         udrm_value = self.result_configer.mtut_manager.get_var('UDRM')
-        return f'{result_path.split(".")[0]}u_{udrm_value}'
+        return f'{result_path.split(".")[0]}u({udrm_value})'
 
     def save_data(self):
-        self.header_build()
+        header = self.header_build()
+        self.header_print(header)
+        self.header_dump_to_file(header)
         self.dump_dataframe_to_file()
 
     def header_build(self):
@@ -266,13 +268,21 @@ class ResultBuilder:
             '',
         ]
         header = [line + '\n' for line in header]
+        return header
+
+    @staticmethod
+    def header_print(header: list):
+        for line in header:
+            print(line.rstrip())
+
+    def header_dump_to_file(self, header: list):
         with open(self.result_path, 'w') as res_file:
             res_file.writelines(header)
 
     def dump_dataframe_to_file(self):
         result_dataframe: pd.DataFrame = self.result_configer.get_result_dataframe()
         with open(self.result_path, 'a') as res_file:
-            res_file.write(result_dataframe.to_string())
+            res_file.write(result_dataframe.to_string(index=False))
         # result_dataframe.to_csv(self.result_path, sep='')
 
 
