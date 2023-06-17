@@ -14,16 +14,15 @@ def main():
 
 
 class TreadaRunner:
-    def __init__(self, exe_path: str, output_file_path: str):
+    def __init__(self, exe_path: str):
         self.exec_process = self.exe_runner(exe_path=exe_path)
         self.capturer = StdoutCapturer(process=self.exec_process)
-        self.output_path = output_file_path
 
     def light_off(self):
         self.capturer.stream_management()
 
-    def light_on(self):
-        self.capturer.stream_management(path_to_txt=self.output_path)
+    def light_on(self, output_file_path: str):
+        self.capturer.stream_management(path_to_txt=output_file_path)
 
     @staticmethod
     def exe_runner(exe_path: str) -> subprocess.Popen:
@@ -56,8 +55,8 @@ class StdoutCapturer:
 
         # Strip slashes if only file name was used as a path (for solving of powershell issues)
         if path_to_txt:
-            if path_to_txt.count('/') <= 2 or path_to_txt.count('\\') <= 2:
-                path_to_txt = path_to_txt.strip('/\\')
+            if path_to_txt.count(os.path.sep) <= 2:
+                path_to_txt = path_to_txt.strip(os.path.sep)
                 path_to_txt = f'{path_to_txt.split(".")[0]}_raw_output.txt'
 
         if not path_to_txt:
@@ -96,11 +95,11 @@ class StdoutCapturer:
                         decoded_output = treada_output.decode('utf-8')
                         # Write *.exe output to file
                         if output_file:
-                            output_file.write(decoded_output.rstrip('\n'))
+                            output_file.write(decoded_output.strip('\n '))
                     except UnicodeDecodeError:
                         decoded_output = treada_output
                     # Copy *.exe output to its own stdout
-                    print(decoded_output.strip())
+                    print(decoded_output.rstrip())
                     str_counter += 1
             except KeyboardInterrupt:
                 self.running_flag = False

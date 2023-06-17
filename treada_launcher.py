@@ -9,13 +9,13 @@ def main():
 
     # Stage 1 - without light
     mtut_stage_configer.light_off(config.stages.light_off)
-    treada = TreadaRunner(config.paths.treada_exe, config.paths.treada_raw_output)
+    treada = TreadaRunner(config.paths.treada_exe)
     treada.light_off()
 
     # Stage 2 - with light
     mtut_stage_configer.light_on(config.stages.light_on)
-    treada = TreadaRunner(config.paths.treada_exe, config.paths.treada_raw_output)
-    treada.light_on()
+    treada = TreadaRunner(config.paths.treada_exe)
+    treada.light_on(config.paths.treada_raw_output)
 
 
 if __name__ == '__main__':
