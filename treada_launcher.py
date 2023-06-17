@@ -1,6 +1,6 @@
 from wrapper.io_handler import TreadaRunner
 from wrapper.config_builder import load_config
-from wrapper.data_management import MtutStageConfiger
+from wrapper.data_management import MtutStageConfiger, ResultBuilder
 
 
 def main():
@@ -16,6 +16,12 @@ def main():
     mtut_stage_configer.light_on(config.stages.light_on)
     treada = TreadaRunner(config.paths.treada_exe)
     treada.light_on(config.paths.treada_raw_output)
+
+    # Save data in result file and output in console
+    result_builder = ResultBuilder(mtut_file_path=config.paths.mtut,
+                                   treada_raw_output_path=config.paths.treada_raw_output,
+                                   result_path=config.paths.treada_result_output)
+    result_builder.save_data()
 
 
 if __name__ == '__main__':

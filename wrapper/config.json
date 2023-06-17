@@ -14,6 +14,7 @@
             "to_exe": "TreadaTx_C\\TreadaTx_C.exe",
             "to_mtut": "TreadaTx_C\\MTUT",
             "to_raw_output": "data\\treada_raw_output.txt",
+            "to_result_output": "data\\res_.txt",
             "UDRM": "data\\UDRM.txt"
         }
     }

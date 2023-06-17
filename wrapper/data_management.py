@@ -4,6 +4,7 @@ from pprint import pprint
 
 import pandas as pd
 
+
 class MtutStageConfiger:
     def __init__(self, mtut_path: str):
         self.mtut_manager = MtutManager(mtut_path)
@@ -36,7 +37,7 @@ class MtutManager:
 
     def find_var_string(self, var_name: str):
         for num_line, line in enumerate(self.data):
-            if line.startswith(var_name):
+            if line.startswith(var_name + ' '):
                 return num_line
         return -1
 
@@ -93,9 +94,6 @@ class TreadaOutputParser:
         with open(raw_file_path, 'r') as file:
             data = file.readlines()
         return data
-        # pd.set_option('display.float_format', '{:.8e}'.format)
-        # print(df)
-        # return df
 
     def clean_data(self, data_list: list):
         start_time = time.time()
@@ -126,7 +124,6 @@ class TreadaOutputParser:
             line_cnt += 1
             if line_cnt > 500:
                 raise ValueError('Error: RELATIVE TIME is not found.')
-
         return relative_time
 
     @staticmethod
@@ -138,14 +135,160 @@ class TreadaOutputParser:
         else:
             return False
 
-    def prepare_dataframe(self):
+    def get_prepared_dataframe(self):
+        return self.dataframe
+
+    def get_relative_time(self):
+        return self.relative_time
+
+
+class ResultDataCollector:
+    def __init__(self, mtut_file_path, treada_raw_output_path):
+        self.mtut_manager = MtutManager(mtut_file_path)
+        self.treada_parser = TreadaOutputParser(treada_raw_output_path)
+        # Set dataframe col names
+        self.source_current_name = self.treada_parser.source_current_name
+        self.time_col_name = 'time (ns)'
+        self.current_density_col_name = 'I (mA/cm^2)'
+        self.dataframe = self.treada_parser.get_prepared_dataframe()
+        # Result data
+        self.transient_time = None
+        self.result_dataframe = None
+        # Get necessary MTUT variables
+
+    def prepare_result_data(self):
+        self.time_col_calculate()
+        self.transient_time = self.find_transient_time()
+        self.current_density_col_calculate()
+        self.result_dataframe = self.dataframe[[self.current_density_col_name, self.time_col_name]]
+        # pd.set_option('display.max_rows', None)
+        # pd.set_option('display.max_columns', None)
+        # pd.set_option('display.width', None)
+        # print(result_dataframe)
+        # print(transient_time)
+
+    def get_transient_time(self):
+        if self.transient_time:
+            return self.transient_time
+        else:
+            raise ValueError('Does not calculated yet. Call prepare_result_data() firstly.')
+
+    def get_result_dataframe(self):
+        if isinstance(self.result_dataframe, pd.DataFrame):
+            return self.result_dataframe
+        else:
+            raise ValueError('Does not calculated yet. Call prepare_result_data() firstly.')
+
+    def time_col_calculate(self):
+        # Get operating time step from MTUT file
+        operating_time_step = float(self.mtut_manager.get_var('TSTEP'))
+        # Get relative time from treada raw output file
+        relative_time = self.treada_parser.get_relative_time()
+        # Calculate timestep constant
+        time_step_const = operating_time_step * relative_time
+        self.dataframe[self.time_col_name] = self.dataframe.index.values * time_step_const
+
+    def transient_criteria_calculate(self):
+        # Get max and min current from col
+        max_current = self.dataframe[self.source_current_name].max()
+        min_current = self.dataframe[self.source_current_name].min()
+        ending_difference = 0.01*(max_current - min_current)
+
+        # Get last value in current col and calculate criteria of transient ending
+        tr_criteria = dict()
+        last_current_value = self.dataframe[self.source_current_name].iloc[-1]
+        tr_criteria['plus'] = last_current_value + ending_difference
+        tr_criteria['minus'] = last_current_value - ending_difference
+
+        return tr_criteria
+
+    def transient_criteria_apply(self, tr_criteria_dict):
+        # Calculation of transient ending criteria
+        self.dataframe['transient_criteria'] = 0
+        self.dataframe.loc[
+                (self.dataframe[self.source_current_name] < tr_criteria_dict['plus']) &
+                (self.dataframe[self.source_current_name] > tr_criteria_dict['minus']),
+                'transient_criteria'] = 1
+        # Get index on which ending criteria satisfied
+        ending_index_obj: pd.Index = self.dataframe[self.dataframe['transient_criteria'] > 0].idxmax()
+        transient_ending_index = ending_index_obj['transient_criteria']
+        return transient_ending_index
+
+    def find_transient_time(self):
+        tr_criteria_dict = self.transient_criteria_calculate()
+        transient_ending_index = self.transient_criteria_apply(tr_criteria_dict)
+        return self.dataframe[self.time_col_name].iloc[transient_ending_index]
+
+    def current_density_col_calculate(self):
+        # Get Device Width (microns)
+        device_width = float(self.mtut_manager.get_var('WIDTH'))
+        # Get HY
+        hy = float(self.mtut_manager.get_var('HY').rstrip(')').split('(')[1])
+        # Calculate density col
+        self.dataframe[self.current_density_col_name] = (
+            self.dataframe[self.source_current_name] / (2*hy * device_width * 1e-8)
+        )
+
+    def save_result_to_file(self, prepared_file_path: str):
         pass
 
-    def save_prepared_file(self, prepared_file_path: str):
-        pass
+
+class ResultBuilder:
+    def __init__(self, mtut_file_path: str, treada_raw_output_path: str, result_path: str):
+        self.result_configer = ResultDataCollector(mtut_file_path, treada_raw_output_path)
+        self.result_path = self.file_name_build(result_path)
+        self.result_configer.prepare_result_data()
+
+    def file_name_build(self, result_path: str):
+        udrm_value = self.result_configer.mtut_manager.get_var('UDRM')
+        return f'{result_path.split(".")[0]}u_{udrm_value}'
+
+    def save_data(self):
+        self.header_build()
+        self.dump_dataframe_to_file()
+
+    def header_build(self):
+        udrm_value = self.result_configer.mtut_manager.get_var('UDRM')
+        emini_value = self.result_configer.mtut_manager.get_var('EMINI')
+        emaxi_value = self.result_configer.mtut_manager.get_var('EMAXI')
+        transient_time_value = self.result_configer.get_transient_time()
+        header: list = [
+            'Sets the First Potential (V)(Current(mA)) Value on Electrode Number 3.',
+            f'UDRM = {udrm_value}',
+            '',
+            'If ITOZ=0 Sets the Illumination Bandwidth in eV: EMINI- its Minimum Edge, EMAXI- its Maximum Edge.',
+            f'EMINI = {emini_value}',
+            f'EMAXI = {emaxi_value}',
+            '',
+            'Transient time:',
+            f'TRANSIENT_TIME = {transient_time_value}',
+            '',
+            '',
+        ]
+        header = [line + '\n' for line in header]
+        with open(self.result_path, 'w') as res_file:
+            res_file.writelines(header)
+
+    def dump_dataframe_to_file(self):
+        result_dataframe: pd.DataFrame = self.result_configer.get_result_dataframe()
+        with open(self.result_path, 'a') as res_file:
+            res_file.write(result_dataframe.to_string())
+        # result_dataframe.to_csv(self.result_path, sep='')
 
 
 if __name__ == '__main__':
-    op = TreadaOutputParser('C:\\Users\\px\\PycharmProjects\\treada-launcher\\data\\treada_raw_output.txt')
-    print('rel time:', op.relative_time)
-    print(op.dataframe)
+    # op = TreadaOutputParser('C:\\Users\\px\\PycharmProjects\\treada-launcher\\data\\treada_raw_output.txt')
+    # print('rel time:', op.relative_time)
+    # print(op.dataframe)
+
+    # pd.set_option('display.max_rows', None)
+    # pd.set_option('display.max_columns', None)
+    # pd.set_option('display.width', None)
+    # mtm = MtutManager('C:\\Users\\px\\PycharmProjects\\treada-launcher\\TreadaTx_C\\MTUT')
+    # print(mtm.get_var('TSTEP'))
+
+    rc = ResultDataCollector('C:\\Users\\px\\PycharmProjects\\treada-launcher\\TreadaTx_C\\MTUT',
+                            'C:\\Users\\px\\PycharmProjects\\treada-launcher\\data\\treada_raw_output.txt')
+
+    rc.time_col_calculate()
+
