@@ -14,10 +14,10 @@ def main():
 
 
 class TreadaRunner:
-    def __init__(self, config):
-        self.exec_process = self.exe_runner(exe_path=config.paths.treada_exe)
+    def __init__(self, exe_path: str, output_file_path: str):
+        self.exec_process = self.exe_runner(exe_path=exe_path)
         self.capturer = StdoutCapturer(process=self.exec_process)
-        self.output_path = config.paths.treada_exe
+        self.output_path = output_file_path
 
     def light_off(self):
         self.capturer.stream_management()
@@ -58,11 +58,12 @@ class StdoutCapturer:
         if path_to_txt:
             if path_to_txt.count('/') <= 2 or path_to_txt.count('\\') <= 2:
                 path_to_txt = path_to_txt.strip('/\\')
+                path_to_txt = f'{path_to_txt.split(".")[0]}_raw_output.txt'
 
         if not path_to_txt:
             self.__io_loop()
         else:
-            with open(f'{path_to_txt.split(".")[0]}_raw_output.txt', "w") as output_file:
+            with open(path_to_txt, "w") as output_file:
                 self.__io_loop(output_file)
 
         # Errors' catching

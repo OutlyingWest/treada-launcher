@@ -6,3 +6,5 @@ __pycache__
 TreadaTx_C/**
 !TreadaTx_C/README.txt
 !wrapper/io_handler.py
+
+data/

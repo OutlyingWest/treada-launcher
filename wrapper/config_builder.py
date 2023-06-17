@@ -16,6 +16,7 @@ class Stages:
 class Paths:
     treada_exe: str
     mtut: str
+    treada_raw_output: str
 
 
 @dataclass
@@ -34,7 +35,9 @@ def load_config(config_path: str = None):
     # load configuration from file
     return Config(
         paths=Paths(treada_exe=project_path + config_dict['treada']['paths']['to_exe'],
-                    mtut=project_path + config_dict['treada']['paths']['to_mtut']),
+                    mtut=project_path + config_dict['treada']['paths']['to_mtut'],
+                    treada_raw_output=project_path + config_dict['treada']['paths']['to_raw_output']),
+
         stages=Stages(light_off=config_dict['treada']['stages']['light_off'],
                       light_on=config_dict['treada']['stages']['light_on'])
     )

@@ -3,17 +3,16 @@ from wrapper.config_builder import Config
 
 
 class MtutStageConfiger:
-    def __init__(self, config: Config):
-        self.config = config
-        self.mtut_manager = MtutManager(self.config.paths.mtut)
+    def __init__(self, mtut_path: str):
+        self.mtut_manager = MtutManager(mtut_path)
 
-    def light_off(self):
-        for key, value in self.config.stages.light_off.items():
+    def light_off(self, light_off_setup: dict):
+        for key, value in light_off_setup.items():
             self.mtut_manager.set_var(key, value)
         self.mtut_manager.save_file()
 
-    def light_on(self):
-        for key, value in self.config.stages.light_on.items():
+    def light_on(self, light_on_setup: dict):
+        for key, value in light_on_setup.items():
             self.mtut_manager.set_var(key, value)
         self.mtut_manager.save_file()
 
