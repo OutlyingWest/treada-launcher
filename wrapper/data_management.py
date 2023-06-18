@@ -210,8 +210,8 @@ class ResultDataCollector:
                 (self.dataframe[self.source_current_name] > tr_criteria_dict['minus']),
                 'transient_criteria'] = 1
         # Get index on which ending criteria satisfied
-        ending_index_obj: pd.Index = self.dataframe[self.dataframe['transient_criteria'] > 0].idxmax()
-        transient_ending_index = ending_index_obj['transient_criteria']
+        transient_ending_index = self.dataframe['transient_criteria'][::-1].idxmin()
+
         return transient_ending_index
 
     def find_transient_time(self):
@@ -297,8 +297,9 @@ if __name__ == '__main__':
     # mtm = MtutManager('C:\\Users\\px\\PycharmProjects\\treada-launcher\\TreadaTx_C\\MTUT')
     # print(mtm.get_var('TSTEP'))
 
+
     rc = ResultDataCollector('C:\\Users\\px\\PycharmProjects\\treada-launcher\\TreadaTx_C\\MTUT',
                             'C:\\Users\\px\\PycharmProjects\\treada-launcher\\data\\treada_raw_output.txt')
 
-    rc.time_col_calculate()
+    rc.prepare_result_data()
 
