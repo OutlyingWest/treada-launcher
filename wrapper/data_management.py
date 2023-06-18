@@ -148,8 +148,8 @@ class ResultDataCollector:
         self.treada_parser = TreadaOutputParser(treada_raw_output_path)
         # Set dataframe col names
         self.source_current_name = self.treada_parser.source_current_name
-        self.time_col_name = 'time (ns)'
-        self.current_density_col_name = 'I (mA/cm^2)'
+        self.time_col_name = 'time(ns)'
+        self.current_density_col_name = 'I(mA/cm^2)'
         self.dataframe = self.treada_parser.get_prepared_dataframe()
         # Result data
         self.transient_time = None
@@ -160,7 +160,7 @@ class ResultDataCollector:
         self.time_col_calculate()
         self.transient_time = self.find_transient_time()
         self.current_density_col_calculate()
-        self.result_dataframe = self.dataframe[[self.current_density_col_name, self.time_col_name]]
+        self.result_dataframe = self.dataframe[[self.time_col_name, self.current_density_col_name]]
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
@@ -241,7 +241,7 @@ class ResultBuilder:
 
     def file_name_build(self, result_path: str):
         udrm_value = self.result_configer.mtut_manager.get_var('UDRM')
-        return f'{result_path.split(".")[0]}u({udrm_value})'
+        return f'{result_path.split(".")[0]}u({udrm_value}).txt'
 
     def save_data(self):
         header = self.header_build()
@@ -255,15 +255,17 @@ class ResultBuilder:
         emaxi_value = self.result_configer.mtut_manager.get_var('EMAXI')
         transient_time_value = self.result_configer.get_transient_time()
         header: list = [
-            'Sets the First Potential (V)(Current(mA)) Value on Electrode Number 3.',
-            f'UDRM = {udrm_value}',
+            'Diode biased at:',
+            f'UDRM = {udrm_value} V',
             '',
-            'If ITOZ=0 Sets the Illumination Bandwidth in eV: EMINI- its Minimum Edge, EMAXI- its Maximum Edge.',
-            f'EMINI = {emini_value}',
-            f'EMAXI = {emaxi_value}',
+            'Minimum Edge of Illumination Bandwidth:',
+            f'EMINI = {emini_value} eV',
+            '',
+            'Maximum Edge of Illumination Bandwidth:',
+            f'EMAXI = {emaxi_value} eV',
             '',
             'Transient time:',
-            f'TRANSIENT_TIME = {transient_time_value}',
+            f'TRANSIENT_TIME = {transient_time_value} ps',
             '',
             '',
         ]

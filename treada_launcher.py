@@ -1,6 +1,7 @@
 from wrapper.io_handler import TreadaRunner
 from wrapper.config_builder import load_config
 from wrapper.data_management import MtutStageConfiger, ResultBuilder
+from wrapper.plotting import plot_builder
 
 
 def main():
@@ -22,6 +23,8 @@ def main():
                                    treada_raw_output_path=config.paths.treada_raw_output,
                                    result_path=config.paths.treada_result_output)
     result_builder.save_data()
+    # Plot result
+    plot_builder(result_builder.result_path)
 
 
 if __name__ == '__main__':
