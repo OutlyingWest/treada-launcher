@@ -1,13 +1,11 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
-from wrapper.config_builder import load_config
+from config_builder import load_config
 
 
 def main():
     config = load_config('wrapper/config.json')
-    path_ending = ''
     print('Enter voltage from required file name to load data. Example: "u(-0.4)"')
     path_ending = input()
     result_path = config.paths.treada_result_output.rsplit('.', maxsplit=1)[0] + path_ending + '.txt'
