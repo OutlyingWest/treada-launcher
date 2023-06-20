@@ -21,27 +21,66 @@ class MtutStageConfiger:
 
 
 class MtutManager:
-    def __init__(self, mtut_file_path):
+    """
+    This class provide the abilities to get or set variables in "MTUT" file
+
+    Attributes:
+        mtut_file_path: Path to MTUT file
+
+    Methods:
+        load_file(): Load data from MTUT file.
+        save_file(): Save changes to MTUT file.
+        find_var_string(var_name: str): Returns number of line on which variable was found.
+        get_var(var_name: str) Get variable by its name from MTUT file.
+        set_var(var_name: str, new_value: str) Set a new value for a variable in MTUT file.
+
+    """
+    def __init__(self, mtut_file_path: str):
+        """
+         Initialize the MtutManager object. Sets path and loads data from MTUT file.
+
+        :param mtut_file_path: Path to MTUT file.
+        """
         self.path = mtut_file_path
         self.data: list = self.load_file()
 
-    def load_file(self):
+    def load_file(self) -> list:
+        """
+        Load data from MTUT file.
+
+        :return: list which contains the data from MTUT file.
+        """
         with open(self.path, "r") as mtut_file:
             data = mtut_file.readlines()
         return data
 
     def save_file(self):
+        """
+        Save data to MTUT file.
+        """
         with open(self.path, "w") as mtut_file:
             for line in self.data:
                 mtut_file.write(line)
 
-    def find_var_string(self, var_name: str):
+    def find_var_string(self, var_name: str) -> int:
+        """
+        Returns number of line on which variable was found.
+
+        :param var_name: Variable name in MTUT file.
+        :return: Number of line on which variable was found or -1 if it does not found.
+        """
         for num_line, line in enumerate(self.data):
             if line.startswith(var_name + ' '):
                 return num_line
         return -1
 
-    def get_var(self, var_name: str):
+    def get_var(self, var_name: str) -> str:
+        """
+        Get variable by its name from MTUT file.
+
+        :param var_name: Variable name.
+        :return: Variable value.
+        """
         var_index = self.find_var_string(var_name)
         if var_index == -1:
             print(f'This variable: {var_name} does not exist in MTUT file.')
@@ -51,6 +90,12 @@ class MtutManager:
         return var_value
 
     def set_var(self, var_name: str, new_value: str):
+        """
+        Set a new value for a variable in MTUT file.
+
+        :param var_name:
+        :param new_value:
+        """
         var_index = self.find_var_string(var_name)
         if var_index == -1:
             print(f'This variable: {var_name} does not exist in MTUT file.')
@@ -60,12 +105,26 @@ class MtutManager:
         self.data[var_index] = new_var_line
 
     @staticmethod
-    def _get_var_value_from_string(var_line: str, var_name: str):
+    def _get_var_value_from_string(var_line: str, var_name: str) -> str:
+        """
+        Retrieves value of the variable from string.
+        :param var_line: String that contains variable.
+        :param var_name: Variable name.
+        :return: Variable value in string format.
+        """
         pattern = r"\s*({})\s*\n*".format(re.escape(var_name))
         return re.sub(pattern, "", var_line).rstrip('\n')
 
     @staticmethod
-    def _set_var_value_to_string(var_line: str, var_name: str, new_value: str):
+    def _set_var_value_to_string(var_line: str, var_name: str, new_value: str) -> str:
+        """
+        Set a new value to a variable string.
+
+        :param var_line: String that contains a variable.
+        :param var_name: Variable name.
+        :param new_value: New value to a variable in string format.
+        :return: String that contains the variable with the new value.
+        """
         pattern = r"\s*({})\s*".format(re.escape(var_name))
         old_value = re.sub(pattern, "", var_line).rstrip('\n')
         new_var_line = var_line.replace(old_value, new_value)
@@ -285,23 +344,8 @@ class ResultBuilder:
         result_dataframe: pd.DataFrame = self.result_configer.get_result_dataframe()
         with open(self.result_path, 'a') as res_file:
             res_file.write(result_dataframe.to_string(index=False))
-        # result_dataframe.to_csv(self.result_path, sep='')
 
 
 if __name__ == '__main__':
-    # op = TreadaOutputParser('C:\\Users\\px\\PycharmProjects\\treada-launcher\\data\\treada_raw_output.txt')
-    # print('rel time:', op.relative_time)
-    # print(op.dataframe)
-
-    # pd.set_option('display.max_rows', None)
-    # pd.set_option('display.max_columns', None)
-    # pd.set_option('display.width', None)
-    # mtm = MtutManager('C:\\Users\\px\\PycharmProjects\\treada-launcher\\TreadaTx_C\\MTUT')
-    # print(mtm.get_var('TSTEP'))
-
-
-    rc = ResultDataCollector('C:\\Users\\px\\PycharmProjects\\treada-launcher\\TreadaTx_C\\MTUT',
-                            'C:\\Users\\px\\PycharmProjects\\treada-launcher\\data\\treada_raw_output.txt')
-
-    rc.prepare_result_data()
+    pass
 
