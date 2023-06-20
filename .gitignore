@@ -8,3 +8,7 @@ TreadaTx_C/**
 !wrapper/io_handler.py
 
 data/
+
+# Ignore installer files
+.log
+
