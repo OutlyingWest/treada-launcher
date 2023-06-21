@@ -62,6 +62,10 @@ class StdoutCapturer:
         if not path_to_txt:
             self.__io_loop()
         else:
+            # Create output dir if it do not exists
+            output_dir_path = path_to_txt.rsplit(f'{os.path.sep}', maxsplit=1)[0]
+            if not os.path.exists(output_dir_path):
+                os.makedirs(output_dir_path)
             with open(path_to_txt, "w") as output_file:
                 self.__io_loop(output_file)
 

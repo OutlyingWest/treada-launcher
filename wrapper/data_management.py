@@ -1,8 +1,11 @@
+import os
 import re
 import time
 from pprint import pprint
 
 import pandas as pd
+
+from wrapper.config_builder import load_config
 
 
 class MtutStageConfiger:
@@ -342,10 +345,16 @@ class ResultBuilder:
 
     def dump_dataframe_to_file(self):
         result_dataframe: pd.DataFrame = self.result_configer.get_result_dataframe()
+        # Create output dir if it do not exists
+        output_dir_path = self.result_path.rsplit(f'{os.path.sep}', maxsplit=1)[0]
+        if not os.path.exists(output_dir_path):
+            os.makedirs(output_dir_path)
         with open(self.result_path, 'a') as res_file:
             res_file.write(result_dataframe.to_string(index=False))
 
 
 if __name__ == '__main__':
-    pass
+    config = load_config('wrapper/config.json')
+    if not os.path.exists(config.paths.treada_result_output):
+        os.makedirs(config.paths.treada_result_output.rsplit(f'{os.path.sep}', maxsplit=1)[0])
 
