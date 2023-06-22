@@ -10,5 +10,5 @@ TreadaTx_C/**
 data/
 
 # Ignore installer files
-.log
+installer_x64/*.log
 

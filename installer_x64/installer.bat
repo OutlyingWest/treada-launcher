@@ -10,7 +10,7 @@
 
 @echo off
 :: Set working directory
-cd %~dp0
+cd "%~dp0"
 
 :: Check is Python exists or not
 for /F "delims= " %%i in ('py -V') do (

@@ -95,7 +95,9 @@ def install_packages(requirements_list, has_internet: bool):
             ]
             subprocess.check_call([sys.executable, "-m", "pip", *pip_args, *requirements])
     else:
-        logger.info("Requirements already satisfied.")
+        satisfied_message = "Requirements already satisfied."
+        logger.info(satisfied_message)
+        print(satisfied_message)
 
 
 if __name__ == '__main__':
