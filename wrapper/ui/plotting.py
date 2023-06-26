@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 
 import pandas as pd
 
-from wrapper.config_builder import load_config
-
 
 def main():
     config = load_config('wrapper/config.json')
@@ -46,7 +44,7 @@ def plotter(x, y, x_label='x', y_label='y', fig_title='Transient'):
 
 
 if __name__ == '__main__':
-    from config_builder import load_config
+    from wrapper.config.config_builder import load_config
     main()
 else:
-    from wrapper.config_builder import load_config
+    from wrapper.config.config_builder import load_config

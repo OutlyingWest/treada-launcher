@@ -26,10 +26,10 @@ class Config:
     stages: Stages
 
 
-def load_config(config_path: str = None):
+def load_config(config_name: str = None):
     script_path = os.path.dirname((os.path.abspath(__file__)))
-    project_path = os.path.split(script_path)[0] + '\\'
-    full_config_path = project_path + config_path
+    project_path = script_path.rsplit(sep=os.path.sep, maxsplit=2)[0] + os.path.sep
+    full_config_path = os.path.sep.join([script_path, config_name])
 
     with open(full_config_path, "r") as config_file:
         config_dict = json.load(config_file)

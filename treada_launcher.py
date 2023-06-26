@@ -1,11 +1,11 @@
 from wrapper.io_handler import TreadaRunner
-from wrapper.config_builder import load_config
+from wrapper.config.config_builder import load_config
 from wrapper.data_management import MtutStageConfiger, ResultBuilder
-from wrapper.plotting import plot_builder
+from wrapper.ui.plotting import plot_builder
 
 
 def main():
-    config = load_config('wrapper/config.json')
+    config = load_config('config.json')
     mtut_stage_configer = MtutStageConfiger(config.paths.mtut)
 
     # Stage 1 - without light

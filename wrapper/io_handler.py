@@ -3,6 +3,8 @@ import sys
 import subprocess
 import time
 
+from wrapper.global_functions import create_dir
+
 
 def main():
     path_to_executable = sys.argv[1]
@@ -10,7 +12,7 @@ def main():
     exec_process = runner.exe_runner(exe_path=path_to_executable)
     capturer = StdoutCapturer(process=exec_process)
     output_path = path_to_executable.strip('. ').split('.')[0]
-    capturer.stream_management(path_to_txt=output_path)
+    capturer.stream_management(path_to_output=output_path)
 
 
 class TreadaRunner:
@@ -22,7 +24,7 @@ class TreadaRunner:
         self.capturer.stream_management()
 
     def light_on(self, output_file_path: str):
-        self.capturer.stream_management(path_to_txt=output_file_path)
+        self.capturer.stream_management(path_to_output=output_file_path)
 
     @staticmethod
     def exe_runner(exe_path: str) -> subprocess.Popen:
@@ -47,26 +49,25 @@ class StdoutCapturer:
         # Shut down shortcut configure
         self.running_flag = True
 
-    def stream_management(self, path_to_txt=None):
+    def stream_management(self, path_to_output=None):
         """
         Divides data from *.exe stdout to its own stdout and file with name *_output.txt.
         Ends by KeyboardInterrupt or ending condition satisfaction
         """
 
         # Strip slashes if only file name was used as a path (for solving of powershell issues)
-        if path_to_txt:
-            if path_to_txt.count(os.path.sep) <= 2:
-                path_to_txt = path_to_txt.strip(os.path.sep)
-                path_to_txt = f'{path_to_txt.split(".")[0]}_raw_output.txt'
+        if path_to_output:
+            if path_to_output.count(os.path.sep) <= 2:
+                path_to_output = path_to_output.strip(os.path.sep)
+                path_to_output = f'{path_to_output.split(".")[0]}_raw_output.txt'
 
-        if not path_to_txt:
+        if not path_to_output:
             self.__io_loop()
         else:
-            # Create output dir if it do not exists
-            output_dir_path = path_to_txt.rsplit(f'{os.path.sep}', maxsplit=1)[0]
-            if not os.path.exists(output_dir_path):
-                os.makedirs(output_dir_path)
-            with open(path_to_txt, "w") as output_file:
+            # Creates output dir if it does not exist
+            create_dir(path_to_output)
+
+            with open(path_to_output, "w") as output_file:
                 self.__io_loop(output_file)
 
         # Errors' catching

@@ -1,11 +1,11 @@
 import os
 import re
 import time
-from pprint import pprint
 
 import pandas as pd
 
-from wrapper.config_builder import load_config
+from wrapper.config.config_builder import load_config
+from wrapper.global_functions import create_dir
 
 
 class MtutStageConfiger:
@@ -216,7 +216,6 @@ class ResultDataCollector:
         # Result data
         self.transient_time = None
         self.result_dataframe = None
-        # Get necessary MTUT variables
 
     def prepare_result_data(self):
         self.time_col_calculate()
@@ -345,16 +344,12 @@ class ResultBuilder:
 
     def dump_dataframe_to_file(self):
         result_dataframe: pd.DataFrame = self.result_configer.get_result_dataframe()
-        # Create output dir if it do not exists
-        output_dir_path = self.result_path.rsplit(f'{os.path.sep}', maxsplit=1)[0]
-        if not os.path.exists(output_dir_path):
-            os.makedirs(output_dir_path)
+        # Create output dir if it does not exist
+        create_dir(self.result_path)
         with open(self.result_path, 'a') as res_file:
             res_file.write(result_dataframe.to_string(index=False))
 
 
 if __name__ == '__main__':
-    config = load_config('wrapper/config.json')
-    if not os.path.exists(config.paths.treada_result_output):
-        os.makedirs(config.paths.treada_result_output.rsplit(f'{os.path.sep}', maxsplit=1)[0])
+    pass
 
