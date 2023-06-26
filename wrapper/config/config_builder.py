@@ -6,24 +6,32 @@ import json
 from dataclasses import dataclass
 
 
-@dataclass()
+@dataclass
 class Stages:
     light_off: dict
     light_on: dict
 
 
-@dataclass()
+@dataclass
 class Paths:
     treada_exe: str
     mtut: str
     treada_raw_output: str
     treada_result_output: str
+    current_state: str
+    udrm: str
+
+
+@dataclass
+class Modes:
+    udrm_vector_mode: bool
 
 
 @dataclass
 class Config:
     paths: Paths
     stages: Stages
+    modes: Modes
 
 
 def load_config(config_name: str = None):
@@ -35,13 +43,16 @@ def load_config(config_name: str = None):
         config_dict = json.load(config_file)
     # load configuration from file
     return Config(
-        paths=Paths(treada_exe=project_path + config_dict['treada']['paths']['to_exe'],
-                    mtut=project_path + config_dict['treada']['paths']['to_mtut'],
-                    treada_raw_output=project_path + config_dict['treada']['paths']['to_raw_output'],
-                    treada_result_output=project_path + config_dict['treada']['paths']['to_result_output']),
-
+        paths=Paths(treada_exe=project_path + config_dict['treada']['paths']['exe'],
+                    mtut=project_path + config_dict['treada']['paths']['mtut'],
+                    treada_raw_output=project_path + config_dict['treada']['paths']['raw_output'],
+                    treada_result_output=project_path + config_dict['treada']['paths']['result_output'],
+                    current_state=project_path + config_dict['treada']['paths']['state'],
+                    udrm=project_path + config_dict['treada']['paths']['udrm']),
         stages=Stages(light_off=config_dict['treada']['stages']['light_off'],
-                      light_on=config_dict['treada']['stages']['light_on'])
+                      light_on=config_dict['treada']['stages']['light_on']),
+        modes=Modes(udrm_vector_mode=config_dict['treada']['modes']['UDRM_vector_mode'])
+
     )
 
 

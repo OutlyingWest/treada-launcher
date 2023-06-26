@@ -1,6 +1,7 @@
 import os
 import re
 import time
+from typing import Union, List
 
 import pandas as pd
 
@@ -307,6 +308,8 @@ class ResultBuilder:
     def save_data(self):
         header = self.header_build()
         self.header_print(header)
+        # Create output dir if it does not exist
+        create_dir(self.result_path)
         self.header_dump_to_file(header)
         self.dump_dataframe_to_file()
 
@@ -344,10 +347,43 @@ class ResultBuilder:
 
     def dump_dataframe_to_file(self):
         result_dataframe: pd.DataFrame = self.result_configer.get_result_dataframe()
-        # Create output dir if it does not exist
-        create_dir(self.result_path)
         with open(self.result_path, 'a') as res_file:
             res_file.write(result_dataframe.to_string(index=False))
+
+
+class UdrmVectorManager:
+    """
+    Manage UDRM vector file, which is used if UDRM_vector_mode set in UDRM_vector_mode config.json
+    """
+    def __init__(self, udrm_vector_file_path):
+        self.file_path = udrm_vector_file_path
+        self.max_index: Union[int, None] = None
+
+    def load(self) -> List[float]:
+        """
+        Loads UDRM vector from file
+        :return:
+        """
+        if os.path.exists(self.file_path):
+            with open(self.file_path, "r") as vector_file:
+                udrm_list = vector_file.readlines()
+            if not udrm_list:
+                raise ValueError('UDRM vector is empty.')
+            self.set_max_index(udrm_list)
+            udrm_float_list = [float(udrm) for udrm in udrm_list]
+        else:
+            print(f'UDRM vector file does not found in path: {self.file_path}')
+            raise FileNotFoundError
+        return udrm_float_list
+
+    def set_max_index(self, udrm_list: list):
+        self.max_index = len(udrm_list) - 1
+
+    def get_max_index(self):
+        if isinstance(self.max_index, int):
+            return self.max_index
+        elif self.max_index is None:
+            raise ValueError('max_index has not calculated yet')
 
 
 if __name__ == '__main__':

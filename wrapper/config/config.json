@@ -10,12 +10,16 @@
                 "ILUMEN": "1"
             }
         },
+        "modes": {
+            "UDRM_vector_mode": true
+        },
         "paths": {
-            "to_exe": "TreadaTx_C\\TreadaTx_C.exe",
-            "to_mtut": "TreadaTx_C\\MTUT",
-            "to_raw_output": "data\\treada_raw_output.txt",
-            "to_result_output": "data\\res_.txt",
-            "UDRM": "data\\UDRM.txt"
+            "exe": "TreadaTx_C\\TreadaTx_C.exe",
+            "mtut": "TreadaTx_C\\MTUT",
+            "raw_output": "data\\treada_raw_output.txt",
+            "result_output": "data\\res_.txt",
+            "udrm": "data\\input\\UDRM.txt",
+            "state": "wrapper\\states\\current_state.json"
         }
     }
 }
