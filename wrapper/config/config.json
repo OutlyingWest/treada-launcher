@@ -17,7 +17,7 @@
             "exe": "TreadaTx_C\\TreadaTx_C.exe",
             "mtut": "TreadaTx_C\\MTUT",
             "raw_output": "data\\treada_raw_output.txt",
-            "result_output": "data\\res_.txt",
+            "result_output": "data\\result\\res_.txt",
             "udrm": "data\\input\\UDRM.txt",
             "state": "wrapper\\states\\current_state.json"
         }
