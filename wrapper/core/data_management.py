@@ -14,11 +14,13 @@ class MtutStageConfiger:
         self.mtut_manager = MtutManager(mtut_path)
 
     def light_off(self, light_off_setup: dict):
+        self.mtut_manager.load_file()
         for key, value in light_off_setup.items():
             self.mtut_manager.set_var(key, value)
         self.mtut_manager.save_file()
 
     def light_on(self, light_on_setup: dict):
+        self.mtut_manager.load_file()
         for key, value in light_on_setup.items():
             self.mtut_manager.set_var(key, value)
         self.mtut_manager.save_file()
@@ -46,7 +48,7 @@ class MtutManager:
         :param mtut_file_path: Path to MTUT file.
         """
         self.path = mtut_file_path
-        self.data: list = self.load_file()
+        self.data: Union[list, None] = None
 
     def load_file(self) -> list:
         """
@@ -55,8 +57,8 @@ class MtutManager:
         :return: list which contains the data from MTUT file.
         """
         with open(self.path, "r") as mtut_file:
-            data = mtut_file.readlines()
-        return data
+            self.data = mtut_file.readlines()
+        return self.data
 
     def save_file(self):
         """
@@ -208,6 +210,7 @@ class TreadaOutputParser:
 class ResultDataCollector:
     def __init__(self, mtut_file_path, treada_raw_output_path):
         self.mtut_manager = MtutManager(mtut_file_path)
+        self.mtut_manager.load_file()
         self.treada_parser = TreadaOutputParser(treada_raw_output_path)
         # Set dataframe col names
         self.source_current_name = self.treada_parser.source_current_name

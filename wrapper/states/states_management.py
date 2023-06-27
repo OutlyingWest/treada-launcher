@@ -10,9 +10,9 @@ from wrapper.core.data_management import MtutManager, UdrmVectorManager
 @dataclass
 class StateStatuses:
     ERROR = -1
-    SAME = 1
     CHANGED = 2
     END = 3
+    MANUAL = 4
 
 
 class State:
@@ -20,6 +20,7 @@ class State:
         self.value = value
         self.status: Union[int, None] = None
         self.statuses = StateStatuses
+        self.addition_info: dict
 
     def set_status(self, status):
         self.status = status
@@ -33,42 +34,44 @@ class State:
 
 class StatesMachine:
     """
-    Responsible for handle of automatic modes' states.
-    Keep and load current state from file.
+    Responsible for handle of automatic modes' states (that influences on "Treada" runtime).
+    Keep and load current state from current_state.json file.
+
+    Attributes:
+        config: Config object
     """
     def __init__(self, config: Config):
         self.config = config
-        self.mtut_manager = MtutManager(config.paths.mtut)
-        # Dependencies of modes
         # Describe State
         self.state: Union[State, None] = None
+        self.statuses = StateStatuses
 
     def update_state(self) -> Union[int, None]:
         """
         Update current state that is loaded from file and returns a state status code.
         Possible status codes:
         ERROR = -1
-        SAME = 1
         CHANGED = 2
         END = 3
-        None
+        MANUAL = 4
         :return state_status code: state status code
         """
         # Check is at least one of modes enabled
         if any(value for value in self.config.modes.__dict__.values() if value):
             self.load_state()
             self.set_state()
-            if self.state.get_status() == self.state.statuses.CHANGED:
+            if self.state.get_status() == self.statuses.CHANGED:
                 self.dump_state()
                 return self.state.statuses.CHANGED
-            elif self.state.get_status() == self.state.statuses.END:
-                state_status_end = self.state.statuses.END
+            elif self.state.get_status() == self.statuses.END:
+                state_status_end = self.statuses.END
                 self.flush_state()
                 return state_status_end
             else:
                 print('Impossible state.')
         else:
             print('Full manual mode enabled.')
+            return self.statuses.MANUAL
 
     def load_state(self):
         """
@@ -95,27 +98,29 @@ class StatesMachine:
         and set state status code.
         :return: None
         """
-        # Mode conditions should be checked here
+        # Mode conditions for treada runtime should be checked here
         if self.config.modes.udrm_vector_mode:
             # Create vector object, which govern operations with UDRM vector from the file UDRM.txt
             udrm_vector = UdrmVectorManager(self.config.paths.udrm)
-            try:
-                udrm_list = udrm_vector.load()
-            except (ValueError, FileNotFoundError):
-                sys.exit()
+            udrm_list = udrm_vector.load()
             # Get udrm vector index from current state
             udrm_index = self.state.value['udrm_vector_index']
             udrm_max_index = udrm_vector.get_max_index()
             if udrm_index <= udrm_max_index:
                 if not self.state.status:
                     print('UDRM vector mode activated.')
-                self.state.set_status(self.state.statuses.CHANGED)
+                self.state.set_status(self.statuses.CHANGED)
                 new_udrm = str(udrm_list[udrm_index])
-                self.mtut_manager.set_var('UDRM', new_udrm)
+                # Create the mtut_manager, which loads a mtut file
+                mtut_manager = MtutManager(self.config.paths.mtut)
+                mtut_manager.load_file()
+                # Set and save UDRM to MTUT file
+                mtut_manager.set_var('UDRM', new_udrm)
+                mtut_manager.save_file()
                 # Increment vector index
                 self.state.value['udrm_vector_index'] += 1
             else:
-                self.state.set_status(self.state.statuses.END)
+                self.state.set_status(self.statuses.END)
 
     def flush_state(self):
         """

@@ -10,15 +10,14 @@ def create_dir(file_path: str, with_file=False):
     :param with_file: If True - creates the file that is included in file_path
     :return:
     """
-    print(f'dir on {file_path= } was created')
     dir_path = file_path.rsplit(f'{os.path.sep}', maxsplit=1)[0]
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
-    if with_file:
-        open(file_path, 'w').close()
+        if with_file:
+            open(file_path, 'w').close()
 
 
-def create_temp_dirs(dirs: List[list]):
+def create_dirs(dirs: List[list]):
     """
     Creates directories.
     dirs format:

@@ -28,8 +28,21 @@ class StatesMachineTests(unittest.TestCase):
 
         # Check
         status = self.states_machine.update_state()
-        self.assertEqual(status, None)
+        self.assertEqual(status, 3)
 
+    def test_check_udrm_update_state(self):
+        # Set prerequisites
+        self.config.modes.udrm_vector_mode = True
+        UDRM_old_value = self.states_machine.mtut_manager.get_var('UDRM')
+        print(f'{UDRM_old_value=}')
+
+        # Check
+        status = self.states_machine.update_state()
+        UDRM_new_value = self.states_machine.mtut_manager.get_var('UDRM')
+        print(f'{UDRM_new_value=}')
+        self.assertNotEqual(UDRM_old_value, UDRM_new_value)
+        if status == 3:
+            self.states_machine.flush_state()
 
 if __name__ == '__main__':
     unittest.main()

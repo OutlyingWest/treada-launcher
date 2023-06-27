@@ -13,6 +13,9 @@
         "modes": {
             "UDRM_vector_mode": true
         },
+        "flags": {
+            "disable_plotting": true
+        },
         "paths": {
             "exe": "TreadaTx_C\\TreadaTx_C.exe",
             "mtut": "TreadaTx_C\\MTUT",

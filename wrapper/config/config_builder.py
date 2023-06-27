@@ -28,10 +28,16 @@ class Modes:
 
 
 @dataclass
+class Flags:
+    disable_plotting: bool
+
+
+@dataclass
 class Config:
     paths: Paths
     stages: Stages
     modes: Modes
+    flags: Flags
 
 
 def load_config(config_name: str = None):
@@ -48,11 +54,11 @@ def load_config(config_name: str = None):
                     treada_raw_output=project_path + config_dict['treada']['paths']['raw_output'],
                     treada_result_output=project_path + config_dict['treada']['paths']['result_output'],
                     current_state=project_path + config_dict['treada']['paths']['state'],
-                    udrm=project_path + config_dict['treada']['paths']['udrm']),
+                    udrm=project_path + config_dict['treada']['paths']['udrm'],),
         stages=Stages(light_off=config_dict['treada']['stages']['light_off'],
-                      light_on=config_dict['treada']['stages']['light_on']),
-        modes=Modes(udrm_vector_mode=config_dict['treada']['modes']['UDRM_vector_mode'])
-
+                      light_on=config_dict['treada']['stages']['light_on'],),
+        modes=Modes(udrm_vector_mode=config_dict['treada']['modes']['UDRM_vector_mode'],),
+        flags=Flags(disable_plotting=config_dict['treada']['flags']['disable_plotting'],),
     )
 
 
