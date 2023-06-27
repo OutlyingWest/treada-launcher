@@ -32,14 +32,30 @@ class State:
 
 
 class StatesMachine:
+    """
+    Responsible for handle of automatic modes' states.
+    Keep and load current state from file.
+    """
     def __init__(self, config: Config):
         self.config = config
         self.mtut_manager = MtutManager(config.paths.mtut)
-        self.udrm_vector = UdrmVectorManager(config.paths.udrm)
+        # Dependencies of modes
         # Describe State
         self.state: Union[State, None] = None
 
-    def update_state(self):
+    def update_state(self) -> Union[int, None]:
+        """
+        Update current state that is loaded from file and returns a state status code.
+        Possible status code:
+        ERROR = -1
+        SAME = 1
+        CHANGED = 2
+        END = 3
+        None
+
+        :return state_status code: state status code
+        """
+        # Check is at least one of modes enabled
         if any(value for value in self.config.modes.__dict__.values() if value):
             self.load_state()
             self.set_state()
@@ -58,8 +74,7 @@ class StatesMachine:
     def load_state(self):
         """
         Loads state from file
-        :param state_file_path:
-        :return:
+        :return: None
         """
         state_file_path = self.config.paths.current_state
         with open(state_file_path, "r") as state_file:
@@ -69,25 +84,29 @@ class StatesMachine:
     def dump_state(self):
         """
         Dumps state value to current_state.json file
-        :return:
+        :return: None
         """
         state_file_path = self.config.paths.current_state
         with open(state_file_path, "w") as state_file:
             json.dump(self.state.value, state_file)
 
-    def set_state(self) -> Union:
+    def set_state(self):
         """
         Set state requirements to MTUT file if they have set in current_state.json
-        :return:
+        and set state status code.
+        :return: None
         """
+        # Mode conditions should be checked here
         if self.config.modes.udrm_vector_mode:
+            # Create vector object, which govern operations with UDRM vector from the file UDRM.txt
+            udrm_vector = UdrmVectorManager(self.config.paths.udrm)
             try:
-                udrm_list = self.udrm_vector.load()
+                udrm_list = udrm_vector.load()
             except (ValueError, FileNotFoundError):
                 sys.exit()
             # Get udrm vector index from current state
             udrm_index = self.state.value['udrm_vector_index']
-            udrm_max_index = self.udrm_vector.get_max_index()
+            udrm_max_index = udrm_vector.get_max_index()
             if udrm_index <= udrm_max_index:
                 if not self.state.status:
                     print('UDRM vector mode activated.')
