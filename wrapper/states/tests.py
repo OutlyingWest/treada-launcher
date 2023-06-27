@@ -1,10 +1,8 @@
-import json
-import os
 import unittest
 
 from wrapper.config.config_builder import load_config
 from wrapper.states.states_management import StatesMachine
-from wrapper.data_management import MtutManager
+from wrapper.core.data_management import MtutManager
 
 
 class StatesMachineTests(unittest.TestCase):

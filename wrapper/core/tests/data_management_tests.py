@@ -1,6 +1,6 @@
 import unittest
 
-from wrapper.data_management import UdrmVectorManager
+from wrapper.core.data_management import UdrmVectorManager
 from wrapper.config.config_builder import load_config
 
 

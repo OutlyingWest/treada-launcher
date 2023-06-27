@@ -1,6 +1,6 @@
-from wrapper.io_handler import TreadaRunner
+from wrapper.core.io_handler import TreadaRunner
 from wrapper.config.config_builder import load_config
-from wrapper.data_management import MtutStageConfiger, ResultBuilder
+from wrapper.core.data_management import MtutStageConfiger, ResultBuilder
 from wrapper.ui.plotting import plot_builder
 
 

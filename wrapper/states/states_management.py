@@ -3,8 +3,8 @@ import sys
 from dataclasses import dataclass
 from typing import Union
 
-from wrapper.config.config_builder import load_config, Config
-from wrapper.data_management import MtutManager, UdrmVectorManager
+from wrapper.config.config_builder import Config
+from wrapper.core.data_management import MtutManager, UdrmVectorManager
 
 
 @dataclass
@@ -46,13 +46,12 @@ class StatesMachine:
     def update_state(self) -> Union[int, None]:
         """
         Update current state that is loaded from file and returns a state status code.
-        Possible status code:
+        Possible status codes:
         ERROR = -1
         SAME = 1
         CHANGED = 2
         END = 3
         None
-
         :return state_status code: state status code
         """
         # Check is at least one of modes enabled
