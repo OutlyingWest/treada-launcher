@@ -26,53 +26,53 @@ class MtutStageConfiger:
         self.mtut_manager.save_file()
 
 
-class MtutManager:
+class FileManager:
     """
-    This class provide the abilities to get or set variables in "MTUT" file
+    This class provide the abilities to get or set variables in "configuration" file
 
     Attributes:
-        mtut_file_path: Path to MTUT file
+        file_path: Path to data file
 
     Methods:
-        load_file(): Load data from MTUT file.
-        save_file(): Save changes to MTUT file.
+        load_file(): Load data from configuration file.
+        save_file(): Save changes to configuration file.
         find_var_string(var_name: str): Returns number of line on which variable was found.
-        get_var(var_name: str) Get variable by its name from MTUT file.
-        set_var(var_name: str, new_value: str) Set a new value for a variable in MTUT file.
+        get_var(var_name: str) Get variable by its name from configuration file.
+        set_var(var_name: str, new_value: str) Set a new value for a variable in configuration file.
 
     """
-    def __init__(self, mtut_file_path: str):
+    def __init__(self, file_path: str):
         """
-         Initialize the MtutManager object. Sets path and loads data from MTUT file.
+         Initialize the FileManager object. Sets path and loads data from configuration file.
 
-        :param mtut_file_path: Path to MTUT file.
+        :param file_path: Path to configuration file.
         """
-        self.path = mtut_file_path
+        self.path = file_path
         self.data: Union[list, None] = None
 
     def load_file(self) -> list:
         """
-        Load data from MTUT file.
+        Load data from configuration file.
 
-        :return: list which contains the data from MTUT file.
+        :return: list which contains the data from configuration file.
         """
-        with open(self.path, "r") as mtut_file:
-            self.data = mtut_file.readlines()
+        with open(self.path, "r") as file:
+            self.data = file.readlines()
         return self.data
 
     def save_file(self):
         """
-        Save data to MTUT file.
+        Save data to configuration file.
         """
-        with open(self.path, "w") as mtut_file:
+        with open(self.path, "w") as file:
             for line in self.data:
-                mtut_file.write(line)
+                file.write(line)
 
     def find_var_string(self, var_name: str) -> int:
         """
         Returns number of line on which variable was found.
 
-        :param var_name: Variable name in MTUT file.
+        :param var_name: Variable name in configuration file.
         :return: Number of line on which variable was found or -1 if it does not found.
         """
         for num_line, line in enumerate(self.data):
@@ -82,14 +82,14 @@ class MtutManager:
 
     def get_var(self, var_name: str) -> str:
         """
-        Get variable by its name from MTUT file.
+        Get variable by its name from configuration file.
 
         :param var_name: Variable name.
         :return: Variable value.
         """
         var_index = self.find_var_string(var_name)
         if var_index == -1:
-            print(f'This variable: {var_name} does not exist in MTUT file.')
+            print(f'This variable: {var_name} does not exist in configuration file.')
             raise ValueError
         var_line = self.data[var_index]
         var_value = self._get_var_value_from_string(var_line, var_name)
@@ -97,14 +97,14 @@ class MtutManager:
 
     def set_var(self, var_name: str, new_value: str):
         """
-        Set a new value for a variable in MTUT file.
+        Set a new value for a variable in configuration file.
 
         :param var_name:
         :param new_value:
         """
         var_index = self.find_var_string(var_name)
         if var_index == -1:
-            print(f'This variable: {var_name} does not exist in MTUT file.')
+            print(f'This variable: {var_name} does not exist in configuration file.')
             raise ValueError
         var_line = self.data[var_index]
         new_var_line = self._set_var_value_to_string(var_line, var_name, new_value)
@@ -119,7 +119,7 @@ class MtutManager:
         :return: Variable value in string format.
         """
         pattern = r"\s*({})\s*\n*".format(re.escape(var_name))
-        return re.sub(pattern, "", var_line).rstrip('\n')
+        return re.sub(pattern, "", var_line).strip('\n =')
 
     @staticmethod
     def _set_var_value_to_string(var_line: str, var_name: str, new_value: str) -> str:
@@ -135,6 +135,17 @@ class MtutManager:
         old_value = re.sub(pattern, "", var_line).rstrip('\n')
         new_var_line = var_line.replace(old_value, new_value)
         return new_var_line
+
+
+class MtutManager(FileManager):
+    """
+        This class provide the abilities to get or set variables in "MTUT" file
+
+    Attributes:
+        mtut_file_path: Path to data file
+    """
+    def __init__(self, mtut_file_path: str):
+        super().__init__(mtut_file_path)
 
 
 class TreadaOutputParser:
@@ -304,9 +315,9 @@ class ResultBuilder:
         self.result_path = self.file_name_build(result_path)
         self.result_configer.prepare_result_data()
 
-    def file_name_build(self, result_path: str):
+    def file_name_build(self, result_path: str, file_extension='txt'):
         udrm_value = self.result_configer.mtut_manager.get_var('UDRM')
-        return f'{result_path.split(".")[0]}u({udrm_value}).txt'
+        return f'{result_path.split(".")[0]}u({udrm_value}).{file_extension}'
 
     def save_data(self):
         header = self.header_build()
@@ -373,7 +384,7 @@ class UdrmVectorManager:
             if not udrm_list:
                 raise ValueError('UDRM vector is empty.')
             self.set_max_index(udrm_list)
-            udrm_float_list = [float(udrm) for udrm in udrm_list]
+            udrm_float_list = [float(udrm.replace(',', '.')) for udrm in udrm_list]
         else:
             print(f'UDRM vector file does not found in path: {self.file_path}')
             raise FileNotFoundError
