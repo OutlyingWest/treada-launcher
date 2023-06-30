@@ -23,13 +23,15 @@ class TreadaSwitcher:
     Responsible for stages switching of "Treada" work
     """
     def __init__(self, config: Config):
-        self.exec_process = self.exe_runner(exe_path=config.paths.treada_exe)
+        self.exec_process = self.exe_runner(exe_path=config.paths.treada_core.exe)
         self.capturer = StdoutCapturer(process=self.exec_process, auto_ending=config.flags.auto_ending)
 
     def light_off(self):
+        self.capturer.set_runtime_console_info('Dark')
         self.capturer.stream_management()
 
     def light_on(self, output_file_path: str):
+        self.capturer.set_runtime_console_info('Light')
         self.capturer.stream_management(path_to_output=output_file_path)
 
     @staticmethod
@@ -46,6 +48,99 @@ class TreadaSwitcher:
                                     cwd=working_directory_path)
         except FileNotFoundError:
             print('Executable file not found, Path:', exe_path)
+
+
+class StdoutCapturer:
+    def __init__(self, process: subprocess.Popen, auto_ending=False):
+        # Running of the executable file
+        self.process = process
+        # Shut down shortcut configure
+        self.running_flag = True
+        # Init auto ending prerequisites
+        self.auto_ending = auto_ending
+        self.ending_condition = EndingCondition(chunk_size=100,
+                                                equal_values_to_stop=5,
+                                                deviation_coef=1e-5)
+        self.runtime_console_info = ''
+
+    def stream_management(self, path_to_output=None):
+        """
+        Divides data from *.exe stdout to its own stdout and file with name *_output.txt.
+        Ends by KeyboardInterrupt or ending condition satisfaction
+        """
+
+        # Strip slashes if only file name was used as a path (for solving of powershell issues)
+        if path_to_output:
+            if path_to_output.count(os.path.sep) <= 2:
+                path_to_output = path_to_output.strip(os.path.sep)
+                path_to_output = f'{path_to_output.split(".")[0]}_raw_output.txt'
+
+        if not path_to_output:
+            self.__io_loop()
+        else:
+            # Creates output dir if it does not exist
+            create_dir(path_to_output)
+
+            with open(path_to_output, "w") as output_file:
+                self.__io_loop(output_file)
+
+        # Errors' catching
+        # error = self.process.stderr.read().decode('utf-8')
+        # if error:
+        #     print('ERRORS:', error.strip())
+
+        # Terminate main executable process
+        self.process.terminate()
+
+    def __io_loop(self, output_file=None):
+
+        str_counter = 0
+        if len(sys.argv) > 2:
+            num_of_str = int(sys.argv[2])
+        else:
+            num_of_str = None
+
+        start_time = time.time()
+        while self.running_flag:
+            try:
+                if num_of_str and num_of_str > str_counter:
+                    break
+                # Get line from process object
+                treada_output: bytes = self.process.stdout.readline()
+                if treada_output == b'' and self.process.poll() is not None:
+                    break
+                if treada_output:
+                    try:
+                        decoded_output = treada_output.decode('utf-8')
+                        clean_decoded_output = decoded_output.strip('\n ')
+                        # Check ending condition
+                        if self.auto_ending:
+                            current_value = (
+                                self.ending_condition.current_value_prepare(currents_string=clean_decoded_output)
+                            )
+                            if current_value and self.ending_condition.check(current_value):
+                                self.running_flag = False
+                        # Write *.exe output to file
+                        if output_file:
+                            output_file.write(clean_decoded_output)
+                    except UnicodeDecodeError:
+                        decoded_output = treada_output
+                    # Copy *.exe output to its own stdout
+                    print('   '.join((decoded_output.rstrip(), self.runtime_console_info)))
+                    str_counter += 1
+            except KeyboardInterrupt:
+                self.running_flag = False
+
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print('Number of strings:', str_counter)
+        print(f'Execution time in I/O loop:{execution_time:.2f}s')
+
+    async def keyboard_catch(self):
+        pass
+
+    def set_runtime_console_info(self, info: str):
+        self.runtime_console_info = info
 
 
 class EndingCondition:
@@ -129,95 +224,6 @@ class EndingCondition:
             else:
                 self.means_vector_index += 1
         return False
-
-
-class StdoutCapturer:
-    def __init__(self, process: subprocess.Popen, auto_ending=False):
-        # Running of the executable file
-        self.process = process
-        # Shut down shortcut configure
-        self.running_flag = True
-        # Init auto ending prerequisites
-        self.auto_ending = auto_ending
-        self.ending_condition = EndingCondition(chunk_size=100,
-                                                equal_values_to_stop=5,
-                                                deviation_coef=1e-5)
-
-    def stream_management(self, path_to_output=None):
-        """
-        Divides data from *.exe stdout to its own stdout and file with name *_output.txt.
-        Ends by KeyboardInterrupt or ending condition satisfaction
-        """
-
-        # Strip slashes if only file name was used as a path (for solving of powershell issues)
-        if path_to_output:
-            if path_to_output.count(os.path.sep) <= 2:
-                path_to_output = path_to_output.strip(os.path.sep)
-                path_to_output = f'{path_to_output.split(".")[0]}_raw_output.txt'
-
-        if not path_to_output:
-            self.__io_loop()
-        else:
-            # Creates output dir if it does not exist
-            create_dir(path_to_output)
-
-            with open(path_to_output, "w") as output_file:
-                self.__io_loop(output_file)
-
-        # Errors' catching
-        # error = self.process.stderr.read().decode('utf-8')
-        # if error:
-        #     print('ERRORS:', error.strip())
-
-        # Terminate main executable process
-        self.process.terminate()
-
-    def __io_loop(self, output_file=None):
-
-        str_counter = 0
-        if len(sys.argv) > 2:
-            num_of_str = int(sys.argv[2])
-        else:
-            num_of_str = None
-
-        start_time = time.time()
-        while self.running_flag:
-            try:
-                if num_of_str and num_of_str > str_counter:
-                    break
-                # Get line from process object
-                treada_output: bytes = self.process.stdout.readline()
-                if treada_output == b'' and self.process.poll() is not None:
-                    break
-                if treada_output:
-                    try:
-                        decoded_output = treada_output.decode('utf-8')
-                        clean_decoded_output = decoded_output.strip('\n ')
-                        # Check ending condition
-                        if self.auto_ending:
-                            current_value = (
-                                self.ending_condition.current_value_prepare(currents_string=clean_decoded_output)
-                            )
-                            if current_value and self.ending_condition.check(current_value):
-                                self.running_flag = False
-                        # Write *.exe output to file
-                        if output_file:
-                            output_file.write(clean_decoded_output)
-                    except UnicodeDecodeError:
-                        decoded_output = treada_output
-                    # Copy *.exe output to its own stdout
-                    print(decoded_output.rstrip())
-                    str_counter += 1
-            except KeyboardInterrupt:
-                self.running_flag = False
-
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print('Number of strings:', str_counter)
-        print(f'Execution time in I/O loop:{execution_time:.2f}s')
-
-    async def keyboard_catch(self):
-        pass
 
 
 if __name__ == '__main__':
