@@ -14,13 +14,15 @@
             "UDRM_vector_mode": true
         },
         "flags": {
-            "disable_plotting": true
+            "disable_plotting": false,
+            "auto_ending": true
         },
         "paths": {
             "exe": "TreadaTx_C\\TreadaTx_C.exe",
             "mtut": "TreadaTx_C\\MTUT",
             "raw_output": "data\\treada_raw_output.txt",
             "result_output": "data\\result\\res_.txt",
+            "result_plot": "data\\result\\plots\\res_.txt",
             "udrm": "data\\input\\UDRM.txt",
             "state": "wrapper\\states\\current_state.json"
         }

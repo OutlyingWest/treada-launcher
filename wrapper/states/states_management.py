@@ -3,7 +3,7 @@ import sys
 from dataclasses import dataclass
 from typing import Union
 
-from wrapper.config.config_builder import Config
+from wrapper.config.config_builder import Config, load_config
 from wrapper.core.data_management import MtutManager, UdrmVectorManager
 
 
@@ -36,15 +36,18 @@ class StatesMachine:
     """
     Responsible for handle of automatic modes' states (that influences on "Treada" runtime).
     Keep and load current state from current_state.json file.
-
-    Attributes:
-        config: Config object
     """
-    def __init__(self, config: Config):
-        self.config = config
+    def __init__(self):
+        self.config: Union[Config, None] = None
         # Describe State
         self.state: Union[State, None] = None
         self.statuses = StateStatuses
+        # Flush state if vector mode disabled
+        # if not self.config.modes.udrm_vector_mode:
+        #     try:
+        #         self.flush_state()
+        #     except AttributeError:
+        #         pass
 
     def update_state(self) -> Union[int, None]:
         """
@@ -57,6 +60,7 @@ class StatesMachine:
         :return state_status code: state status code
         """
         # Check is at least one of modes enabled
+        self.config = load_config('config.json')
         if any(value for value in self.config.modes.__dict__.values() if value):
             self.load_state()
             self.set_state()

@@ -1,4 +1,4 @@
-from wrapper.core.io_handler import TreadaRunner
+from wrapper.core.io_handler import TreadaSwitcher
 from wrapper.config.config_builder import load_config, Config
 from wrapper.core.data_management import MtutStageConfiger, ResultBuilder
 from wrapper.initializations import init_dirs
@@ -15,7 +15,7 @@ def main():
 
 def treada_run_loop(config: Config):
     mtut_stage_configer = MtutStageConfiger(config.paths.mtut)
-    states_machine = StatesMachine(config)
+    states_machine = StatesMachine()
     state_statuses = StateStatuses
 
     running_flag = True
@@ -30,12 +30,12 @@ def treada_run_loop(config: Config):
 
         # Stage 1 - without light
         mtut_stage_configer.light_off(config.stages.light_off)
-        treada = TreadaRunner(config.paths.treada_exe)
+        treada = TreadaSwitcher(config)
         treada.light_off()
 
         # Stage 2 - with light
         mtut_stage_configer.light_on(config.stages.light_on)
-        treada = TreadaRunner(config.paths.treada_exe)
+        treada = TreadaSwitcher(config)
         treada.light_on(config.paths.treada_raw_output)
 
         # Save data in result file and output in console
@@ -45,7 +45,8 @@ def treada_run_loop(config: Config):
         result_builder.save_data()
         # Plot result
         if not config.flags.disable_plotting:
-            plot_builder(result_builder.result_path)
+            full_plot_path = result_builder.file_name_build(config.paths.plots, file_extension='png')
+            plot_builder(result_builder.result_path, full_plot_path)
 
 
 if __name__ == '__main__':
