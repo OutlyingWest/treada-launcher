@@ -5,7 +5,6 @@ from typing import Union, List
 
 import pandas as pd
 
-from wrapper.config.config_builder import load_config
 from wrapper.global_functions import create_dir
 
 
@@ -332,6 +331,16 @@ class ResultBuilder:
         emini_value = self.result_configer.mtut_manager.get_var('EMINI')
         emaxi_value = self.result_configer.mtut_manager.get_var('EMAXI')
         transient_time_value = self.result_configer.get_transient_time()
+
+        # with open(answer_with_path, mode='r', encoding='utf-8') as answr:
+        #     answer_string = answr.read()
+        # answer_string_with_format = answer_string.format(
+        #     first_name=obj.from_user.first_name,
+        #     format_cmd=hcode('/format'),
+        #     error=hcode('Error:')
+        # )
+
+
         header: list = [
             'Diode biased at:',
             f'UDRM = {udrm_value} V',

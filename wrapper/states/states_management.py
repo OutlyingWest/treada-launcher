@@ -1,5 +1,4 @@
 import json
-import sys
 from dataclasses import dataclass
 from typing import Union
 
@@ -42,12 +41,6 @@ class StatesMachine:
         # Describe State
         self.state: Union[State, None] = None
         self.statuses = StateStatuses
-        # Flush state if vector mode disabled
-        # if not self.config.modes.udrm_vector_mode:
-        #     try:
-        #         self.flush_state()
-        #     except AttributeError:
-        #         pass
 
     def update_state(self) -> Union[int, None]:
         """
@@ -82,7 +75,7 @@ class StatesMachine:
         Loads state from file
         :return: None
         """
-        state_file_path = self.config.paths.current_state
+        state_file_path = self.config.paths.input.current_state
         with open(state_file_path, "r") as state_file:
             state_dict = json.load(state_file)
         self.state = State(state_dict)
@@ -92,7 +85,7 @@ class StatesMachine:
         Dumps state value to current_state.json file
         :return: None
         """
-        state_file_path = self.config.paths.current_state
+        state_file_path = self.config.paths.input.current_state
         with open(state_file_path, "w") as state_file:
             json.dump(self.state.value, state_file)
 
@@ -105,7 +98,7 @@ class StatesMachine:
         # Mode conditions for treada runtime should be checked here
         if self.config.modes.udrm_vector_mode:
             # Create vector object, which govern operations with UDRM vector from the file UDRM.txt
-            udrm_vector = UdrmVectorManager(self.config.paths.udrm)
+            udrm_vector = UdrmVectorManager(self.config.paths.input.udrm)
             udrm_list = udrm_vector.load()
             # Get udrm vector index from current state
             udrm_index = self.state.value['udrm_vector_index']
@@ -116,7 +109,7 @@ class StatesMachine:
                 self.state.set_status(self.statuses.CHANGED)
                 new_udrm = str(udrm_list[udrm_index])
                 # Create the mtut_manager, which loads a mtut file
-                mtut_manager = MtutManager(self.config.paths.mtut)
+                mtut_manager = MtutManager(self.config.paths.treada_core.mtut)
                 mtut_manager.load_file()
                 # Set and save UDRM to MTUT file
                 mtut_manager.set_var('UDRM', new_udrm)

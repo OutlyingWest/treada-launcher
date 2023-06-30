@@ -1,0 +1,12 @@
+Diode biased at:
+UDRM = {udrm_value} V
+
+Minimum Edge of Illumination Bandwidth:
+EMINI = {emini_value} eV
+
+Maximum Edge of Illumination Bandwidth:
+EMAXI = {emaxi_value} eV
+
+Transient time:
+TRANSIENT_TIME = {transient_time_value} ps
+

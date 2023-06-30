@@ -1,5 +1,5 @@
 """
-Contains features for load settings
+Contains features for load configuration
 """
 import os
 import json
@@ -12,15 +12,31 @@ class Stages:
     light_on: dict
 
 
+# Paths section
+@dataclass
+class TreadaCorePaths:
+    exe: str
+    mtut: str
+
+
+@dataclass
+class InputPaths:
+    udrm: str
+    current_state: str
+
+
+@dataclass
+class OutputPaths:
+    raw: str
+    result: str
+    plots: str
+
+
 @dataclass
 class Paths:
-    treada_exe: str
-    mtut: str
-    treada_raw_output: str
-    treada_result_output: str
-    current_state: str
-    udrm: str
-    plots: str
+    treada_core: TreadaCorePaths
+    input: InputPaths
+    output: OutputPaths
 
 
 @dataclass
@@ -51,18 +67,26 @@ def load_config(config_name: str = None):
         config_dict = json.load(config_file)
     # load configuration from file
     return Config(
-        paths=Paths(treada_exe=project_path + config_dict['treada']['paths']['exe'],
-                    mtut=project_path + config_dict['treada']['paths']['mtut'],
-                    treada_raw_output=project_path + config_dict['treada']['paths']['raw_output'],
-                    treada_result_output=project_path + config_dict['treada']['paths']['result_output'],
-                    current_state=project_path + config_dict['treada']['paths']['state'],
-                    udrm=project_path + config_dict['treada']['paths']['udrm'],
-                    plots=project_path + config_dict['treada']['paths']['result_plot'],),
-        stages=Stages(light_off=config_dict['treada']['stages']['light_off'],
-                      light_on=config_dict['treada']['stages']['light_on'],),
-        modes=Modes(udrm_vector_mode=config_dict['treada']['modes']['UDRM_vector_mode'],),
-        flags=Flags(disable_plotting=config_dict['treada']['flags']['disable_plotting'],
-                    auto_ending=config_dict['treada']['flags']['auto_ending'],),
+        paths=Paths(
+            treada_core=TreadaCorePaths(
+                exe=project_path + config_dict['paths']['treada_core']['exe'],
+                mtut=project_path + config_dict['paths']['treada_core']['mtut'],
+            ),
+            input=InputPaths(
+                udrm=project_path + config_dict['paths']['input']['udrm'],
+                current_state=project_path + config_dict['paths']['input']['state'],
+            ),
+            output=OutputPaths(
+                raw=project_path + config_dict['paths']['output']['raw'],
+                result=project_path + config_dict['paths']['output']['results'],
+                plots=project_path + config_dict['paths']['output']['plots'],
+            ),
+        ),
+        stages=Stages(light_off=config_dict['stages']['light_off'],
+                      light_on=config_dict['stages']['light_on'],),
+        modes=Modes(udrm_vector_mode=config_dict['modes']['UDRM_vector_mode'],),
+        flags=Flags(disable_plotting=config_dict['flags']['disable_plotting'],
+                    auto_ending=config_dict['flags']['auto_ending'],),
     )
 
 

@@ -1,30 +1,34 @@
 {
-    "treada": {
-        "stages": {
-            "light_off": {
-                "CKLKRS": "1.",
-                "ILUMEN": "0"
-            },
-            "light_on": {
-                "CKLKRS": "2.",
-                "ILUMEN": "1"
-            }
+    "stages": {
+        "light_off": {
+            "CKLKRS": "1.",
+            "ILUMEN": "0"
         },
-        "modes": {
-            "UDRM_vector_mode": true
-        },
-        "flags": {
-            "disable_plotting": false,
-            "auto_ending": true
-        },
-        "paths": {
+        "light_on": {
+            "CKLKRS": "2.",
+            "ILUMEN": "1"
+        }
+    },
+    "modes": {
+        "UDRM_vector_mode": true
+    },
+    "flags": {
+        "disable_plotting": false,
+        "auto_ending": true
+    },
+    "paths": {
+        "treada_core": {
             "exe": "TreadaTx_C\\TreadaTx_C.exe",
-            "mtut": "TreadaTx_C\\MTUT",
-            "raw_output": "data\\treada_raw_output.txt",
-            "result_output": "data\\result\\res_.txt",
-            "result_plot": "data\\result\\plots\\res_.txt",
+            "mtut": "TreadaTx_C\\MTUT"
+        },
+        "input": {
             "udrm": "data\\input\\UDRM.txt",
             "state": "wrapper\\states\\current_state.json"
+        },
+        "output": {
+            "raw": "data\\treada_raw_output.txt",
+            "results": "data\\result\\res_.txt",
+            "plots": "data\\result\\plots\\res_.txt"
         }
     }
 }
