@@ -12,3 +12,6 @@ data/
 # Ignore installer files
 installer_x64/*.log
 
+# Ignore the main configutaion file
+config.json
+

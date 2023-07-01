@@ -1,0 +1,34 @@
+{
+    "stages": {
+        "light_off": {
+            "CKLKRS": "1.",
+            "ILUMEN": "0"
+        },
+        "light_on": {
+            "CKLKRS": "2.",
+            "ILUMEN": "1"
+        }
+    },
+    "modes": {
+        "UDRM_vector_mode": false
+    },
+    "flags": {
+        "disable_plotting": false,
+        "auto_ending": false
+    },
+    "paths": {
+        "treada_core": {
+            "exe": "TreadaTx_C\\TreadaTx_C.exe",
+            "mtut": "TreadaTx_C\\MTUT"
+        },
+        "input": {
+            "udrm": "data\\input\\UDRM.txt",
+            "state": "wrapper\\states\\current_state.json"
+        },
+        "output": {
+            "raw": "data\\treada_raw_output.txt",
+            "results": "data\\result\\res_.txt",
+            "plots": "data\\result\\plots\\res_.txt"
+        }
+    }
+}
