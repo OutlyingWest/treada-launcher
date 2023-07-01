@@ -13,5 +13,5 @@ data/
 installer_x64/*.log
 
 # Ignore the main configutaion file
-config.json
+wrapper/config/config.json
 

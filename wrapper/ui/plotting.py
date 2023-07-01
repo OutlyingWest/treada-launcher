@@ -1,86 +1,156 @@
 import os
+import re
 import sys
-from typing import List, Tuple, Union
+from typing import Union, Iterable, Dict
 
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from wrapper.config.config_builder import load_config
-
 
 def main():
     config = load_config('config.json')
-    result_path = os.path.split(config.paths.treada_result_output)[0] + os.sep
+    result_path = os.path.split(config.paths.output.result)[0] + os.sep
     if len(sys.argv) > 1:
         res_name = sys.argv[1]
     else:
         print('Enter file name to load data from data/result/. Example: "res_u(-0.45).txt"')
         res_name = input()
     full_result_path = result_path + res_name
-    plot_builder(full_result_path)
+    # Creation of plot builder object
+    plot_builder = TreadaPlotBuilder(result_path=full_result_path)
+    # Show plot
+    plot_builder.show()
 
 
-def plot_builder(res_path: str,
-                 plot_path: Union[str, None] = None,
-                 skip_rows=11,
-                 special_points: List[Tuple[float, float]] = None,
-                 points_annotation: Union[str, None] = None):
-    df = pd.read_csv(res_path, skiprows=skip_rows, header=0, sep='\s+')
-    u_value = res_path.rsplit(os.sep, maxsplit=1)[1].split('(')[1].rsplit(')', maxsplit=1)[0]
-    figure_title = 'Udrm = ' + u_value + ' V'
-    plotter(df[df.columns[0]], df[df.columns[1]],
-            x_label='time (ps)',
-            y_label='I (mA/cm^2)',
-            fig_title=figure_title,
-            special_points=special_points,
-            points_annotation=points_annotation)
+class TreadaPlotBuilder:
+    def __init__(self,
+                 result_path: str,
+                 ending_point_coords: Union[tuple, None] = None,
+                 transient_time=-1.,
+                 skip_rows=11):
+        self.result_path = result_path
+        # Load result data from file
+        self.result_df = pd.read_csv(result_path, skiprows=skip_rows, header=0, sep='\s+')
+        # Extract result data
+        time_column = self.result_df[self.result_df.columns[0]]
+        current_density_column = self.result_df[self.result_df.columns[1]]
+        # Create plotter object
+        self.plotter = AdvancedPlotter(time_column, current_density_column)
+        # Construct plot
+        self.set_descriptions()
+        if ending_point_coords:
+            self.set_transient_ending_point(ending_point_coords, f'Transient time = {transient_time:.3f} ps')
 
-    if plot_path:
+    def set_descriptions(self):
+        # Set titles
+        udrm: str = self._extract_udrm(self.result_path)
+        title = f'Udrm = {udrm} V'
+        self.plotter.set_plot_title(title)
+        self.plotter.set_window_title(title)
+        # Set axes labels
+        self.plotter.set_plot_axes_labels(x_label='time (ps)', y_label='I (mA/cm^2)')
+
+    def set_transient_ending_point(self, coords: tuple, annotation: str):
+        time, current_density = coords
+        self.plotter.add_special_point(time, current_density)
+        self.plotter.annotate_special_point(time, current_density, annotation)
+
+    @staticmethod
+    def _extract_udrm(res_path) -> Union[str, None]:
+        udrm: re.Match = re.search('(-?\d+\.?\d?)', res_path)
+        return udrm.group()
+
+    @classmethod
+    def show(cls):
+        try:
+            plt.show()
+        except KeyboardInterrupt:
+            pass
+
+    @classmethod
+    def save_plot(cls, plot_path: str):
         plt.savefig(plot_path)
-    try:
-        plt.show()
-    except KeyboardInterrupt:
-        pass
 
 
-def plotter(x, y,
-            x_label='x', y_label='y',
-            fig_title='Transient',
-            special_points: List[Tuple[float, float]] = None,
-            points_annotation: Union[str, None] = None):
-    fig, ax = plt.subplots(1, 1)
-    # Set window title
-    window = fig.canvas.manager.window
-    window.title(fig_title)
-    # Set plot title
-    ax.set_title(fig_title)
-    ax.grid(True)
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    # Set and display special points on plot if they exist
-    if special_points:
-        for point in special_points:
-            special_x, special_y = point
-            # Create special point
-            plt.scatter(special_x, special_y, color='red', marker='o', s=30)
-            # Annotate point
-            if points_annotation:
-                annotation = points_annotation
-            else:
-                annotation = f'({special_x}, {special_y})'
+class SimplePlotter:
+    def __init__(self, x: Iterable, y: Iterable):
+        fig, ax = plt.subplots(1, 1)
+        self.fig: plt.Figure = fig
+        self.ax: plt.Axes = ax
+        self.ax.grid(True)
+        self.ax.plot(x, y)
 
-            plt.annotate(text=annotation,
-                         xy=(special_x, special_y),
-                         xytext=(10, -20),
-                         textcoords='offset points',
-                         arrowprops=dict(arrowstyle='->', color='black'))
-    ax.plot(x, y)
+    def set_window_title(self, title='window title'):
+        window = self.fig.canvas.manager.window
+        window.title(title)
+
+    def set_plot_axes_labels(self, x_label='x', y_label='y'):
+        self.ax.set_xlabel(x_label)
+        self.ax.set_ylabel(y_label)
+
+    def set_plot_title(self, title='plot title'):
+        self.ax.set_title(title)
+
+
+class SpecialPointsMixin:
+    @staticmethod
+    def add_special_point(special_x, special_y, color='red', marker='o', size=30):
+        """
+        Creates a special point on a plot.
+
+        :param special_x:
+        :param special_y:
+        :param color:
+        :param marker:
+        :param size:
+        :return:
+        """
+        plt.scatter(special_x, special_y, color=color, marker=marker, s=size)
+        return special_x, special_y
+
+    @staticmethod
+    def annotate_special_point(special_x, special_y, annotation=''):
+        """
+        Annotate special point
+
+        :param special_x:
+        :param special_y:
+        :param annotation:
+        :return:
+        """
+        if not annotation:
+            annotation = f'({special_x}, {special_y})'
+        plt.annotate(text=annotation,
+                     xy=(special_x, special_y),
+                     xytext=(10, -20),
+                     textcoords='offset points',
+                     arrowprops=dict(arrowstyle='->', color='black'))
+
+    @classmethod
+    def add_multiple_points(cls, points: Dict[str, tuple]):
+        """
+        Add the multiple special points with annotations.
+
+        :param points: example: {'first': (x_coord, y_coord), 'second': (x_coord, y_coord)}
+        """
+        for annotation, coords in points.items():
+            x, y = coords
+            cls.add_special_point(x, y)
+            cls.annotate_special_point(x, y, annotation)
+
+
+class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
+    def __init__(self, x: Iterable, y: Iterable):
+        super().__init__(x, y)
 
 
 if __name__ == '__main__':
-    # Добавить путь к директории "wrapper" в переменную окружения PYTHONPATH
-    wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "wrapper"))
+    # Add path to "wrapper" directory in environ variable - PYTHONPATH
+    wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     sys.path.append(wrapper_path)
+    from config.config_builder import load_config
     main()
+else:
+    from wrapper.config.config_builder import load_config
