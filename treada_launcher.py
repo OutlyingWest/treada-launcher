@@ -46,7 +46,13 @@ def treada_run_loop(config: Config):
         # Plot result
         if not config.flags.disable_plotting:
             full_plot_path = result_builder.file_name_build(config.paths.output.plots, file_extension='png')
-            plot_builder(result_builder.result_path, plot_path=full_plot_path)
+
+            transient_time_value = result_builder.results['transient_time']
+            ending_current_density = result_builder.results['ending_current_density']
+            plot_builder(result_builder.result_path,
+                         plot_path=full_plot_path,
+                         special_points=[(transient_time_value, ending_current_density)],
+                         points_annotation=f"Transient time = {transient_time_value:.3f}")
 
 
 if __name__ == '__main__':

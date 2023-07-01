@@ -228,6 +228,8 @@ class ResultDataCollector:
         self.current_density_col_name = 'I(mA/cm^2)'
         self.dataframe = self.treada_parser.get_prepared_dataframe()
         # Result data
+        self.transient_ending_index = None
+        self.transient_current_density = None
         self.transient_time = None
         self.result_dataframe = None
 
@@ -236,6 +238,8 @@ class ResultDataCollector:
         self.transient_time = self.find_transient_time()
         self.current_density_col_calculate()
         self.result_dataframe = self.dataframe[[self.time_col_name, self.current_density_col_name]]
+        ending_index = self.get_transient_ending_index()
+        self.transient_current_density = self.result_dataframe[self.current_density_col_name].iloc[ending_index]
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
@@ -263,7 +267,7 @@ class ResultDataCollector:
         time_step_const = operating_time_step * relative_time
         self.dataframe[self.time_col_name] = self.dataframe.index.values * time_step_const
 
-    def transient_criteria_calculate(self):
+    def transient_criteria_calculate(self) -> dict:
         # Get max and min current from col
         max_current = self.dataframe[self.source_current_name].max()
         min_current = self.dataframe[self.source_current_name].min()
@@ -292,6 +296,7 @@ class ResultDataCollector:
     def find_transient_time(self):
         tr_criteria_dict = self.transient_criteria_calculate()
         transient_ending_index = self.transient_criteria_apply(tr_criteria_dict)
+        self.transient_ending_index = transient_ending_index
         return self.dataframe[self.time_col_name].iloc[transient_ending_index]
 
     def current_density_col_calculate(self):
@@ -304,8 +309,21 @@ class ResultDataCollector:
             self.dataframe[self.source_current_name] / (2*hy * device_width * 1e-8)
         )
 
-    def save_result_to_file(self, prepared_file_path: str):
-        pass
+    def get_transient_ending_index(self) -> int:
+        """
+        Returns index in result dataframe, which corresponds calculated transient time.
+        :return:
+        """
+        if self.transient_ending_index:
+            return self.transient_ending_index
+        else:
+            raise ValueError('transient_ending_index does not calculated yet.')
+
+    def get_transient_current_density(self) -> float:
+        if self.transient_current_density:
+            return float(self.transient_current_density)
+        else:
+            raise ValueError('transient_current_density does not calculated yet.')
 
 
 class ResultBuilder:
@@ -313,6 +331,8 @@ class ResultBuilder:
         self.result_configer = ResultDataCollector(mtut_file_path, treada_raw_output_path)
         self.result_path = self.file_name_build(result_path)
         self.result_configer.prepare_result_data()
+        self.results = {}
+        self.results['ending_current_density'] = self.result_configer.get_transient_current_density()
 
     def file_name_build(self, result_path: str, file_extension='txt'):
         udrm_value = self.result_configer.mtut_manager.get_var('UDRM')
@@ -327,10 +347,10 @@ class ResultBuilder:
         self.dump_dataframe_to_file()
 
     def header_build(self):
-        udrm_value = self.result_configer.mtut_manager.get_var('UDRM')
-        emini_value = self.result_configer.mtut_manager.get_var('EMINI')
-        emaxi_value = self.result_configer.mtut_manager.get_var('EMAXI')
-        transient_time_value = self.result_configer.get_transient_time()
+        self.results['udrm'] = self.result_configer.mtut_manager.get_var('UDRM')
+        self.results['emini'] = self.result_configer.mtut_manager.get_var('EMINI')
+        self.results['emaxi'] = self.result_configer.mtut_manager.get_var('EMAXI')
+        self.results['transient_time'] = self.result_configer.get_transient_time()
 
         # with open(answer_with_path, mode='r', encoding='utf-8') as answr:
         #     answer_string = answr.read()
@@ -340,19 +360,18 @@ class ResultBuilder:
         #     error=hcode('Error:')
         # )
 
-
         header: list = [
             'Diode biased at:',
-            f'UDRM = {udrm_value} V',
+            f'UDRM = {self.results["udrm"]} V',
             '',
             'Minimum Edge of Illumination Bandwidth:',
-            f'EMINI = {emini_value} eV',
+            f'EMINI = {self.results["emini"]} eV',
             '',
             'Maximum Edge of Illumination Bandwidth:',
-            f'EMAXI = {emaxi_value} eV',
+            f'EMAXI = {self.results["emaxi"]} eV',
             '',
             'Transient time:',
-            f'TRANSIENT_TIME = {transient_time_value} ps',
+            f'TRANSIENT_TIME = {self.results["transient_time"]} ps',
             '',
             '',
         ]

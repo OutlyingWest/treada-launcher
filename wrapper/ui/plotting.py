@@ -22,8 +22,11 @@ def main():
     plot_builder(full_result_path)
 
 
-def plot_builder(res_path: str, plot_path: Union[str, None] = None, skip_rows=11,
-                 special_points: List[Tuple[float, float]] = None):
+def plot_builder(res_path: str,
+                 plot_path: Union[str, None] = None,
+                 skip_rows=11,
+                 special_points: List[Tuple[float, float]] = None,
+                 points_annotation: Union[str, None] = None):
     df = pd.read_csv(res_path, skiprows=skip_rows, header=0, sep='\s+')
     u_value = res_path.rsplit(os.sep, maxsplit=1)[1].split('(')[1].rsplit(')', maxsplit=1)[0]
     figure_title = 'Udrm = ' + u_value + ' V'
@@ -31,7 +34,8 @@ def plot_builder(res_path: str, plot_path: Union[str, None] = None, skip_rows=11
             x_label='time (ps)',
             y_label='I (mA/cm^2)',
             fig_title=figure_title,
-            special_points=special_points)
+            special_points=special_points,
+            points_annotation=points_annotation)
 
     if plot_path:
         plt.savefig(plot_path)
@@ -41,7 +45,11 @@ def plot_builder(res_path: str, plot_path: Union[str, None] = None, skip_rows=11
         pass
 
 
-def plotter(x, y, x_label='x', y_label='y', fig_title='Transient', special_points: List[Tuple[float, float]] = None):
+def plotter(x, y,
+            x_label='x', y_label='y',
+            fig_title='Transient',
+            special_points: List[Tuple[float, float]] = None,
+            points_annotation: Union[str, None] = None):
     fig, ax = plt.subplots(1, 1)
     # Set window title
     window = fig.canvas.manager.window
@@ -55,9 +63,19 @@ def plotter(x, y, x_label='x', y_label='y', fig_title='Transient', special_point
     if special_points:
         for point in special_points:
             special_x, special_y = point
-            plt.scatter(special_x, special_y, color='red', marker='o', s=30)  # Особая точка
-            plt.annotate(f'({special_x}, {special_y})', (special_x, special_y), xytext=(10, -20),
-                         textcoords='offset points', arrowprops=dict(arrowstyle='->', color='black'))
+            # Create special point
+            plt.scatter(special_x, special_y, color='red', marker='o', s=30)
+            # Annotate point
+            if points_annotation:
+                annotation = points_annotation
+            else:
+                annotation = f'({special_x}, {special_y})'
+
+            plt.annotate(text=annotation,
+                         xy=(special_x, special_y),
+                         xytext=(10, -20),
+                         textcoords='offset points',
+                         arrowprops=dict(arrowstyle='->', color='black'))
     ax.plot(x, y)
 
 

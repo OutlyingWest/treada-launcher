@@ -10,7 +10,7 @@
         }
     },
     "modes": {
-        "UDRM_vector_mode": true
+        "UDRM_vector_mode": false
     },
     "flags": {
         "disable_plotting": false,
