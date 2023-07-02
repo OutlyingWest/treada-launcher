@@ -30,7 +30,8 @@ class FileManager:
     This class provide the abilities to get or set variables in "configuration" file
 
     Attributes:
-        file_path: Path to data file
+        path: Path to data file
+        data: Extracted from file data (available only after file loading by load_file() method)
 
     Methods:
         load_file(): Load data from configuration file.
@@ -138,7 +139,7 @@ class FileManager:
 
 class MtutManager(FileManager):
     """
-        This class provide the abilities to get or set variables in "MTUT" file
+    This class provide the abilities to get or set variables in "MTUT" file
 
     Attributes:
         mtut_file_path: Path to data file
@@ -148,6 +149,15 @@ class MtutManager(FileManager):
 
 
 class TreadaOutputParser:
+    """
+    Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
+    Extract data. That includes:
+        1) Source current vector and saving it to the dataframe
+        2) RELATIVE TIME
+    Attributes:
+
+    Methods:
+    """
     def __init__(self, raw_output_path: str):
         self.raw_output_path = raw_output_path
         self.source_current_name = 'TSRS (mA)'

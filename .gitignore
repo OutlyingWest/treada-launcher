@@ -15,3 +15,6 @@ installer_x64/*.log
 # Ignore the main configutaion file
 wrapper/config/config.json
 
+# Ignore states machine service file
+wrapper/states/current_state.json
+

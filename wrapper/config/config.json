@@ -10,10 +10,10 @@
         }
     },
     "modes": {
-        "UDRM_vector_mode": false
+        "UDRM_vector_mode": true
     },
     "flags": {
-        "disable_plotting": false,
+        "disable_plotting": true,
         "auto_ending": true
     },
     "paths": {

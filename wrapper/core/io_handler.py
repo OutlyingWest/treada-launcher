@@ -68,7 +68,6 @@ class StdoutCapturer:
         Divides data from *.exe stdout to its own stdout and file with name *_output.txt.
         Ends by KeyboardInterrupt or ending condition satisfaction
         """
-
         # Strip slashes if only file name was used as a path (for solving of powershell issues)
         if path_to_output:
             if path_to_output.count(os.path.sep) <= 2:
@@ -83,11 +82,6 @@ class StdoutCapturer:
 
             with open(path_to_output, "w") as output_file:
                 self.__io_loop(output_file)
-
-        # Errors' catching
-        # error = self.process.stderr.read().decode('utf-8')
-        # if error:
-        #     print('ERRORS:', error.strip())
 
         # Terminate main executable process
         self.process.terminate()

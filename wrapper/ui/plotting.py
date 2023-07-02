@@ -25,6 +25,22 @@ def main():
 
 
 class TreadaPlotBuilder:
+    """
+    Download result data of treada-launcher from file and build plot.
+    Can save plot picture to file.
+
+    Attributes:
+        result_path: path to result data file
+        result_df: result data pandas dataframe
+        plotter: AdvancedPlotter class object
+
+    Methods:
+        set_descriptions(): sets plot descriptions
+        set_transient_ending_point(coords: tuple, annotation: str): sets transient ending point
+        _extract_udrm(res_path: str): extracts udrm value from result file path string
+        show(): calls plt.show() method
+        save_plot(plot_path: str): save plot to file
+    """
     def __init__(self,
                  result_path: str,
                  ending_point_coords: Union[tuple, None] = None,
@@ -58,7 +74,7 @@ class TreadaPlotBuilder:
         self.plotter.annotate_special_point(time, current_density, annotation)
 
     @staticmethod
-    def _extract_udrm(res_path) -> Union[str, None]:
+    def _extract_udrm(res_path: str) -> Union[str, None]:
         udrm: re.Match = re.search('(-?\d+\.?\d?)', res_path)
         return udrm.group()
 
@@ -75,7 +91,19 @@ class TreadaPlotBuilder:
 
 
 class SimplePlotter:
+    """
+    Allows to construct a single plot with labels and titles.
+
+    Attributes:
+        fig: Matplotlib Figure object
+        ax: Matplotlib Axes object
+    """
     def __init__(self, x: Iterable, y: Iterable):
+        """
+        Take coords to plot.
+        :param x: Iterable vector of x coordinates
+        :param y: Iterable vector of y coordinates
+        """
         fig, ax = plt.subplots(1, 1)
         self.fig: plt.Figure = fig
         self.ax: plt.Axes = ax
@@ -95,17 +123,20 @@ class SimplePlotter:
 
 
 class SpecialPointsMixin:
+    """
+    Allows to draw and annotate special points on plots.
+    """
     @staticmethod
     def add_special_point(special_x, special_y, color='red', marker='o', size=30):
         """
         Creates a special point on a plot.
 
-        :param special_x:
-        :param special_y:
-        :param color:
-        :param marker:
-        :param size:
-        :return:
+        :param special_x: Special point x coordinate
+        :param special_y: Special point y coordinate
+        :param color: Point color
+        :param marker: Point marker type
+        :param size: Point size
+        :return: Special point coordinates
         """
         plt.scatter(special_x, special_y, color=color, marker=marker, s=size)
         return special_x, special_y
@@ -113,11 +144,11 @@ class SpecialPointsMixin:
     @staticmethod
     def annotate_special_point(special_x, special_y, annotation=''):
         """
-        Annotate special point
+        Annotate special point.
 
-        :param special_x:
-        :param special_y:
-        :param annotation:
+        :param special_x: Special point x coordinate.
+        :param special_y: Special point y coordinate.
+        :param annotation: Point annotation.
         :return:
         """
         if not annotation:
@@ -142,6 +173,9 @@ class SpecialPointsMixin:
 
 
 class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
+    """
+    Class that extends the abilities of SimplePlotter.
+    """
     def __init__(self, x: Iterable, y: Iterable):
         super().__init__(x, y)
 
