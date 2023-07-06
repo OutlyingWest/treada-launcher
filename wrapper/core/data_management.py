@@ -183,11 +183,12 @@ class TreadaOutputParser:
     def clean_data(self, data_list: list):
         start_time = time.time()
         # Get pure source current list
-        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if self.keep_line_regex(line)]
+        keep_line_regex_func = self.keep_line_regex
+        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if keep_line_regex_func(line)]
 
         end_time = time.time()
         execution_time = end_time - start_time
-        print(f'Time of file cleaning:{execution_time:.2f}s')
+        # print(f'Time of file cleaning:{execution_time:.2f}s')
 
         # Creation of dataframe with current in numeric format
         pure_df = pd.DataFrame({self.source_current_name: pure_data_lines})

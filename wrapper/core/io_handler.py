@@ -27,11 +27,11 @@ class TreadaSwitcher:
         self.capturer = StdoutCapturer(process=self.exec_process, auto_ending=config.flags.auto_ending)
 
     def light_off(self):
-        self.capturer.set_runtime_console_info('Dark')
+        self.capturer.set_runtime_console_info('   Dark')
         self.capturer.stream_management()
 
     def light_on(self, output_file_path: str):
-        self.capturer.set_runtime_console_info('Light')
+        self.capturer.set_runtime_console_info('   Light')
         self.capturer.stream_management(path_to_output=output_file_path)
 
     @staticmethod
@@ -120,7 +120,7 @@ class StdoutCapturer:
                     except UnicodeDecodeError:
                         decoded_output = treada_output
                     # Copy *.exe output to its own stdout
-                    print('   '.join((decoded_output.rstrip(), self.runtime_console_info)))
+                    print(decoded_output.rstrip() + self.runtime_console_info)
                     str_counter += 1
             except KeyboardInterrupt:
                 self.running_flag = False

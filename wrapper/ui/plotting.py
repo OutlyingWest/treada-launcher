@@ -75,7 +75,7 @@ class TreadaPlotBuilder:
 
     @staticmethod
     def _extract_udrm(res_path: str) -> Union[str, None]:
-        udrm: re.Match = re.search('(-?\d+\.?\d?)', res_path)
+        udrm: re.Match = re.search('(-?\d+\.?\d*)', res_path)
         return udrm.group()
 
     @classmethod
