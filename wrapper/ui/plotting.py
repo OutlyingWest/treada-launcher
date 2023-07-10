@@ -10,14 +10,23 @@ import pandas as pd
 
 
 def main():
-    config = load_config('config.json')
-    result_path = os.path.split(config.paths.output.result)[0] + os.sep
+    try:
+        from config.config_builder import load_config
+
+        config = load_config('config.json')
+        result_path = os.path.split(config.paths.output.result)[0] + os.sep
+        print(f'{result_path=}')
+    except ModuleNotFoundError:
+        print('Finding of input file by full path...')
+        result_path = ''
     if len(sys.argv) > 1:
         res_name = sys.argv[1]
     else:
         print('Enter file name to load data from data/result/. Example: "res_u(-0.45).txt"')
         res_name = input()
+
     full_result_path = result_path + res_name
+
     # Creation of plot builder object
     plot_builder = TreadaPlotBuilder(result_path=full_result_path)
     # Show plot
@@ -184,7 +193,4 @@ if __name__ == '__main__':
     # Add path to "wrapper" directory in environ variable - PYTHONPATH
     wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     sys.path.append(wrapper_path)
-    from config.config_builder import load_config
     main()
-else:
-    from wrapper.config.config_builder import load_config
