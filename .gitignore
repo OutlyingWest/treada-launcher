@@ -5,7 +5,7 @@ __pycache__
 # Ignore rules of pure "Treada" folder
 TreadaTx_C/**
 !TreadaTx_C/README.txt
-!wrapper/core/io_handler.py
+!wrapper/core/treada_io_handler.py
 
 data/
 

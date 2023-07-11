@@ -1,4 +1,4 @@
-from wrapper.core.io_handler import TreadaSwitcher
+from wrapper.core.treada_io_handler import TreadaSwitcher
 from wrapper.config.config_builder import load_config, Config
 from wrapper.core.data_management import MtutStageConfiger, ResultBuilder
 from wrapper.initializations import init_dirs

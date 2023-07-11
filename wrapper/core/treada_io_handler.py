@@ -5,9 +5,6 @@ import time
 from typing import Union
 import numpy as np
 
-from wrapper.config.config_builder import Config
-from wrapper.global_functions import create_dir
-
 
 def main():
     path_to_executable = sys.argv[1]
@@ -22,7 +19,7 @@ class TreadaSwitcher:
     """
     Responsible for stages switching of "Treada" work
     """
-    def __init__(self, config: Config):
+    def __init__(self, config):
         self.exec_process = self.exe_runner(exe_path=config.paths.treada_core.exe)
         self.capturer = StdoutCapturer(process=self.exec_process, auto_ending=config.flags.auto_ending)
 
@@ -58,8 +55,8 @@ class StdoutCapturer:
         self.running_flag = True
         # Init auto ending prerequisites
         self.auto_ending = auto_ending
-        self.ending_condition = EndingCondition(chunk_size=100,
-                                                equal_values_to_stop=5,
+        self.ending_condition = EndingCondition(chunk_size=10000,
+                                                equal_values_to_stop=100,
                                                 deviation_coef=1e-5)
         self.runtime_console_info = ''
 
@@ -97,7 +94,7 @@ class StdoutCapturer:
         start_time = time.time()
         while self.running_flag:
             try:
-                if num_of_str and num_of_str > str_counter:
+                if num_of_str and num_of_str <= str_counter:
                     break
                 # Get line from process object
                 treada_output: bytes = self.process.stdout.readline()
@@ -221,4 +218,13 @@ class EndingCondition:
 
 
 if __name__ == '__main__':
+    # Add path to "wrapper" directory in environ variable - PYTHONPATH
+    wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    sys.path.append(wrapper_path)
+    from global_functions import create_dir
+
     main()
+else:
+    from wrapper.global_functions import create_dir
+
+
