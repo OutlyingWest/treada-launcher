@@ -79,9 +79,9 @@ class TreadaPlotBuilder:
         return udrm.group()
 
     @classmethod
-    def show(cls):
+    def show(cls, block=True):
         try:
-            plt.show()
+            plt.show(block=block)
         except KeyboardInterrupt:
             pass
 
@@ -98,7 +98,7 @@ class SimplePlotter:
         fig: Matplotlib Figure object
         ax: Matplotlib Axes object
     """
-    def __init__(self, x: Iterable, y: Iterable):
+    def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
         """
         Take coords to plot.
         :param x: Iterable vector of x coordinates
@@ -108,7 +108,12 @@ class SimplePlotter:
         self.fig: plt.Figure = fig
         self.ax: plt.Axes = ax
         self.ax.grid(True)
-        self.ax.plot(x, y)
+        if plot_type == 'plot':
+            self.ax.plot(x, y)
+        elif plot_type == 'scatter':
+            self.ax.scatter(x, y)
+        else:
+            raise ValueError('Wrong type')
 
     def set_window_title(self, title='window title'):
         window = self.fig.canvas.manager.window
@@ -176,8 +181,8 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
     """
     Class that extends the abilities of SimplePlotter.
     """
-    def __init__(self, x: Iterable, y: Iterable):
-        super().__init__(x, y)
+    def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
+        super().__init__(x, y, plot_type)
 
 
 if __name__ == '__main__':

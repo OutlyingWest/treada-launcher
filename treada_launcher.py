@@ -1,3 +1,7 @@
+import time
+
+from matplotlib import pyplot as plt
+
 from wrapper.core.treada_io_handler import TreadaSwitcher
 from wrapper.config.config_builder import load_config, Config
 from wrapper.core.data_management import MtutStageConfiger, ResultBuilder
@@ -11,6 +15,8 @@ def main():
     init_dirs(paths=config.paths)
 
     treada_run_loop(config)
+
+    input()
 
 
 def treada_run_loop(config: Config):
@@ -55,9 +61,18 @@ def treada_run_loop(config: Config):
         # Save plot to file
         full_plot_path = result_builder.file_name_build(config.paths.output.plots, file_extension='png')
         plot_builder.save_plot(full_plot_path)
-        # Show plot
-        if not config.flags.disable_plotting:
-            plot_builder.show()
+    # Show plot
+    if not config.flags.disable_plotting:
+        plt.show(block=False)
+
+
+def wait_interrupt():
+    try:
+        while True:
+            time.sleep(0.5)
+            pass
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':

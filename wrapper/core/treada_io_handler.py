@@ -5,6 +5,8 @@ import time
 from typing import Union
 import numpy as np
 
+from wrapper.core.ending_conditions import LineEndingCondition, current_value_prepare
+
 
 def main():
     path_to_executable = sys.argv[1]
@@ -55,9 +57,13 @@ class StdoutCapturer:
         self.running_flag = True
         # Init auto ending prerequisites
         self.auto_ending = auto_ending
-        self.ending_condition = EndingCondition(chunk_size=10000,
-                                                equal_values_to_stop=100,
+        self.ending_condition = EndingCondition(chunk_size=300,
+                                                equal_values_to_stop=20,
                                                 deviation_coef=1e-5)
+        # self.ending_condition = LineEndingCondition(precision=1e-2,
+        #                                             chunk_size=100,
+        #                                             big_step_multiplier=100,
+        #                                             low_step_border=100)
         self.runtime_console_info = ''
 
     def stream_management(self, path_to_output=None):
@@ -107,7 +113,7 @@ class StdoutCapturer:
                         # Check ending condition
                         if self.auto_ending:
                             current_value = (
-                                self.ending_condition.current_value_prepare(currents_string=clean_decoded_output)
+                                current_value_prepare(currents_string=clean_decoded_output)
                             )
                             if current_value and self.ending_condition.check(current_value):
                                 self.running_flag = False
