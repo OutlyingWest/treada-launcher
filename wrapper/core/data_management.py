@@ -237,6 +237,7 @@ class ResultDataCollector:
         self.source_current_name = self.treada_parser.source_current_name
         self.time_col_name = 'time(ns)'
         self.current_density_col_name = 'I(mA/cm^2)'
+        self.mean_densities_col_name = 'mean_density'
         self.dataframe = self.treada_parser.get_prepared_dataframe()
         # Result data
         self.transient_ending_index = None
@@ -277,6 +278,18 @@ class ResultDataCollector:
         # Calculate timestep constant
         time_step_const = operating_time_step * relative_time
         self.dataframe[self.time_col_name] = self.dataframe.index.values * time_step_const
+
+    def get_mean_current_density(self, window_size_denominator=100) -> pd.Series:
+        dataframe_length = self.dataframe.shape[0]
+        # Definition of window size to mean
+        window_size = int(dataframe_length / window_size_denominator)
+        # Calculating of means
+        mean_densities = (
+            self.dataframe[self.current_density_col_name]
+            .rolling(window=window_size, step=window_size, center=True)
+            .mean()
+        )
+        return mean_densities
 
     def transient_criteria_calculate(self) -> dict:
         # Get max and min current from col
@@ -319,6 +332,9 @@ class ResultDataCollector:
         self.dataframe[self.current_density_col_name] = (
             self.dataframe[self.source_current_name] / (2*hy * device_width * 1e-8)
         )
+
+    def get_density_mean_col(self):
+        self.dataframe[self.mean_densities_col_name] = self.dataframe[self.current_density_col_name]
 
     def get_transient_ending_index(self) -> int:
         """
