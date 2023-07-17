@@ -110,8 +110,15 @@ class Chunk:
         if self.is_full():
             self._index = 0
 
-    def get_mean_current(self) -> float:
-        return np.mean(self.storage)
+    def get_mean_current(self) -> Union[float, None]:
+        if np.any(self.storage != 0):
+            return np.mean(self.storage)
+        else:
+            return None
+
+    def set_y(self, y: float):
+        if y:
+            self.y = y
 
     def get_mean_index(self):
         return int((self.high_index + self.low_index) / 2)
@@ -143,6 +150,7 @@ class StepBasedEndingCondition:
         self.high_step_border = high_step_border
 
         small_step, big_step = self._calculate_steps(big_step_multiplier=big_step_multiplier)
+        self.steps_ratio = 2
 
         ChunkSmall.step = small_step
         ping_pong_small = [
@@ -157,6 +165,8 @@ class StepBasedEndingCondition:
         ]
         self.ping_pong = [ping_pong_small, ping_pong_big]
 
+        self.step_scale = 1 / 30
+
     @staticmethod
     def _get_treada_time_step() -> float:
         config = load_config('config.json')
@@ -166,30 +176,37 @@ class StepBasedEndingCondition:
         return float(treada_time_step_str)
 
     def _calculate_steps(self, big_step_multiplier: float,
-                         small_step_multiplier=0) -> Tuple[int, int]:
+                         small_step_multiplier=0,
+                         index_dependent_step_multiplier=1) -> Tuple[int, int]:
         if small_step_multiplier < big_step_multiplier:
             # Steps that depend on treada time step are calculated here
             initial_step_coef = np.abs(np.log10(self.treada_time_step))
-            big_step = initial_step_coef * big_step_multiplier
+            big_step = initial_step_coef * big_step_multiplier * index_dependent_step_multiplier
             if not small_step_multiplier:
                 small_step = big_step / 2
             else:
-                small_step = initial_step_coef * small_step_multiplier
+                small_step = initial_step_coef * small_step_multiplier * index_dependent_step_multiplier
 
+            self.steps_ratio = big_step / small_step
             # If steps go out of defined borders, returns them into that
             if small_step < self.low_step_border:
-                steps_ratio = big_step / small_step
                 small_step = self.low_step_border
-                big_step = small_step * steps_ratio
+                big_step = small_step * self.steps_ratio
             if big_step > self.high_step_border:
-                steps_ratio = big_step / small_step
                 big_step = self.high_step_border
-                small_step = big_step / steps_ratio
+                small_step = big_step / self.steps_ratio
 
             print(f'{small_step=} {big_step=}')
             return round(small_step), round(big_step)
         else:
             raise ValueError('small_step_multiplier can not exceed big_step_multiplier')
+
+    def update_steps_scale(self, current_index: int):
+        if current_index > 2000 and ChunkBig.step / current_index < self.step_scale:
+            ChunkBig.step = int(current_index * self.step_scale)
+            ChunkSmall.step = int(ChunkBig.step / self.steps_ratio)
+
+
 
     @staticmethod
     def swap_chunks():
@@ -234,7 +251,7 @@ class LineEndingCondition(StepBasedEndingCondition):
             elif current_index == chunks[1].high_index:
                 for chunk in chunks:
                     chunk.x = chunk.get_mean_index()
-                    chunk.y = chunk.get_mean_current()
+                    chunk.set_y(chunk.get_mean_current())
                 # print(f'{chunks[0].x=} {chunks[0].y=}')
                 # print(f'{chunks[1].x=} {chunks[1].y=}')
 
@@ -262,7 +279,7 @@ class MeansEndingCondition(StepBasedEndingCondition):
                                                    high_step_border)
         self.max_current = None
         self.min_current = None
-        self.scale = None
+        self.current_scale = None
 
         self.condition_requirements = [False, False]
 
@@ -271,18 +288,19 @@ class MeansEndingCondition(StepBasedEndingCondition):
 
     def update_scale(self, new_point: float):
         is_updated = False
-        if new_point > self.max_current:
-            self.max_current = new_point
-            is_updated = True
-        elif new_point < self.min_current:
-            self.min_current = new_point
-            is_updated = True
-        if is_updated:
-            self.scale = np.abs(self.max_current - self.min_current)
+        if new_point:
+            if new_point > self.max_current:
+                self.max_current = new_point
+                is_updated = True
+            elif new_point < self.min_current:
+                self.min_current = new_point
+                is_updated = True
+            if is_updated:
+                self.current_scale = np.abs(self.max_current - self.min_current)
 
     def deviation(self) -> float:
-        if self.scale:
-            deviation = self.scale * self.precision
+        if self.current_scale:
+            deviation = self.current_scale * self.precision
         else:
             deviation = self.precision
         return deviation
@@ -299,7 +317,8 @@ class MeansEndingCondition(StepBasedEndingCondition):
 
     def check(self,  current_index: int, source_current: float):
         # print(f'{current_index=}')
-        if not self.scale:
+
+        if not self.current_scale:
             self.init_extremes(source_current)
 
         for kind_index, chunks in enumerate(self.ping_pong):
@@ -308,7 +327,8 @@ class MeansEndingCondition(StepBasedEndingCondition):
                 # print(f'{chunks[1]=}')
             elif current_index == chunks[1].high_index:
                 for chunk in chunks:
-                    chunk.y = chunk.get_mean_current()
+                    chunk.x = chunk.get_mean_index()
+                    chunk.set_y(chunk.get_mean_current())
                     self.update_scale(chunk.y)
                 # print(f'{chunks[0].x=} {chunks[0].y=}')
                 # print(f'{chunks[1].x=} {chunks[1].y=}')
@@ -321,6 +341,9 @@ class MeansEndingCondition(StepBasedEndingCondition):
                 chunks[0], chunks[1] = chunks[1], chunks[0]
                 chunks[1].low_index = chunks[0].high_index + chunks[0].step
                 chunks[1].high_index = chunks[1].low_index + chunks[1].size
+
+        self.update_steps_scale(current_index)
+
         if False not in self.condition_requirements:
             return True
         return False
