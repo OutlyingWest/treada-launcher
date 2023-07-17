@@ -57,17 +57,17 @@ class StdoutCapturer:
         self.running_flag = True
         # Init auto ending prerequisites
         self.auto_ending = auto_ending
-        # self.ending_condition = EndingCondition(chunk_size=300,
-        #                                         equal_values_to_stop=20,
-        #                                         deviation_coef=1e-5)
+        self.ending_condition = EndingCondition(chunk_size=300,
+                                                equal_values_to_stop=20,
+                                                deviation_coef=1e-5)
         # self.ending_condition = LineEndingCondition(precision=1e-2,
         #                                             chunk_size=100,
         #                                             big_step_multiplier=100,
         #                                             low_step_border=100)
-        self.ending_condition = MeansEndingCondition(precision=2e-5,
-                                                     chunk_size=100,
-                                                     big_step_multiplier=100,
-                                                     low_step_border=100)
+        # self.ending_condition = MeansEndingCondition(precision=2e-5,
+        #                                              chunk_size=100,
+        #                                              big_step_multiplier=100,
+        #                                              low_step_border=100)
         self.runtime_console_info = ''
 
     def stream_management(self, path_to_output=None):
@@ -119,7 +119,8 @@ class StdoutCapturer:
                             current_value = (
                                 current_value_prepare(currents_string=clean_decoded_output)
                             )
-                            if current_value and self.ending_condition.check(str_counter, current_value):
+                            # if current_value and self.ending_condition.check(str_counter, current_value):
+                            if current_value and self.ending_condition.check(current_value):
                                 self.running_flag = False
                         # Write *.exe output to file
                         if output_file:
