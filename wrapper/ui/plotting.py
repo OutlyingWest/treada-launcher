@@ -132,7 +132,7 @@ class SpecialPointsMixin:
     Allows to draw and annotate special points on plots.
     """
     @staticmethod
-    def add_special_point(special_x, special_y, color='red', marker='o', size=30):
+    def add_special_point(special_x, special_y, color='red', marker='o', size=30, zorder=2, **kwargs):
         """
         Creates a special point on a plot.
 
@@ -141,9 +141,10 @@ class SpecialPointsMixin:
         :param color: Point color
         :param marker: Point marker type
         :param size: Point size
+        :param zorder: Order of sowing by z axis
         :return: Special point coordinates
         """
-        plt.scatter(special_x, special_y, color=color, marker=marker, s=size, zorder=2)
+        plt.scatter(special_x, special_y, c=color, marker=marker, s=size, zorder=zorder, **kwargs)
         return special_x, special_y
 
     @staticmethod
@@ -157,7 +158,7 @@ class SpecialPointsMixin:
         :return:
         """
         if not annotation:
-            annotation = f'({special_x}, {special_y})'
+            annotation = f'({special_x:.3f}, {special_y:.3f})'
         plt.annotate(text=annotation,
                      xy=(special_x, special_y),
                      xytext=(10, -20),

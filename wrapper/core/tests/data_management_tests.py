@@ -88,46 +88,65 @@ class ResultDataCollectorTests(unittest.TestCase):
         self.rdc.prepare_result_data()
         self.df = self.rdc.get_result_dataframe()
 
-    def test_ending_lines_intersection(self):
+    def test_ending_lines_intersection_algorythm(self):
         # Get data
         self.rdc.time_col_calculate()
-        self.rdc.transient_time = self.rdc.find_transient_time()
         self.rdc.current_density_col_calculate()
-        ending_index = self.rdc.get_transient_ending_index()
-        ending_time = self.rdc.get_transient_time()
+        self.rdc.transient_time = ending_time = self.rdc.find_transient_time()
+        ending_index_low, ending_index_high = self.rdc.get_transient_ending_indexes()
         ending_current_density = self.rdc.get_transient_current_density()
-        density_mean_seria = self.rdc.get_mean_current_density_seria()
-        density_mean_times: pd.Series = self.rdc.dataframe[self.rdc.time_col_name].iloc[density_mean_seria.index]
+        # density_mean_seria = self.rdc.get_mean_current_density_seria()
+        # density_mean_times: pd.Series = self.rdc.dataframe[self.rdc.time_col_name].iloc[density_mean_seria.index]
+        self.rdc.mean_dataframe[self.rdc.time_col_name] = (
+            self.rdc.dataframe[self.rdc.time_col_name].iloc[self.rdc.mean_dataframe.index]
+        )
+        self.transient_current_density = self.rdc.result_dataframe[self.rdc.current_density_col_name].iloc[ending_index_low]
+        accurate_time, accurate_density = self.rdc.correct_transient_time()
+
 
         # desities = pd.DataFrame()
 
-        print(f'{ending_index=}')
+        print(f'{ending_index_low=}')
         print(f'{ending_current_density=}')
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
 
-        print(self.rdc.dataframe.iloc[ending_index-10: ending_index+10])
-
-        # Calculate nearest to ending transient point indexes
-        closest_index_1, closest_index_2 = self.rdc.calculate_nearest_ending_point_indexes(density_mean_seria,
-                                                                                           ending_index)
-        print(f'{closest_index_1=}')
-        print(f'{closest_index_2=}')
-        print(density_mean_seria)
+        print(f'{ending_index_low=}')
+        print(self.rdc.mean_dataframe.loc[ending_index_low])
+        print(f'{ending_index_high=}')
+        print(self.rdc.mean_dataframe.loc[ending_index_high])
+        print(self.rdc.mean_dataframe.loc[ending_index_low-1000:ending_index_low+1000])
         # print(type(density_mean_times))
 
         # init plotter
         self.plotter = AdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
-        self.plotter.add_special_point(ending_time, ending_current_density)
-        self.plotter.ax.scatter(density_mean_times, density_mean_seria, c='green', alpha=1, zorder=2)
-        self.plotter.ax.scatter(density_mean_times[closest_index_1], density_mean_seria[closest_index_1], c='black', alpha=1, zorder=3)
-        self.plotter.ax.scatter(density_mean_times[closest_index_2], density_mean_seria[closest_index_2], c='yellow', alpha=1, zorder=3)
+        self.plotter.add_special_point(ending_time, ending_current_density,
+                                       label='Rough transient ending point')
+        # Plot mean current densities
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[self.rdc.time_col_name],
+                                self.rdc.mean_dataframe[self.rdc.current_density_col_name],
+                                c='green', alpha=1, zorder=2,
+                                label='Mean current densities')
+        # Highlight low nearest ending point
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[self.rdc.time_col_name].loc[ending_index_low],
+                                self.rdc.mean_dataframe[self.rdc.current_density_col_name].loc[ending_index_low],
+                                c='black', alpha=1, zorder=3,
+                                label='Low nearest ending point')
+        # Highlight high nearest ending point
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[self.rdc.time_col_name].loc[ending_index_high],
+                                self.rdc.mean_dataframe[self.rdc.current_density_col_name].loc[ending_index_high],
+                                c='magenta', alpha=1, zorder=3,
+                                label='High nearest ending point')
+        # Plot accurate transient ending point
+        self.plotter.add_special_point(accurate_time, accurate_density, color='yellow', marker='*', size=70, zorder=4,
+                                       label='Accurate transient ending point')
+        self.plotter.annotate_special_point(accurate_time, accurate_density)
+
+        self.plotter.ax.legend()
+
         plt.show()
         # plt.scatter
-
-
-
 
 
 if __name__ == '__main__':
