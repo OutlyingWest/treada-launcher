@@ -48,7 +48,6 @@ def treada_run_loop(config: Config):
         result_builder = ResultBuilder(mtut_file_path=config.paths.treada_core.mtut,
                                        treada_raw_output_path=config.paths.output.raw,
                                        result_path=config.paths.output.result)
-        result_builder.save_data()
 
         # Collection of data to display on plot
         transient_time_value = result_builder.results['transient_time']

@@ -86,22 +86,26 @@ class ResultDataCollectorTests(unittest.TestCase):
         self.config = load_config('config.json')
         self.rdc = ResultDataCollector(self.config.paths.treada_core.mtut, self.config.paths.output.raw)
         self.rdc.prepare_result_data()
-        self.df = self.rdc.get_result_dataframe()
+        # self.df = self.rdc.get_result_dataframe()
 
+    # @unittest.skip
     def test_ending_lines_intersection_algorythm(self):
         # Get data
         self.rdc.time_col_calculate()
         self.rdc.current_density_col_calculate()
         self.rdc.transient_time = ending_time = self.rdc.find_transient_time()
-        ending_index_low, ending_index_high = self.rdc.get_transient_ending_indexes()
-        ending_current_density = self.rdc.get_transient_current_density()
+        ending_index_low, ending_index_high = self.rdc.transient.get_ending_indexes()
+        ending_current_density = self.rdc.transient.get_current_density()
         # density_mean_seria = self.rdc.get_mean_current_density_seria()
         # density_mean_times: pd.Series = self.rdc.dataframe[self.rdc.time_col_name].iloc[density_mean_seria.index]
         self.rdc.mean_dataframe[self.rdc.time_col_name] = (
             self.rdc.dataframe[self.rdc.time_col_name].iloc[self.rdc.mean_dataframe.index]
         )
-        self.transient_current_density = self.rdc.result_dataframe[self.rdc.current_density_col_name].iloc[ending_index_low]
+        self.transient_current_density = self.rdc.result_dataframe[self.rdc.current_density_col_name].iloc[ending_index_high]
         accurate_time, accurate_density = self.rdc.correct_transient_time()
+
+        print(f'{accurate_time=}')
+        print(f'{accurate_density=}')
 
 
         # desities = pd.DataFrame()
@@ -111,6 +115,7 @@ class ResultDataCollectorTests(unittest.TestCase):
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
+        # print(self.rdc.mean_dataframe)
 
         print(f'{ending_index_low=}')
         print(self.rdc.mean_dataframe.loc[ending_index_low])
@@ -147,6 +152,17 @@ class ResultDataCollectorTests(unittest.TestCase):
 
         plt.show()
         # plt.scatter
+
+    @unittest.skip
+    def test_means_dataframe(self):
+        # init plotter
+        self.plotter = AdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
+        # Plot mean current densities
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[self.rdc.time_col_name],
+                                self.rdc.mean_dataframe[self.rdc.current_density_col_name],
+                                c='green', alpha=1, zorder=2,
+                                label='Mean current densities')
+        plt.show()
 
 
 if __name__ == '__main__':

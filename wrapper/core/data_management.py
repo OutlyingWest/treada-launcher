@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import os
 import re
 import time
@@ -230,6 +231,48 @@ class TreadaOutputParser:
         return self.relative_time
 
 
+class TransientData:
+    """
+    Class that contains data about transient process results.
+    Provides the safe access to its own attributes.
+
+    Attributes:
+        ending_index_low: Low border's index of ending condition line and current density's line intersection.
+        ending_index_high: High border's index of ending condition line and current density's line intersection.
+        current_density: value of current density on which transient process ends.
+        time: rough value of time density on which transient process ends.
+        corrected_time: accurate value of time density on which transient process ends. Additionally corrected.
+    """
+    def __init__(self):
+        self.ending_index_low: Union[int, None] = None
+        self.ending_index_high: Union[int, None] = None
+        self.current_density: Union[float, None] = None
+        self.time: Union[float, None] = None
+        self.corrected_time: Union[float, None] = None
+
+    def get_ending_indexes(self) -> Tuple[int, int]:
+        """
+        Returns index in result dataframe, which corresponds calculated transient time.
+        :return:
+        """
+        if self.ending_index_low and self.ending_index_high:
+            return self.ending_index_low, self.ending_index_high
+        else:
+            raise ValueError('ending_index does not calculated yet.')
+
+    def get_current_density(self) -> float:
+        if self.current_density:
+            return float(self.current_density)
+        else:
+            raise ValueError('current_density does not calculated yet.')
+
+    def get_time(self):
+        if self.time:
+            return self.time
+        else:
+            raise ValueError('Does not calculated yet. Call prepare_result_data() firstly.')
+
+
 class ResultDataCollector:
     def __init__(self, mtut_file_path, treada_raw_output_path):
         self.mtut_manager = MtutManager(mtut_file_path)
@@ -244,20 +287,16 @@ class ResultDataCollector:
         # Create dataframe which contains mean current densities and its dependencies
         self.mean_dataframe = pd.DataFrame()
         # Result data
-        self.transient_ending_index_low = None
-        self.transient_ending_index_high = None
-        self.transient_current_density = None
-        self.transient_time = None
-        self.corrected_transient_time = None
+        self.transient = TransientData()
         self.result_dataframe = None
 
     def prepare_result_data(self):
         self.time_col_calculate()
         self.current_density_col_calculate()
-        self.transient_time = self.find_transient_time()
+        self.transient.time = self.find_transient_time()
         self.result_dataframe = self.dataframe[[self.time_col_name, self.current_density_col_name]]
-        ending_index_low, _ = self.get_transient_ending_indexes()
-        self.transient_current_density = self.result_dataframe[self.current_density_col_name].iloc[ending_index_low]
+        ending_index_low, ending_index_high = self.transient.get_ending_indexes()
+        self.transient.current_density = self.result_dataframe[self.current_density_col_name].iloc[ending_index_high]
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
@@ -285,7 +324,8 @@ class ResultDataCollector:
             .rolling(window=window_size, step=window_size, center=True)
             .mean()
         )
-        return mean_densities
+        print(f'{window_size=}')
+        return mean_densities, window_size
 
     def current_density_col_calculate(self):
         # Get Device Width (microns)
@@ -303,14 +343,17 @@ class ResultDataCollector:
         :return: transient time
         """
         # Fill mean_dataframe
-        self.mean_dataframe[self.current_density_col_name] = self.get_mean_current_density_seria(500)
+        self.mean_dataframe[self.current_density_col_name], window_size = self.get_mean_current_density_seria(600)
         self.mean_dataframe[self.time_col_name] = (
             self.dataframe[self.time_col_name].iloc[self.mean_dataframe.index]
         )
         tr_criteria_dict = self.transient_criteria_calculate()
-        (self.transient_ending_index_low,
-         self.transient_ending_index_high) = self.transient_criteria_apply(tr_criteria_dict)
-        return self.dataframe[self.time_col_name].iloc[self.transient_ending_index_low]
+        (self.transient.ending_index_low,
+         self.transient.ending_index_high) = self.transient_criteria_apply(tr_criteria_dict, window_size)
+        print(f'{self.transient.ending_index_low=}')
+        print(f'{self.transient.ending_index_high=}')
+        self.mean_dataframe.drop(self.mean_dataframe.index[-1], inplace=True)
+        return self.dataframe[self.time_col_name].iloc[self.transient.ending_index_high]
 
     def transient_criteria_calculate(self) -> dict:
         # Get max and min current from col
@@ -326,7 +369,7 @@ class ResultDataCollector:
 
         return tr_criteria
 
-    def transient_criteria_apply(self, tr_criteria_dict):
+    def transient_criteria_apply(self, tr_criteria_dict, window_size: int) -> tuple:
         # Calculation of transient ending criteria
         self.mean_dataframe['transient_criteria'] = 0
         self.mean_dataframe.loc[
@@ -334,8 +377,14 @@ class ResultDataCollector:
                 (self.mean_dataframe[self.current_density_col_name] > tr_criteria_dict['minus']),
                 'transient_criteria'] = 1
         # Get index on which ending criteria satisfied
-        transient_ending_index_low = self.mean_dataframe['transient_criteria'][::-1].idxmin()
-        transient_ending_index_high = self.mean_dataframe['transient_criteria'].idxmax()
+        transient_ending_index_high = self.mean_dataframe['transient_criteria'][::-1].idxmin()
+        # transient_ending_index_high = self.mean_dataframe['transient_criteria'].idxmax()
+        transient_time_low = self.mean_dataframe[self.time_col_name].loc[transient_ending_index_high - window_size]
+        transient_ending_index_low = self.mean_dataframe.loc[transient_time_low == self.mean_dataframe[self.time_col_name]].index.values[0]
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', None)
+        print(self.mean_dataframe)
         return transient_ending_index_low, transient_ending_index_high
 
     def correct_transient_time(self) -> tuple:
@@ -344,7 +393,7 @@ class ResultDataCollector:
         :return: accurate_time, accurate_density
         """
         # Get borders' times and densities
-        ending_index_low, ending_index_high = self.get_transient_ending_indexes()
+        ending_index_low, ending_index_high = self.transient.get_ending_indexes()
         ending_time_low, ending_density_low = (
             self.mean_dataframe[[self.time_col_name, self.current_density_col_name]].loc[ending_index_low]
         )
@@ -352,7 +401,7 @@ class ResultDataCollector:
             self.mean_dataframe[[self.time_col_name, self.current_density_col_name]].loc[ending_index_high]
         )
         # Get rough estimated transient density
-        ending_density = self.get_transient_current_density()
+        ending_density = self.transient.get_current_density()
         print(self.mean_dataframe)
         print(f'{ending_time_low=} {ending_density_low=}')
         print(f'{ending_time_high=} {ending_density_high=}')
@@ -367,31 +416,8 @@ class ResultDataCollector:
         accurate_time, accurate_density = alg.lines_intersection([k_rough, b_rough], [k_border, b_border])
         return accurate_time, accurate_density
 
-
     def get_density_mean_col(self):
         self.dataframe[self.mean_densities_col_name] = self.dataframe[self.current_density_col_name]
-
-    def get_transient_ending_indexes(self) -> Tuple[int, int]:
-        """
-        Returns index in result dataframe, which corresponds calculated transient time.
-        :return:
-        """
-        if self.transient_ending_index_low and self.transient_ending_index_high:
-            return self.transient_ending_index_low, self.transient_ending_index_high
-        else:
-            raise ValueError('transient_ending_index does not calculated yet.')
-
-    def get_transient_current_density(self) -> float:
-        if self.transient_current_density:
-            return float(self.transient_current_density)
-        else:
-            raise ValueError('transient_current_density does not calculated yet.')
-
-    def get_transient_time(self):
-        if self.transient_time:
-            return self.transient_time
-        else:
-            raise ValueError('Does not calculated yet. Call prepare_result_data() firstly.')
 
     def get_result_dataframe(self):
         if isinstance(self.result_dataframe, pd.DataFrame):
@@ -407,7 +433,8 @@ class ResultBuilder:
         self.result_collector.prepare_result_data()
         # Dictionary for extracted results preserving
         self.results = {}
-        self.results['ending_current_density'] = self.result_collector.get_transient_current_density()
+        self.results['ending_current_density'] = self.result_collector.transient.get_current_density()
+        self.save_data()
 
     def file_name_build(self, result_path: str, file_extension='txt'):
         udrm_value = self.result_collector.mtut_manager.get_var('UDRM')
@@ -425,7 +452,7 @@ class ResultBuilder:
         self.results['udrm'] = self.result_collector.mtut_manager.get_var('UDRM')
         self.results['emini'] = self.result_collector.mtut_manager.get_var('EMINI')
         self.results['emaxi'] = self.result_collector.mtut_manager.get_var('EMAXI')
-        self.results['transient_time'] = self.result_collector.get_transient_time()
+        self.results['transient_time'] = self.result_collector.transient.get_time()
 
         # with open(answer_with_path, mode='r', encoding='utf-8') as answr:
         #     answer_string = answr.read()
