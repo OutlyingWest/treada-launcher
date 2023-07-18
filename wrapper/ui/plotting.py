@@ -1,7 +1,7 @@
 import os
 import re
 import sys
-from typing import Union, Iterable, Dict
+from typing import Union, Iterable, Dict, Any, List
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -143,7 +143,7 @@ class SpecialPointsMixin:
         :param size: Point size
         :return: Special point coordinates
         """
-        plt.scatter(special_x, special_y, color=color, marker=marker, s=size)
+        plt.scatter(special_x, special_y, color=color, marker=marker, s=size, zorder=2)
         return special_x, special_y
 
     @staticmethod
@@ -165,7 +165,7 @@ class SpecialPointsMixin:
                      arrowprops=dict(arrowstyle='->', color='black'))
 
     @classmethod
-    def add_multiple_points(cls, points: Dict[str, tuple]):
+    def add_multiple_points(cls, points: Dict[str, List[Any]]):
         """
         Add the multiple special points with annotations.
 

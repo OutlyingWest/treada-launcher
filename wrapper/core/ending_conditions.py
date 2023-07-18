@@ -3,6 +3,7 @@ import numpy as np
 
 from wrapper.config.config_builder import load_config
 from wrapper.core.data_management import MtutManager
+from wrapper.misc.lin_alg import line_coefficients
 
 
 def current_value_prepare(currents_string: str) -> Union[float, None]:
@@ -213,6 +214,12 @@ class StepBasedEndingCondition:
         pass
 
     def check(self,  current_index: int, source_current: float) -> bool:
+        """
+        Must be redefined by child class.
+        :param current_index: Line with currents index that read from Treada output.
+        :param source_current: Current value that read from Treada output.
+        :return: True if condition is satisfied and False if not.
+        """
         pass
 
 
@@ -225,21 +232,6 @@ class LineEndingCondition(StepBasedEndingCondition):
                  high_step_border=10e5,):
         super(LineEndingCondition, self).__init__(precision, chunk_size, big_step_multiplier, low_step_border,
                                                   high_step_border)
-
-    @staticmethod
-    def line_coefficients(first_point_coords: List[Union[int, float]],
-                          second_point_coords: List[Union[int, float]]) -> Tuple[Any, Any]:
-        x1, y1 = first_point_coords
-        x2, y2 = second_point_coords
-        # Set coefficients of A matrix
-        A = np.array([[x1, 1],
-                      [x2, 1]])
-        # print(f'{A=}')
-        # Set right side coefficients - Y vector
-        Y = np.array([y1, y2])
-        # Solve linear system
-        k, b = np.linalg.solve(A, Y)
-        return k, b
 
     def check(self,  current_index: int, source_current: float) -> bool:
         # print(f'{current_index=}')
@@ -257,8 +249,8 @@ class LineEndingCondition(StepBasedEndingCondition):
 
                 # print(f'{self.ping_pong=}')
 
-                k, _ = self.line_coefficients(first_point_coords=[chunks[0].x, chunks[0].y * 1e3],
-                                              second_point_coords=[chunks[1].x, chunks[1].y * 1e3])
+                k, _ = line_coefficients(first_point_coords=[chunks[0].x, chunks[0].y * 1e3],
+                                         second_point_coords=[chunks[1].x, chunks[1].y * 1e3])
                 chunks[1].k = k
                 if np.abs(k) < self.precision:
                     return True

@@ -5,7 +5,7 @@ import time
 from typing import Union
 import numpy as np
 
-from wrapper.core.ending_conditions import LineEndingCondition, current_value_prepare, MeansEndingCondition
+from wrapper.core.ending_conditions import current_value_prepare
 
 
 def main():
@@ -58,7 +58,7 @@ class StdoutCapturer:
         # Init auto ending prerequisites
         self.auto_ending = auto_ending
         self.ending_condition = EndingCondition(chunk_size=300,
-                                                equal_values_to_stop=20,
+                                                equal_values_to_stop=10,
                                                 deviation_coef=1e-5)
         # self.ending_condition = LineEndingCondition(precision=1e-2,
         #                                             chunk_size=100,
@@ -232,10 +232,10 @@ if __name__ == '__main__':
     # Add path to "wrapper" directory in environ variable - PYTHONPATH
     wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     sys.path.append(wrapper_path)
-    from global_functions import create_dir
+    from misc.global_functions import create_dir
 
     main()
 else:
-    from wrapper.global_functions import create_dir
+    from wrapper.misc.global_functions import create_dir
 
 

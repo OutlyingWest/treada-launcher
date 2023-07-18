@@ -96,20 +96,35 @@ class ResultDataCollectorTests(unittest.TestCase):
         ending_index = self.rdc.get_transient_ending_index()
         ending_time = self.rdc.get_transient_time()
         ending_current_density = self.rdc.get_transient_current_density()
+        density_mean_seria = self.rdc.get_mean_current_density_seria()
+        density_mean_times: pd.Series = self.rdc.dataframe[self.rdc.time_col_name].iloc[density_mean_seria.index]
+
+        # desities = pd.DataFrame()
+
         print(f'{ending_index=}')
         print(f'{ending_current_density=}')
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
-        print(self.rdc.dataframe.iloc[74647-10: 74647+10])
 
+        print(self.rdc.dataframe.iloc[ending_index-10: ending_index+10])
 
-
+        # Calculate nearest to ending transient point indexes
+        closest_index_1, closest_index_2 = self.rdc.calculate_nearest_ending_point_indexes(density_mean_seria,
+                                                                                           ending_index)
+        print(f'{closest_index_1=}')
+        print(f'{closest_index_2=}')
+        print(density_mean_seria)
+        # print(type(density_mean_times))
 
         # init plotter
         self.plotter = AdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
         self.plotter.add_special_point(ending_time, ending_current_density)
+        self.plotter.ax.scatter(density_mean_times, density_mean_seria, c='green', alpha=1, zorder=2)
+        self.plotter.ax.scatter(density_mean_times[closest_index_1], density_mean_seria[closest_index_1], c='black', alpha=1, zorder=3)
+        self.plotter.ax.scatter(density_mean_times[closest_index_2], density_mean_seria[closest_index_2], c='yellow', alpha=1, zorder=3)
         plt.show()
+        # plt.scatter
 
 
 

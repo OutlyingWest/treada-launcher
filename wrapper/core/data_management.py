@@ -3,9 +3,10 @@ import re
 import time
 from typing import Union, List
 
+import numpy as np
 import pandas as pd
 
-from wrapper.global_functions import create_dir
+from wrapper.misc.global_functions import create_dir
 
 
 class MtutStageConfiger:
@@ -279,10 +280,12 @@ class ResultDataCollector:
         time_step_const = operating_time_step * relative_time
         self.dataframe[self.time_col_name] = self.dataframe.index.values * time_step_const
 
-    def get_mean_current_density(self, window_size_denominator=100) -> pd.Series:
+    def get_mean_current_density_seria(self, window_size_denominator=500) -> pd.Series:
         dataframe_length = self.dataframe.shape[0]
         # Definition of window size to mean
         window_size = int(dataframe_length / window_size_denominator)
+        if window_size < 10:
+            window_size = 10
         # Calculating of means
         mean_densities = (
             self.dataframe[self.current_density_col_name]
@@ -290,6 +293,14 @@ class ResultDataCollector:
             .mean()
         )
         return mean_densities
+
+    def calculate_nearest_ending_point_indexes(self, density_mean_seria: pd.Series, ending_index: int) -> tuple:
+        closest_array_index_1 = np.argmin(np.abs(density_mean_seria.index - ending_index))
+        closest_index_1 = density_mean_seria.index[closest_array_index_1]
+        dropped_density_mean_seria = density_mean_seria.drop(closest_index_1)
+        closest_array_index_2 = np.argmin(np.abs(dropped_density_mean_seria.index - ending_index))
+        closest_index_2 = dropped_density_mean_seria.index[closest_array_index_2]
+        return closest_index_1, closest_index_2
 
     def transient_criteria_calculate(self) -> dict:
         # Get max and min current from col
@@ -355,14 +366,15 @@ class ResultDataCollector:
 
 class ResultBuilder:
     def __init__(self, mtut_file_path: str, treada_raw_output_path: str, result_path: str):
-        self.result_configer = ResultDataCollector(mtut_file_path, treada_raw_output_path)
+        self.result_collector = ResultDataCollector(mtut_file_path, treada_raw_output_path)
         self.result_path = self.file_name_build(result_path)
-        self.result_configer.prepare_result_data()
+        self.result_collector.prepare_result_data()
+        # Dictionary for extracted results preserving
         self.results = {}
-        self.results['ending_current_density'] = self.result_configer.get_transient_current_density()
+        self.results['ending_current_density'] = self.result_collector.get_transient_current_density()
 
     def file_name_build(self, result_path: str, file_extension='txt'):
-        udrm_value = self.result_configer.mtut_manager.get_var('UDRM')
+        udrm_value = self.result_collector.mtut_manager.get_var('UDRM')
         return f'{result_path.split(".")[0]}u({udrm_value}).{file_extension}'
 
     def save_data(self):
@@ -374,10 +386,10 @@ class ResultBuilder:
         self.dump_dataframe_to_file()
 
     def header_build(self):
-        self.results['udrm'] = self.result_configer.mtut_manager.get_var('UDRM')
-        self.results['emini'] = self.result_configer.mtut_manager.get_var('EMINI')
-        self.results['emaxi'] = self.result_configer.mtut_manager.get_var('EMAXI')
-        self.results['transient_time'] = self.result_configer.get_transient_time()
+        self.results['udrm'] = self.result_collector.mtut_manager.get_var('UDRM')
+        self.results['emini'] = self.result_collector.mtut_manager.get_var('EMINI')
+        self.results['emaxi'] = self.result_collector.mtut_manager.get_var('EMAXI')
+        self.results['transient_time'] = self.result_collector.get_transient_time()
 
         # with open(answer_with_path, mode='r', encoding='utf-8') as answr:
         #     answer_string = answr.read()
@@ -415,7 +427,7 @@ class ResultBuilder:
             res_file.writelines(header)
 
     def dump_dataframe_to_file(self):
-        result_dataframe: pd.DataFrame = self.result_configer.get_result_dataframe()
+        result_dataframe: pd.DataFrame = self.result_collector.get_result_dataframe()
         with open(self.result_path, 'a') as res_file:
             res_file.write(result_dataframe.to_string(index=False))
 
