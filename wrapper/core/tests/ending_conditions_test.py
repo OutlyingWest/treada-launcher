@@ -42,10 +42,10 @@ from wrapper.core.ending_conditions import StepBasedEndingCondition, LineEndingC
 #         # -- Real --
 #         result_path = os.path.split(self.config.paths.output.result)[0] + os.sep + 'res_u(-16.0).txt'
 #         # Load result data from file
-#         self.result_df = pd.read_csv(result_path, skiprows=11, header=0, sep='\s+')
+#         self.result_full_df = pd.read_csv(result_path, skiprows=11, header=0, sep='\s+')
 #         # Extract result data
-#         self.X = list(self.result_df.index)
-#         self.Y = self.result_df[self.result_df.columns[1]]
+#         self.X = list(self.result_full_df.index)
+#         self.Y = self.result_full_df[self.result_full_df.columns[1]]
 #         print(f'{self.Y}')
 #
 #         self.plotter = AdvancedPlotter(self.X, self.Y, plot_type='plot')
@@ -92,10 +92,10 @@ from wrapper.core.ending_conditions import StepBasedEndingCondition, LineEndingC
 #                             k = chunk.k
 #                             self.plotter.annotate_special_point(chunk.x, chunk.y, annotation=f'{k=}')
 #                 break
-#         # self.result_df['condition'] = condition_list
+#         # self.result_full_df['condition'] = condition_list
 #
 #         # pd.set_option('display.max_rows', None)
-#         # print(self.result_df.loc[self.result_df['condition'] == True].index)
+#         # print(self.result_full_df.loc[self.result_full_df['condition'] == True].index)
 #         plt.show()
 #
 #     def test_speed_check(self):
@@ -168,9 +168,9 @@ class MeansEndingConditionTests(unittest.TestCase):
                 print(f'{self.mec.ping_pong[1][0].step=}')
                 break
 
-        # self.result_df['condition'] = condition_list
+        # self.result_full_df['condition'] = condition_list
 
         # pd.set_option('display.max_rows', None)
-        # print(self.result_df.loc[self.result_df['condition'] == True].index)
+        # print(self.result_full_df.loc[self.result_full_df['condition'] == True].index)
         plt.show()
 

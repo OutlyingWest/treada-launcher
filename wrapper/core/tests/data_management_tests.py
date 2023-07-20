@@ -91,18 +91,23 @@ class ResultDataCollectorTests(unittest.TestCase):
     # @unittest.skip
     def test_ending_lines_intersection_algorythm(self):
         # Get data
-        self.rdc.time_col_calculate()
-        self.rdc.current_density_col_calculate()
-        self.rdc.transient_time = ending_time = self.rdc.find_transient_time()
-        ending_index_low, ending_index_high = self.rdc.transient.get_ending_indexes()
+        # self.rdc.time_col_calculate()
+        # self.rdc.current_density_col_calculate()
+        # self.rdc.transient_time = ending_time = self.rdc.find_transient_time()
+        # ending_index_low, ending_index_high = self.rdc.transient.get_ending_indexes()
+        # ending_current_density = self.rdc.transient.get_current_density()
+        # # density_mean_seria = self.rdc.get_mean_current_density_seria()
+        # # density_mean_times: pd.Series = self.rdc.dataframe[self.rdc.time_col_name].iloc[density_mean_seria.index]
+        # self.rdc.mean_dataframe[self.rdc.time_col_name] = (
+        #     self.rdc.dataframe[self.rdc.time_col_name].iloc[self.rdc.mean_dataframe.index]
+        # )
+        # self.transient_current_density = self.rdc.result_dataframe[self.rdc.current_density_col_name].iloc[ending_index_high]
+        # accurate_time, accurate_density = self.rdc.correct_transient_time()
+        ending_time = self.rdc.transient.get_time()
         ending_current_density = self.rdc.transient.get_current_density()
-        # density_mean_seria = self.rdc.get_mean_current_density_seria()
-        # density_mean_times: pd.Series = self.rdc.dataframe[self.rdc.time_col_name].iloc[density_mean_seria.index]
-        self.rdc.mean_dataframe[self.rdc.time_col_name] = (
-            self.rdc.dataframe[self.rdc.time_col_name].iloc[self.rdc.mean_dataframe.index]
-        )
-        self.transient_current_density = self.rdc.result_dataframe[self.rdc.current_density_col_name].iloc[ending_index_high]
-        accurate_time, accurate_density = self.rdc.correct_transient_time()
+        ending_index_low, ending_index_high = self.rdc.transient.get_ending_indexes()
+        accurate_time = self.rdc.transient.get_corrected_time()
+        accurate_density = self.rdc.transient.get_corrected_current_density()
 
         print(f'{accurate_time=}')
         print(f'{accurate_density=}')
@@ -110,7 +115,6 @@ class ResultDataCollectorTests(unittest.TestCase):
 
         # desities = pd.DataFrame()
 
-        print(f'{ending_index_low=}')
         print(f'{ending_current_density=}')
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
@@ -126,6 +130,7 @@ class ResultDataCollectorTests(unittest.TestCase):
 
         # init plotter
         self.plotter = AdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
+        # Plot rough transient ending point
         self.plotter.add_special_point(ending_time, ending_current_density,
                                        label='Rough transient ending point')
         # Plot mean current densities
@@ -147,7 +152,6 @@ class ResultDataCollectorTests(unittest.TestCase):
         self.plotter.add_special_point(accurate_time, accurate_density, color='yellow', marker='*', size=70, zorder=4,
                                        label='Accurate transient ending point')
         self.plotter.annotate_special_point(accurate_time, accurate_density)
-
         self.plotter.ax.legend()
 
         plt.show()

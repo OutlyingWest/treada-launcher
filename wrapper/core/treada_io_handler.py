@@ -23,7 +23,9 @@ class TreadaSwitcher:
     """
     def __init__(self, config):
         self.exec_process = self.exe_runner(exe_path=config.paths.treada_core.exe)
-        self.capturer = StdoutCapturer(process=self.exec_process, auto_ending=config.flags.auto_ending)
+        self.capturer = StdoutCapturer(process=self.exec_process,
+                                       auto_ending=config.flags.auto_ending,
+                                       ending_condition_params=None)
 
     def light_off(self):
         self.capturer.set_runtime_console_info('   Dark')
@@ -50,14 +52,14 @@ class TreadaSwitcher:
 
 
 class StdoutCapturer:
-    def __init__(self, process: subprocess.Popen, auto_ending=False):
+    def __init__(self, process: subprocess.Popen, ending_condition_params, auto_ending=False):
         # Running of the executable file
         self.process = process
         # Shut down shortcut configure
         self.running_flag = True
         # Init auto ending prerequisites
         self.auto_ending = auto_ending
-        self.ending_condition = EndingCondition(chunk_size=300,
+        self.ending_condition = EndingCondition(chunk_size=100,
                                                 equal_values_to_stop=10,
                                                 deviation_coef=1e-5)
         # self.ending_condition = LineEndingCondition(precision=1e-2,

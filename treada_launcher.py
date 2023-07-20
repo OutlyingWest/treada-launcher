@@ -1,13 +1,14 @@
 import time
 
-from matplotlib import pyplot as plt
+import colorama
+from colorama import Fore, Style
 
 from wrapper.core.treada_io_handler import TreadaSwitcher
 from wrapper.config.config_builder import load_config, Config
 from wrapper.core.data_management import MtutStageConfiger, ResultBuilder
 from wrapper.initializations import init_dirs
 from wrapper.states.states_management import StatesMachine, StateStatuses
-from wrapper.ui.plotting import TreadaPlotBuilder
+from wrapper.ui.plotting import TreadaPlotBuilder, AdvancedPlotter
 
 
 def main():
@@ -16,6 +17,8 @@ def main():
 
     treada_run_loop(config)
 
+    print(f'To complete the program, click the {Fore.GREEN}Enter{Style.RESET_ALL} button. '
+          f'{Fore.YELLOW}Be careful! All interactive plots will be destroyed.{Style.RESET_ALL}')
     input()
 
 
@@ -49,20 +52,21 @@ def treada_run_loop(config: Config):
                                        treada_raw_output_path=config.paths.output.raw,
                                        result_path=config.paths.output.result)
 
-        # Collection of data to display on plot
-        transient_time_value = result_builder.results['transient_time']
-        ending_current_density = result_builder.results['ending_current_density']
         # Creation of plot builder object
         plot_builder = TreadaPlotBuilder(result_path=result_builder.result_path,
-                                         ending_point_coords=(transient_time_value, ending_current_density),
-                                         transient_time=transient_time_value)
+                                         result_data=result_builder.results)
+
+        # Display advanced info
+        if config.flags.plotting.advanced_info:
+            plot_builder.set_advanced_info()
 
         # Save plot to file
         full_plot_path = result_builder.file_name_build(config.paths.output.plots, file_extension='png')
         plot_builder.save_plot(full_plot_path)
+
     # Show plot
-    if not config.flags.disable_plotting:
-        plt.show(block=False)
+    if config.flags.plotting.enable:
+        AdvancedPlotter.show(block=False)
 
 
 def wait_interrupt():
@@ -75,4 +79,5 @@ def wait_interrupt():
 
 
 if __name__ == '__main__':
+    colorama.init()
     main()
