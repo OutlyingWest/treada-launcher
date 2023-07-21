@@ -1,4 +1,4 @@
-from wrapper.global_functions import create_dir
+from wrapper.misc.global_functions import create_dir
 from wrapper.config.config_builder import Paths
 
 

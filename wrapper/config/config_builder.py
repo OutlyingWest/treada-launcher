@@ -4,10 +4,14 @@ Contains features for load configuration
 import os
 import json
 from dataclasses import dataclass
+from typing import Union
 
 
 @dataclass
 class Stages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
     light_off: dict
     light_on: dict
 
@@ -15,18 +19,27 @@ class Stages:
 # Paths section
 @dataclass
 class TreadaCorePaths:
+    """
+    Paths to "Treada" exe and its own dependent files.
+    """
     exe: str
     mtut: str
 
 
 @dataclass
 class InputPaths:
+    """
+    Paths to input data for treada_launcher program.
+    """
     udrm: str
     current_state: str
 
 
 @dataclass
 class OutputPaths:
+    """
+    Paths to output of treada_launcher program.
+    """
     raw: str
     result: str
     plots: str
@@ -34,6 +47,9 @@ class OutputPaths:
 
 @dataclass
 class Paths:
+    """
+    Class that collects paths to all.
+    """
     treada_core: TreadaCorePaths
     input: InputPaths
     output: OutputPaths
@@ -41,21 +57,55 @@ class Paths:
 
 @dataclass
 class Modes:
+    """
+    Keeps data about runtime modes of treada_launcher program.
+    """
     udrm_vector_mode: bool
 
 
 @dataclass
+class PlottingFlags:
+    """
+    Keeps flags that set rules for plotting.
+    """
+    enable: bool
+    advanced_info: bool
+
+
+@dataclass
 class Flags:
-    disable_plotting: bool
+    """
+    Class that collects all flags.
+    """
+    plotting: PlottingFlags
     auto_ending: bool
 
 
 @dataclass
+class TransientSettings:
+    """
+    """
+    window_size: int
+    window_size_denominator: Union[int, None]
+
+
+@dataclass
+class AdvancedSettings:
+    """
+    """
+    transient: TransientSettings
+
+
+@dataclass
 class Config:
+    """
+    Class that collects all data from config.json.
+    """
     paths: Paths
     stages: Stages
     modes: Modes
     flags: Flags
+    advanced_settings: AdvancedSettings
 
 
 def load_config(config_name: str = None):
@@ -85,8 +135,13 @@ def load_config(config_name: str = None):
         stages=Stages(light_off=config_dict['stages']['light_off'],
                       light_on=config_dict['stages']['light_on'],),
         modes=Modes(udrm_vector_mode=config_dict['modes']['UDRM_vector_mode'],),
-        flags=Flags(disable_plotting=config_dict['flags']['disable_plotting'],
+        flags=Flags(plotting=PlottingFlags(enable=config_dict['flags']['plotting']['enable'],
+                                           advanced_info=config_dict['flags']['plotting']['advanced_info']),
                     auto_ending=config_dict['flags']['auto_ending'],),
+        advanced_settings=AdvancedSettings(transient=TransientSettings(
+            window_size=config_dict['advanced_settings']['transient']['window_size'],
+            window_size_denominator=config_dict['advanced_settings']['transient']['window_size_denominator'],)
+        )
     )
 
 

@@ -5,8 +5,8 @@ import time
 from typing import Union
 import numpy as np
 
-from wrapper.config.config_builder import Config
-from wrapper.global_functions import create_dir
+from wrapper.core.ending_conditions import current_value_prepare
+from wrapper.core import ending_conditions as ec
 
 
 def main():
@@ -22,9 +22,11 @@ class TreadaSwitcher:
     """
     Responsible for stages switching of "Treada" work
     """
-    def __init__(self, config: Config):
+    def __init__(self, config):
         self.exec_process = self.exe_runner(exe_path=config.paths.treada_core.exe)
-        self.capturer = StdoutCapturer(process=self.exec_process, auto_ending=config.flags.auto_ending)
+        self.capturer = StdoutCapturer(process=self.exec_process,
+                                       auto_ending=config.flags.auto_ending,
+                                       ending_condition_params=None)
 
     def light_off(self):
         self.capturer.set_runtime_console_info('   Dark')
@@ -51,16 +53,25 @@ class TreadaSwitcher:
 
 
 class StdoutCapturer:
-    def __init__(self, process: subprocess.Popen, auto_ending=False):
+    def __init__(self, process: subprocess.Popen, ending_condition_params, auto_ending=False):
         # Running of the executable file
         self.process = process
         # Shut down shortcut configure
         self.running_flag = True
         # Init auto ending prerequisites
         self.auto_ending = auto_ending
-        self.ending_condition = EndingCondition(chunk_size=100,
-                                                equal_values_to_stop=5,
-                                                deviation_coef=1e-5)
+        self.ending_condition = ec.EndingCondition(chunk_size=100,
+                                                   equal_values_to_stop=5,
+                                                   deviation_coef=1e-5)
+        # self.ending_condition = LineEndingCondition(precision=1e-2,
+        #                                             chunk_size=100,
+        #                                             big_step_multiplier=100,
+        #                                             low_step_border=100)
+        # self.ending_condition = MeansEndingCondition(precision=2e-5,
+        #                                              chunk_size=100,
+        #                                              big_step_multiplier=100,
+        #                                              low_step_border=100)
+        # Can be defined by setter
         self.runtime_console_info = ''
 
     def stream_management(self, path_to_output=None):
@@ -97,7 +108,7 @@ class StdoutCapturer:
         start_time = time.time()
         while self.running_flag:
             try:
-                if num_of_str and num_of_str > str_counter:
+                if num_of_str and num_of_str <= str_counter:
                     break
                 # Get line from process object
                 treada_output: bytes = self.process.stdout.readline()
@@ -110,8 +121,9 @@ class StdoutCapturer:
                         # Check ending condition
                         if self.auto_ending:
                             current_value = (
-                                self.ending_condition.current_value_prepare(currents_string=clean_decoded_output)
+                                current_value_prepare(currents_string=clean_decoded_output)
                             )
+                            # if current_value and self.ending_condition.check(str_counter, current_value):
                             if current_value and self.ending_condition.check(current_value):
                                 self.running_flag = False
                         # Write *.exe output to file
@@ -221,4 +233,13 @@ class EndingCondition:
 
 
 if __name__ == '__main__':
+    # Add path to "wrapper" directory in environ variable - PYTHONPATH
+    wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    sys.path.append(wrapper_path)
+    from misc.global_functions import create_dir
+
     main()
+else:
+    from wrapper.misc.global_functions import create_dir
+
+
