@@ -13,8 +13,25 @@
         "UDRM_vector_mode": false
     },
     "flags": {
-        "disable_plotting": false,
-        "auto_ending": false
+        "plotting": {
+            "enable": true,
+            "advanced_info": true
+        },
+        "auto_ending": true
+    },
+    "advanced_settings": {
+        "runtime_ending_condition": {
+            "chunk_size": 100,
+            "equal_values_to_stop": 10,
+            "deviation_coef": 1e-5,
+            "precision": 2e-5,
+            "big_step_multiplier": 100,
+            "low_step_border": 100
+        },
+        "transient": {
+            "window_size": 100,
+            "window_size_denominator": null
+        }
     },
     "paths": {
         "treada_core": {
