@@ -10,8 +10,12 @@ from colorama import Fore, Style
 import numpy as np
 import pandas as pd
 
-from wrapper.misc.global_functions import create_dir
-from wrapper.misc import lin_alg as alg
+try:
+    from wrapper.misc.global_functions import create_dir
+    from wrapper.misc import lin_alg as alg
+except ModuleNotFoundError:
+    from misc.global_functions import create_dir
+    from misc import lin_alg as alg
 
 
 class MtutStageConfiger:
@@ -64,6 +68,12 @@ class FileManager:
         """
         with open(self.path, "r") as file:
             self.data = file.readlines()
+        return self.data
+
+    def load_file_head(self, num_lines) -> list:
+        with open(self.path, "r") as file:
+            file_head = [next(file) for x in range(num_lines)]
+        self.data = file_head
         return self.data
 
     def save_file(self):
@@ -169,6 +179,7 @@ col_names = DataFrameColNames(
     mean_density='mean_density',
 )
 
+
 class TreadaOutputParser:
     """
     Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
@@ -257,31 +268,53 @@ class TransientData:
         ending_index_low: Low border's index of ending condition line and current density's line intersection.
         ending_index_high: High border's index of ending condition line and current density's line intersection.
         current_density: value of current density on which transient process ends.
-        time: rough value of time density on which transient process ends.
+        time: rough value of time on which transient process ends.
         corrected_time: accurate value of time density on which transient process ends. Additionally corrected.
     """
-    def __init__(self):
-        self.window_size_denominator: Union[int, None] = None
-        self.window_size: Union[int, None] = None
-        self.ending_index: Union[int, None] = None
-        self.ending_index_low: Union[int, None] = None
-        self.ending_index_high: Union[int, None] = None
-        self.current_density: Union[float, None] = None
-        self.time: Union[float, None] = None
-        self.corrected_time: Union[float, None] = None
-        self.corrected_density: Union[float, None] = None
+    def __init__(self, **kwargs):
+        self._window_size_denominator: Union[int, None] = kwargs.get('window_size_denominator')
+        self._window_size: Union[int, None] = kwargs.get('window_size')
+        self.default_window_size = kwargs.get('default_window_size', 100)
+        self.ending_index: Union[int, None] = kwargs.get('ending_index')
+        self.ending_index_low: Union[int, None] = kwargs.get('ending_index_low')
+        self.ending_index_high: Union[int, None] = kwargs.get('ending_index_high')
+        self.current_density: Union[float, None] = kwargs.get('current_density')
+        self.time: Union[float, None] = kwargs.get('time')
+        self.corrected_time: Union[float, None] = kwargs.get('corrected_time')
+        self.corrected_density: Union[float, None] = kwargs.get('corrected_density')
+
+    def set_window_size(self, window_size):
+        self._window_size = window_size
 
     def get_window_size(self):
-        if self.window_size:
-            return self.window_size
-        else:
-            raise ValueError('window_size does not calculated yet.')
+        if self._window_size is None and self._window_size_denominator is None:
+            print(f'{Fore.YELLOW} window_size and window_size_denominator are not defined, window_size'
+                  f' will be set to default, {self.default_window_size=}{Style.RESET_ALL}')
+            self._window_size = self.default_window_size
+        elif self._window_size is None:
+            print(f'{Fore.YELLOW} window_size is not defined, window_size'
+                  f' will be set to default, {self.default_window_size=}{Style.RESET_ALL}')
+            self._window_size = self.default_window_size
+        elif self._window_size < 10:
+            print(f'{Fore.YELLOW}Too little {self._window_size=},'
+                  f' window size set to {self.default_window_size=}{Style.RESET_ALL}')
+            self._window_size = self.default_window_size
+        return self._window_size
+
+    def set_window_size_denominator(self, window_size_denominator):
+        self._window_size_denominator = window_size_denominator
 
     def get_window_size_denominator(self):
-        if self.window_size_denominator:
-            return self.window_size_denominator
-        else:
-            raise ValueError('window_size_denominator does not set yet.')
+        """
+        Can be None, in this case window_size will not be redefined.
+        """
+        if self._window_size_denominator is not None:
+            if self._window_size_denominator < 4:
+                old_window_size_denominator = self._window_size_denominator
+                self._window_size_denominator = 3
+                print(f'{Fore.YELLOW}Too little window_size_denominator={old_window_size_denominator},'
+                      f' set to {self._window_size_denominator=}{Style.RESET_ALL}')
+        return self._window_size_denominator
 
     def get_ending_index(self) -> int:
         """
@@ -328,6 +361,9 @@ class TransientData:
         else:
             raise ValueError('corrected_time does not calculated yet. Call prepare_result_data() firstly.')
 
+    window_size = property(fset=set_window_size, fget=get_window_size)
+    window_size_denominator = property(fset=set_window_size_denominator, fget=get_window_size_denominator)
+
 
 class ResultDataCollector:
     def __init__(self, mtut_file_path, treada_raw_output_path):
@@ -340,7 +376,6 @@ class ResultDataCollector:
         self.mean_dataframe = pd.DataFrame()
         # Result data
         self.transient = TransientData()
-        self.transient.window_size_denominator = 800
         self.result_dataframe = None
 
     def prepare_result_data(self):
@@ -349,7 +384,7 @@ class ResultDataCollector:
         self.transient.time = self.find_transient_time()
         self.result_dataframe = self.dataframe[[col_names.time, col_names.current_density]]
         ending_index = self.transient.get_ending_index()
-        self.transient.current_density = self.result_dataframe[col_names.current_density].iloc[ending_index]
+        # self.transient.current_density = self.result_dataframe[col_names.current_density].iloc[ending_index]
         self.correct_transient_time(window_size=self.transient.window_size)
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
@@ -366,29 +401,19 @@ class ResultDataCollector:
         time_step_const = operating_time_step * relative_time
         self.dataframe[col_names.time] = self.dataframe.index.values * time_step_const
 
-    def get_mean_current_density_seria(self, window_size_denominator=500) -> Tuple[pd.Series, int]:
+    def get_mean_current_density_seria(self, window_size_denominator: Union[None, int]) -> pd.Series:
         dataframe_length = self.dataframe.shape[0]
-        if window_size_denominator < 4:
-            old_window_size_denominator = window_size_denominator
-            window_size_denominator = 3
-            print(f'{Fore.YELLOW}Too little window_size_denominator={old_window_size_denominator},'
-                  f' set to {window_size_denominator=}{Style.RESET_ALL}')
-        # Definition of window size to mean
-        window_size = int(dataframe_length / window_size_denominator)
-        if window_size < 10:
-            window_size = 10
-            print(f'{Fore.YELLOW}Too large {window_size_denominator=},'
-                  f' window size set to {window_size=}{Style.RESET_ALL}')
-        # elif window_size > 2000:
-        #     window_size = 2000
-        # Calculating of means
+        # Set window_size if denominator exists or use its own window_size value if not
+        if window_size_denominator is not None:
+            self.transient.window_size = int(dataframe_length / window_size_denominator)
+        # Calculating
         mean_densities = (
             self.dataframe[col_names.current_density]
-            .rolling(window=window_size, step=window_size, center=True)
+            .rolling(window=self.transient.window_size, step=self.transient.window_size, center=True)
             .mean()
         )
-        print(f'{window_size=}')
-        return mean_densities, window_size
+        print(f'{self.transient.window_size=}')
+        return mean_densities
 
     def current_density_col_calculate(self):
         # Get Device Width (microns)
@@ -407,7 +432,7 @@ class ResultDataCollector:
         """
         window_size_denominator = self.transient.get_window_size_denominator()
         # Fill mean_dataframe
-        self.mean_dataframe[col_names.current_density], self.transient.window_size = (
+        self.mean_dataframe[col_names.current_density] = (
             self.get_mean_current_density_seria(window_size_denominator)
         )
         self.mean_dataframe[col_names.time] = (
@@ -415,40 +440,61 @@ class ResultDataCollector:
         )
         self.mean_dataframe.drop(self.mean_dataframe.index[-1], inplace=True)
         tr_criteria_dict = self.transient_criteria_calculate()
-        self.transient.ending_index = self.transient_criteria_apply(tr_criteria_dict)
+        self.transient_criteria_apply(tr_criteria_dict)
         # print(f'{self.transient.ending_index_low=}')
         # print(f'{self.transient.ending_index_high=}')
-        return self.dataframe[col_names.time].iloc[self.transient.ending_index]
+        return self.mean_dataframe[col_names.time].loc[self.transient.ending_index]
 
     def transient_criteria_calculate(self) -> dict:
         # Get max and min current from col
-        max_current = self.mean_dataframe[col_names.current_density].max()
-        min_current = self.mean_dataframe[col_names.current_density].min()
-        ending_difference = 0.01*(max_current - min_current)
+        max_density = self.mean_dataframe[col_names.current_density].max()
+        min_density = self.mean_dataframe[col_names.current_density].min()
+        ending_difference = 0.01*(max_density - min_density)
 
         # Get last value in current col and calculate criteria of transient ending
         tr_criteria = dict()
-        last_current_value = self.mean_dataframe[col_names.current_density].iloc[-1]
-        tr_criteria['plus'] = last_current_value + ending_difference
-        tr_criteria['minus'] = last_current_value - ending_difference
-        print(f'{last_current_value=}')
-        print(f"{tr_criteria['minus']=}")
+        last_density_value = self.mean_dataframe[col_names.current_density].iloc[-1]
+        tr_criteria['plus'] = last_density_value + ending_difference
+        tr_criteria['minus'] = last_density_value - ending_difference
+        # print(f'{last_density_value=}')
+        # print(f"{tr_criteria['minus']=}")
         return tr_criteria
 
-    def transient_criteria_apply(self, tr_criteria_dict) -> int:
+    def transient_criteria_apply(self, tr_criteria: dict):
         # Calculation of transient ending criteria
-        self.mean_dataframe['transient_criteria'] = 0
-        self.mean_dataframe.loc[
-                (self.mean_dataframe[col_names.current_density] < tr_criteria_dict['plus']) &
-                (self.mean_dataframe[col_names.current_density] > tr_criteria_dict['minus']),
-                'transient_criteria'] = 1
-        # Get index on which ending criteria satisfied
-        transient_ending_index = self.mean_dataframe['transient_criteria'][::-1].idxmin()
+        # self.mean_dataframe['transient_criteria'] = 0
+        self.mean_dataframe['compare_plus'] = 0
+        self.mean_dataframe['compare_minus'] = 0
+        # self.mean_dataframe.loc[
+        #         (self.mean_dataframe[col_names.current_density] < tr_criteria['plus']) &
+        #         (self.mean_dataframe[col_names.current_density] > tr_criteria['minus']),
+        #         'transient_criteria'] = 1
+        self.mean_dataframe.loc[self.mean_dataframe[col_names.current_density] > tr_criteria['minus'],
+                                'compare_minus'] = 1
+        self.mean_dataframe.loc[self.mean_dataframe[col_names.current_density] < tr_criteria['plus'],
+                                'compare_plus'] = 1
+
+        # Get indexes on which ending criteria satisfied
+        ending_minus_index = self.mean_dataframe['compare_minus'][::-1].idxmin()
+        ending_plus_index = self.mean_dataframe['compare_plus'][::-1].idxmin()
+
+        if ending_minus_index < ending_plus_index:
+            self.transient.ending_index = ending_plus_index
+            self.transient.current_density = tr_criteria['plus']
+
+        elif ending_plus_index < ending_minus_index:
+            self.transient.ending_index = ending_minus_index
+            self.transient.current_density = tr_criteria['minus']
+        else:
+            raise ValueError('transient_ending_index does not found.')
+
+        # print(f"{tr_criteria['minus']=}")
+        # print(f"{self.transient.current_density=}")
+        #
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
         # print(self.mean_dataframe)
-        return transient_ending_index
 
     def correct_transient_time(self, window_size: int) -> tuple:
         """
@@ -458,28 +504,33 @@ class ResultDataCollector:
         # Get rough estimated transient density
         ending_density = self.transient.get_current_density()
         # Get transient ending border data
-        ending_center_index = self.mean_dataframe['transient_criteria'][::-1].idxmin()
-        ending_center_density = self.mean_dataframe[col_names.current_density].loc[ending_center_index]
+        ending_center_index = self.transient.get_ending_index()
+        ending_center_density = self.transient.current_density
+        # ending_center_density = self.mean_dataframe[col_names.current_density].loc[ending_center_index]
 
-        ending_prev_time = (
-            self.mean_dataframe[col_names.time].loc[ending_center_index - window_size]
-        )
-        ending_prev_index = (
-            self.mean_dataframe.loc[ending_prev_time == self.mean_dataframe[col_names.time]].index.values[0]
-        )
+        # ending_prev_time = (
+        #     self.mean_dataframe[col_names.time].loc[ending_center_index - window_size]
+        # )
+        # ending_prev_index = (
+        #     self.mean_dataframe.loc[ending_prev_time == self.mean_dataframe[col_names.time]].index.values[0]
+        # )
         ending_next_time = (
             self.mean_dataframe[col_names.time].loc[ending_center_index + window_size]
         )
         ending_next_index = (
             self.mean_dataframe.loc[ending_next_time == self.mean_dataframe[col_names.time]].index.values[0]
         )
+
+        self.transient.ending_index_low = ending_center_index
+        self.transient.ending_index_high = ending_next_index
+
         # Check is border low or high
-        if ending_center_density <= ending_density:
-            self.transient.ending_index_low = ending_center_index
-            self.transient.ending_index_high = ending_next_index
-        elif ending_center_density > ending_density:
-            self.transient.ending_index_low = ending_prev_index
-            self.transient.ending_index_high = ending_center_index
+        # if ending_center_density <= ending_density:
+        #     self.transient.ending_index_low = ending_center_index
+        #     self.transient.ending_index_high = ending_next_index
+        # elif ending_center_density > ending_density:
+        #     self.transient.ending_index_low = ending_prev_index
+        #     self.transient.ending_index_high = ending_center_index
 
         # Get borders' times and densities
         ending_index_low, ending_index_high = self.transient.get_ending_indexes()
@@ -530,9 +581,8 @@ class ResultData:
 
 
 class ResultBuilder:
-    def __init__(self, mtut_file_path: str, treada_raw_output_path: str, result_path: str):
-        self.result_collector = ResultDataCollector(mtut_file_path, treada_raw_output_path)
-        self.result_collector.prepare_result_data()
+    def __init__(self,  result_collector: ResultDataCollector, result_path: str):
+        self.result_collector = result_collector
         self.results = self._extract_results()
         self.result_path = self.file_name_build(result_path)
         # Dictionary for extracted results preserving
@@ -599,6 +649,7 @@ class ResultBuilder:
 
     def _dump_dataframe_to_file(self):
         with open(self.result_path, 'a') as res_file:
+            # Save dataframe without indexes to file
             res_file.write(self.results.full_df.to_string(index=False))
 
 

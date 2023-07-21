@@ -9,7 +9,8 @@ import pandas as pd
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser, ResultDataCollector
+from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser, ResultDataCollector, \
+    col_names
 from wrapper.config.config_builder import load_config
 from wrapper.ui.plotting import AdvancedPlotter
 
@@ -134,18 +135,18 @@ class ResultDataCollectorTests(unittest.TestCase):
         self.plotter.add_special_point(ending_time, ending_current_density,
                                        label='Rough transient ending point')
         # Plot mean current densities
-        self.plotter.ax.scatter(self.rdc.mean_dataframe[self.rdc.time_col_name],
-                                self.rdc.mean_dataframe[self.rdc.current_density_col_name],
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[col_names.time],
+                                self.rdc.mean_dataframe[col_names.current_density],
                                 c='green', alpha=1, zorder=2,
                                 label='Mean current densities')
         # Highlight low nearest ending point
-        self.plotter.ax.scatter(self.rdc.mean_dataframe[self.rdc.time_col_name].loc[ending_index_low],
-                                self.rdc.mean_dataframe[self.rdc.current_density_col_name].loc[ending_index_low],
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[col_names.time].loc[ending_index_low],
+                                self.rdc.mean_dataframe[col_names.current_density].loc[ending_index_low],
                                 c='black', alpha=1, zorder=3,
                                 label='Low nearest ending point')
         # Highlight high nearest ending point
-        self.plotter.ax.scatter(self.rdc.mean_dataframe[self.rdc.time_col_name].loc[ending_index_high],
-                                self.rdc.mean_dataframe[self.rdc.current_density_col_name].loc[ending_index_high],
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[col_names.time].loc[ending_index_high],
+                                self.rdc.mean_dataframe[col_names.current_density].loc[ending_index_high],
                                 c='magenta', alpha=1, zorder=3,
                                 label='High nearest ending point')
         # Plot accurate transient ending point

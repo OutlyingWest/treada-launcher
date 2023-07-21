@@ -5,7 +5,7 @@ from colorama import Fore, Style
 
 from wrapper.core.treada_io_handler import TreadaSwitcher
 from wrapper.config.config_builder import load_config, Config
-from wrapper.core.data_management import MtutStageConfiger, ResultBuilder
+from wrapper.core.data_management import MtutStageConfiger, ResultBuilder, ResultDataCollector
 from wrapper.initializations import init_dirs
 from wrapper.states.states_management import StatesMachine, StateStatuses
 from wrapper.ui.plotting import TreadaPlotBuilder, AdvancedPlotter
@@ -47,9 +47,19 @@ def treada_run_loop(config: Config):
         treada = TreadaSwitcher(config)
         treada.light_on(config.paths.output.raw)
 
+        # Collect result
+        result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
+                                               treada_raw_output_path=config.paths.output.raw)
+        # Set transient parameters
+        result_collector.transient.set_window_size_denominator(
+            config.advanced_settings.transient.window_size_denominator
+        )
+        result_collector.transient.set_window_size(config.advanced_settings.transient.window_size)
+        # Prepare result
+        result_collector.prepare_result_data()
+
         # Save data in result file and output in console
-        result_builder = ResultBuilder(mtut_file_path=config.paths.treada_core.mtut,
-                                       treada_raw_output_path=config.paths.output.raw,
+        result_builder = ResultBuilder(result_collector,
                                        result_path=config.paths.output.result)
 
         # Creation of plot builder object
@@ -59,6 +69,8 @@ def treada_run_loop(config: Config):
         # Display advanced info
         if config.flags.plotting.advanced_info:
             plot_builder.set_advanced_info()
+        else:
+            plot_builder.set_loaded_info()
 
         # Save plot to file
         full_plot_path = result_builder.file_name_build(config.paths.output.plots, file_extension='png')

@@ -5,8 +5,6 @@ from typing import Union, Iterable, Dict, Any, List
 
 import matplotlib
 
-from wrapper.core.data_management import ResultData, col_names
-
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -23,6 +21,7 @@ def main():
     full_result_path = result_path + res_name
     # Creation of plot builder object
     plot_builder = TreadaPlotBuilder(result_path=full_result_path)
+    plot_builder.set_loaded_info()
     # Show plot
     plot_builder.plotter.show()
 
@@ -46,7 +45,7 @@ class TreadaPlotBuilder:
     """
     def __init__(self,
                  result_path: str,
-                 result_data: Union[ResultData, None] = None,
+                 result_data: Union[Any, None] = None,
                  ending_point_coords: Union[tuple, None] = None,
                  transient_time=-1.,
                  skip_rows=11):
@@ -63,8 +62,7 @@ class TreadaPlotBuilder:
         if result_data:
             self.result_data = result_data
             ending_point_coords = (result_data.transient.corrected_time, result_data.transient.corrected_density)
-            self.set_transient_ending_point(ending_point_coords, f'Transient time = '
-                                                                 f'{result_data.transient.corrected_time:.3f} ps')
+            self.set_transient_ending_point(ending_point_coords, f'Transient ending point')
 
     def set_descriptions(self):
         # Set titles
@@ -80,6 +78,10 @@ class TreadaPlotBuilder:
         self.plotter.add_special_point(time, current_density)
         self.plotter.annotate_special_point(time, current_density, annotation)
 
+    def set_loaded_info(self):
+        loaded_result = self.load_result()
+        self.plotter.set_info(loaded_result)
+
     def set_advanced_info(self):
         self.plotter.set_advanced_info(self.result_data)
 
@@ -87,6 +89,25 @@ class TreadaPlotBuilder:
     def _extract_udrm(res_path: str) -> Union[str, None]:
         udrm: re.Match = re.search('(-?\d+\.?\d*)', res_path)
         return udrm.group()
+
+    def load_result(self) -> Any:
+        file_manager = FileManager(self.result_path)
+        file_manager.load_file_head(num_lines=11)
+        print(f'{file_manager.data=}')
+        transient_time_str = file_manager.get_var('TRANSIENT_TIME')
+        transient_time = float(transient_time_str.strip(' ps'))
+        transient_data = TransientData(
+            corrected_time=transient_time
+        )
+        results = ResultData(
+            transient=transient_data,
+            udrm=file_manager.get_var('UDRM'),
+            emini=file_manager.get_var('EMINI'),
+            emaxi=file_manager.get_var('EMAXI'),
+            full_df=None,
+            mean_df=None,
+        )
+        return results
 
     @classmethod
     def save_plot(cls, plot_path: str):
@@ -161,7 +182,7 @@ class SpecialPointsMixin:
         :return:
         """
         if not annotation:
-            annotation = f'({special_x:.3f}, {special_y:.3f})'
+            annotation = f'({special_x:.5f}, {special_y:.5f})'
         plt.annotate(text=annotation,
                      xy=(special_x, special_y),
                      xytext=(10, -20),
@@ -176,7 +197,13 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
     def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
         super().__init__(x, y, plot_type)
 
-    def set_advanced_info(self, results: ResultData):
+    def set_info(self, loaded_result):
+        self.ax.scatter([], [], label=f'EMINI = {loaded_result.emini}', s=0)
+        self.ax.scatter([], [], label=f'EMAXI = {loaded_result.emaxi}', s=0)
+        self.ax.scatter([], [], label=f'Transient time = {loaded_result.transient.corrected_time:.4f} ps', s=0)
+        self.ax.legend()
+
+    def set_advanced_info(self, results):
         if results:
             # Extract data
             ending_index_low = results.transient.ending_index_low
@@ -206,6 +233,7 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
             # Plot accurate transient ending point
             self.add_special_point(corrected_time, corrected_density, color='yellow', marker='*', size=70, zorder=4,
                                    label='Accurate transient ending point')
+            self.ax.scatter([], [], label=f'Transient time = {results.transient.corrected_time:.6f} ps', s=0)
             self.ax.legend()
         else:
             raise ValueError('Results data does not set for plotting.')
@@ -222,7 +250,9 @@ if __name__ == '__main__':
     # Add path to "wrapper" directory in environ variable - PYTHONPATH
     wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     sys.path.append(wrapper_path)
+    from core.data_management import ResultData, col_names, FileManager, TransientData
     from config.config_builder import load_config
     main()
 else:
+    from wrapper.core.data_management import ResultData, col_names, FileManager, TransientData
     from wrapper.config.config_builder import load_config

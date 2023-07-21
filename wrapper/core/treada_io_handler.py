@@ -6,6 +6,7 @@ from typing import Union
 import numpy as np
 
 from wrapper.core.ending_conditions import current_value_prepare
+from wrapper.core import ending_conditions as ec
 
 
 def main():
@@ -59,9 +60,9 @@ class StdoutCapturer:
         self.running_flag = True
         # Init auto ending prerequisites
         self.auto_ending = auto_ending
-        self.ending_condition = EndingCondition(chunk_size=100,
-                                                equal_values_to_stop=10,
-                                                deviation_coef=1e-5)
+        self.ending_condition = ec.EndingCondition(chunk_size=100,
+                                                   equal_values_to_stop=5,
+                                                   deviation_coef=1e-5)
         # self.ending_condition = LineEndingCondition(precision=1e-2,
         #                                             chunk_size=100,
         #                                             big_step_multiplier=100,
@@ -70,6 +71,7 @@ class StdoutCapturer:
         #                                              chunk_size=100,
         #                                              big_step_multiplier=100,
         #                                              low_step_border=100)
+        # Can be defined by setter
         self.runtime_console_info = ''
 
     def stream_management(self, path_to_output=None):

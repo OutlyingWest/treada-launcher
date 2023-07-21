@@ -4,6 +4,7 @@ Contains features for load configuration
 import os
 import json
 from dataclasses import dataclass
+from typing import Union
 
 
 @dataclass
@@ -81,6 +82,21 @@ class Flags:
 
 
 @dataclass
+class TransientSettings:
+    """
+    """
+    window_size: int
+    window_size_denominator: Union[int, None]
+
+
+@dataclass
+class AdvancedSettings:
+    """
+    """
+    transient: TransientSettings
+
+
+@dataclass
 class Config:
     """
     Class that collects all data from config.json.
@@ -89,6 +105,7 @@ class Config:
     stages: Stages
     modes: Modes
     flags: Flags
+    advanced_settings: AdvancedSettings
 
 
 def load_config(config_name: str = None):
@@ -121,6 +138,10 @@ def load_config(config_name: str = None):
         flags=Flags(plotting=PlottingFlags(enable=config_dict['flags']['plotting']['enable'],
                                            advanced_info=config_dict['flags']['plotting']['advanced_info']),
                     auto_ending=config_dict['flags']['auto_ending'],),
+        advanced_settings=AdvancedSettings(transient=TransientSettings(
+            window_size=config_dict['advanced_settings']['transient']['window_size'],
+            window_size_denominator=config_dict['advanced_settings']['transient']['window_size_denominator'],)
+        )
     )
 
 
