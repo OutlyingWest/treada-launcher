@@ -102,7 +102,6 @@ class TreadaPlotBuilder:
     def load_result(self) -> Any:
         file_manager = FileManager(self.result_path)
         file_manager.load_file_head(num_lines=11)
-        print(f'{file_manager.data=}')
         transient_time_str = file_manager.get_var('TRANSIENT_TIME')
         transient_time = float(transient_time_str.strip(' ps'))
         transient_data = TransientData(

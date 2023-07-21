@@ -291,14 +291,20 @@ class TransientData:
             print(f'{Fore.YELLOW} window_size and window_size_denominator are not defined, window_size'
                   f' will be set to default, {self.default_window_size=}{Style.RESET_ALL}')
             self._window_size = self.default_window_size
+            print(f'{Fore.YELLOW}Push the Enter button if you want to continue anyway.{Style.RESET_ALL}')
+            input()
         elif self._window_size is None:
             print(f'{Fore.YELLOW} window_size is not defined, window_size'
                   f' will be set to default, {self.default_window_size=}{Style.RESET_ALL}')
             self._window_size = self.default_window_size
+            print(f'{Fore.YELLOW}Push the Enter button if you want to continue anyway.{Style.RESET_ALL}')
+            input()
         elif self._window_size < 10:
             print(f'{Fore.YELLOW}Too little {self._window_size=},'
                   f' window size set to {self.default_window_size=}{Style.RESET_ALL}')
             self._window_size = self.default_window_size
+            print(f'{Fore.YELLOW}Push the Enter button if you want to continue anyway.{Style.RESET_ALL}')
+            input()
         return self._window_size
 
     def set_window_size_denominator(self, window_size_denominator):
@@ -314,6 +320,8 @@ class TransientData:
                 self._window_size_denominator = 3
                 print(f'{Fore.YELLOW}Too little window_size_denominator={old_window_size_denominator},'
                       f' set to {self._window_size_denominator=}{Style.RESET_ALL}')
+                print(f'{Fore.YELLOW}Push the Enter button if you want to continue anyway.{Style.RESET_ALL}')
+                input()
         return self._window_size_denominator
 
     def get_ending_index(self) -> int:

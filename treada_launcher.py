@@ -17,7 +17,7 @@ def main():
 
     treada_run_loop(config)
 
-    print(f'To complete the program, click the {Fore.GREEN}Enter{Style.RESET_ALL} button. '
+    print(f'To complete the program, push the {Fore.GREEN}Enter{Style.RESET_ALL} button. '
           f'{Fore.YELLOW}Be careful! All interactive plots will be destroyed.{Style.RESET_ALL}')
     input()
 
