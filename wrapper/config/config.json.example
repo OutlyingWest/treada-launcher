@@ -15,7 +15,7 @@
     "flags": {
         "plotting": {
             "enable": true,
-            "advanced_info": true
+            "advanced_info": false
         },
         "auto_ending": true
     },
