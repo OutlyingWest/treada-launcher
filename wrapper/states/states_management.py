@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, List, Any
 
 from wrapper.config.config_builder import Config, load_config
 from wrapper.core.data_management import MtutManager, UdrmVectorManager
@@ -15,7 +15,8 @@ class StateStatuses:
 
 
 class State:
-    def __init__(self, value: dict):
+    def __init__(self, key: str, value: Any):
+        self.key = key
         self.value = value
         self.status: Union[int, None] = None
         self.statuses = StateStatuses
@@ -39,7 +40,7 @@ class StatesMachine:
     def __init__(self):
         self.config: Union[Config, None] = None
         # Describe State
-        self.state: Union[State, None] = None
+        self.states: Union[List[State], None] = None
         self.statuses = StateStatuses
 
     def update_state(self) -> Union[int, None]:
@@ -72,27 +73,32 @@ class StatesMachine:
         state_file_path = self.config.paths.input.current_state
         with open(state_file_path, "r") as state_file:
             state_dict = json.load(state_file)
-        self.state = State(state_dict)
+        for key, value in state_dict.items:
+            self.states.append(State(key=key, value=value))
 
     def dump_states(self):
         """
         Dumps state value to current_state.json file
         :return: None
         """
+        states_dict = {}
+        for state in self.states:
+            states_dict.update({state.key: state.value})
         state_file_path = self.config.paths.input.current_state
         with open(state_file_path, "w") as state_file:
-            json.dump(self.state.value, state_file)
+            json.dump(states_dict, state_file)
 
     def check_state_statuses(self) -> int:
-        if self.state.get_status() == self.statuses.CHANGED:
-            self.dump_states()
-            return self.state.statuses.CHANGED
-        elif self.state.get_status() == self.statuses.END:
-            state_status_end = self.statuses.END
-            self.flush_state()
-            return state_status_end
-        else:
-            print('Impossible state.')
+        for state in self.states:
+            if self.state.get_status() == self.statuses.CHANGED:
+                self.dump_states()
+                return self.state.statuses.CHANGED
+            elif self.state.get_status() == self.statuses.END:
+                state_status_end = self.statuses.END
+                self.flush_state()
+                return state_status_end
+            else:
+                print('Impossible state.')
 
     def set_udrm_vector_state(self):
         """
@@ -104,7 +110,7 @@ class StatesMachine:
         udrm_vector = UdrmVectorManager(self.config.paths.input.udrm)
         udrm_list = udrm_vector.load()
         # Get udrm vector index from current state
-        udrm_index = self.state.value['udrm_vector_index']
+        udrm_index = self.state.item['udrm_vector_index']
         udrm_max_index = udrm_vector.get_max_index()
         if udrm_index <= udrm_max_index:
             if not self.state.status:
@@ -118,7 +124,7 @@ class StatesMachine:
             mtut_manager.set_var('UDRM', new_udrm)
             mtut_manager.save_file()
             # Increment vector index
-            self.state.value['udrm_vector_index'] += 1
+            self.state.item['udrm_vector_index'] += 1
         else:
             self.state.set_status(self.statuses.END)
 
@@ -127,6 +133,6 @@ class StatesMachine:
         Set all state values in variables and file to default
         :return:
         """
-        self.state.value['udrm_vector_index'] = 0
+        self.state.item['udrm_vector_index'] = 0
         self.dump_states()
-        self.state = None
+        self.states = None
