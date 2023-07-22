@@ -25,13 +25,15 @@ class MtutStageConfiger:
     def light_off(self, light_off_setup: dict):
         self.mtut_manager.load_file()
         for key, value in light_off_setup.items():
-            self.mtut_manager.set_var(key, value)
+            if key != 'name':
+                self.mtut_manager.set_var(key, value)
         self.mtut_manager.save_file()
 
     def light_on(self, light_on_setup: dict):
         self.mtut_manager.load_file()
         for key, value in light_on_setup.items():
-            self.mtut_manager.set_var(key, value)
+            if key != 'name':
+                self.mtut_manager.set_var(key, value)
         self.mtut_manager.save_file()
 
 
@@ -589,10 +591,10 @@ class ResultData:
 
 
 class ResultBuilder:
-    def __init__(self,  result_collector: ResultDataCollector, result_path: str):
+    def __init__(self,  result_collector: ResultDataCollector, result_path: str, stage='light'):
         self.result_collector = result_collector
         self.results = self._extract_results()
-        self.result_path = self.file_name_build(result_path)
+        self.result_path = self.file_name_build(result_path, stage=stage)
         # Dictionary for extracted results preserving
         self.save_data()
 
@@ -607,8 +609,8 @@ class ResultBuilder:
         )
         return results
 
-    def file_name_build(self, result_path: str, file_extension='txt'):
-        return f'{result_path.split(".")[0]}u({self.results.udrm}).{file_extension}'
+    def file_name_build(self, result_path: str, stage: str, file_extension='txt'):
+        return f'{result_path.split(".")[0]}u({self.results.udrm})_{stage}.{file_extension}'
 
     def save_data(self):
         header = self._header_build()

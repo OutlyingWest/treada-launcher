@@ -6,7 +6,7 @@ from wrapper.config.config_builder import Config, load_config
 from wrapper.core.data_management import MtutManager, UdrmVectorManager
 
 
-@dataclass
+@dataclass(frozen=True)
 class StateStatuses:
     ERROR = -1
     CHANGED = 2
@@ -55,22 +55,16 @@ class StatesMachine:
         # Check is at least one of modes enabled
         self.config = load_config('config.json')
         if any(value for value in self.config.modes.__dict__.values() if value):
-            self.load_state()
-            self.set_state()
-            if self.state.get_status() == self.statuses.CHANGED:
-                self.dump_state()
-                return self.state.statuses.CHANGED
-            elif self.state.get_status() == self.statuses.END:
-                state_status_end = self.statuses.END
-                self.flush_state()
-                return state_status_end
-            else:
-                print('Impossible state.')
+            self.load_states()
+            if self.config.modes.udrm_vector_mode:
+                self.set_udrm_vector_state()
+
+            return self.check_state_statuses()
         else:
             print('Full manual mode enabled.')
             return self.statuses.MANUAL
 
-    def load_state(self):
+    def load_states(self):
         """
         Loads state from file
         :return: None
@@ -80,7 +74,7 @@ class StatesMachine:
             state_dict = json.load(state_file)
         self.state = State(state_dict)
 
-    def dump_state(self):
+    def dump_states(self):
         """
         Dumps state value to current_state.json file
         :return: None
@@ -89,35 +83,44 @@ class StatesMachine:
         with open(state_file_path, "w") as state_file:
             json.dump(self.state.value, state_file)
 
-    def set_state(self):
+    def check_state_statuses(self) -> int:
+        if self.state.get_status() == self.statuses.CHANGED:
+            self.dump_states()
+            return self.state.statuses.CHANGED
+        elif self.state.get_status() == self.statuses.END:
+            state_status_end = self.statuses.END
+            self.flush_state()
+            return state_status_end
+        else:
+            print('Impossible state.')
+
+    def set_udrm_vector_state(self):
         """
-        Set state requirements to MTUT file if they have set in current_state.json
+        Set UDRM to MTUT file if they have set in current_state.json
         and set state status code.
         :return: None
         """
-        # Mode conditions for treada runtime should be checked here
-        if self.config.modes.udrm_vector_mode:
-            # Create vector object, which govern operations with UDRM vector from the file UDRM.txt
-            udrm_vector = UdrmVectorManager(self.config.paths.input.udrm)
-            udrm_list = udrm_vector.load()
-            # Get udrm vector index from current state
-            udrm_index = self.state.value['udrm_vector_index']
-            udrm_max_index = udrm_vector.get_max_index()
-            if udrm_index <= udrm_max_index:
-                if not self.state.status:
-                    print('UDRM vector mode activated.')
-                self.state.set_status(self.statuses.CHANGED)
-                new_udrm = str(udrm_list[udrm_index])
-                # Create the mtut_manager, which loads a mtut file
-                mtut_manager = MtutManager(self.config.paths.treada_core.mtut)
-                mtut_manager.load_file()
-                # Set and save UDRM to MTUT file
-                mtut_manager.set_var('UDRM', new_udrm)
-                mtut_manager.save_file()
-                # Increment vector index
-                self.state.value['udrm_vector_index'] += 1
-            else:
-                self.state.set_status(self.statuses.END)
+        # Create vector object, which govern operations with UDRM vector from the file UDRM.txt
+        udrm_vector = UdrmVectorManager(self.config.paths.input.udrm)
+        udrm_list = udrm_vector.load()
+        # Get udrm vector index from current state
+        udrm_index = self.state.value['udrm_vector_index']
+        udrm_max_index = udrm_vector.get_max_index()
+        if udrm_index <= udrm_max_index:
+            if not self.state.status:
+                print('UDRM vector mode activated.')
+            self.state.set_status(self.statuses.CHANGED)
+            new_udrm = str(udrm_list[udrm_index])
+            # Create the mtut_manager, which loads a mtut file
+            mtut_manager = MtutManager(self.config.paths.treada_core.mtut)
+            mtut_manager.load_file()
+            # Set and save UDRM to MTUT file
+            mtut_manager.set_var('UDRM', new_udrm)
+            mtut_manager.save_file()
+            # Increment vector index
+            self.state.value['udrm_vector_index'] += 1
+        else:
+            self.state.set_status(self.statuses.END)
 
     def flush_state(self):
         """
@@ -125,5 +128,5 @@ class StatesMachine:
         :return:
         """
         self.state.value['udrm_vector_index'] = 0
-        self.dump_state()
+        self.dump_states()
         self.state = None

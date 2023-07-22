@@ -32,9 +32,9 @@ class TreadaSwitcher:
         self.capturer.set_runtime_console_info('   Dark')
         self.capturer.stream_management()
 
-    def light_on(self, output_file_path: str):
+    def light_on(self, light_output_file_path: str):
         self.capturer.set_runtime_console_info('   Light')
-        self.capturer.stream_management(path_to_output=output_file_path)
+        self.capturer.stream_management(path_to_output=light_output_file_path)
 
     @staticmethod
     def exe_runner(exe_path: str) -> subprocess.Popen:
