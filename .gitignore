@@ -18,3 +18,5 @@ wrapper/config/config.json
 # Ignore states machine service file
 wrapper/states/current_state.json
 
+# Ignore other txt files
+wrapper/misc/*.txt
