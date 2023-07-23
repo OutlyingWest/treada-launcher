@@ -28,9 +28,12 @@ class TreadaSwitcher:
                                        auto_ending=config.flags.auto_ending,
                                        ending_condition_params=None)
 
-    def light_off(self):
+    def light_off(self, dark_output_file_path=''):
         self.capturer.set_runtime_console_info('   Dark')
-        self.capturer.stream_management()
+        if dark_output_file_path:
+            self.capturer.stream_management(path_to_output=dark_output_file_path)
+        else:
+            self.capturer.stream_management()
 
     def light_on(self, light_output_file_path: str):
         self.capturer.set_runtime_console_info('   Light')
@@ -60,8 +63,8 @@ class StdoutCapturer:
         self.running_flag = True
         # Init auto ending prerequisites
         self.auto_ending = auto_ending
-        self.ending_condition = ec.EndingCondition(chunk_size=100,
-                                                   equal_values_to_stop=5,
+        self.ending_condition = ec.EndingCondition(chunk_size=5000,
+                                                   equal_values_to_stop=10,
                                                    deviation_coef=1e-5)
         # self.ending_condition = LineEndingCondition(precision=1e-2,
         #                                             chunk_size=100,

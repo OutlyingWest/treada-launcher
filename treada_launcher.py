@@ -40,57 +40,59 @@ def treada_run_loop(config: Config):
         # Stage 1 - without light
         mtut_stage_configer.light_off(config.stages.light_off)
         treada = TreadaSwitcher(config)
-        treada.light_off()
+        if config.flags.dark_result_saving:
+            treada.light_off(config.paths.output.raw)
+            # Collect data and build result
+            result_build(config, stage_name=config.stages.names.light_off)
+        else:
+            treada.light_off()
 
         # Stage 2 - with light
         mtut_stage_configer.light_on(config.stages.light_on)
         treada = TreadaSwitcher(config)
         treada.light_on(config.paths.output.raw)
-
-        # Collect result
-        result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
-                                               treada_raw_output_path=config.paths.output.raw)
-        # Set transient parameters
-        result_collector.transient.set_window_size_denominator(
-            config.advanced_settings.transient.window_size_denominator
-        )
-        result_collector.transient.set_window_size(config.advanced_settings.transient.window_size)
-        # Prepare result
-        result_collector.prepare_result_data()
-
-        # Save data in result file and output in console
-        result_builder = ResultBuilder(result_collector,
-                                       result_path=config.paths.output.result,
-                                       stage='light')
-
-        # Creation of plot builder object
-        plot_builder = TreadaPlotBuilder(result_path=result_builder.result_path,
-                                         result_data=result_builder.results)
-
-        # Display advanced info
-        if config.flags.plotting.advanced_info:
-            plot_builder.set_advanced_info()
-        else:
-            plot_builder.set_loaded_info()
-
-        # Save plot to file
-        full_plot_path = result_builder.file_name_build(result_path=config.paths.output.plots,
-                                                        stage='light',
-                                                        file_extension='png')
-        plot_builder.save_plot(full_plot_path)
+        # Collect data and build result
+        result_build(config, stage_name=config.stages.names.light_on)
 
     # Show plot
     if config.flags.plotting.enable:
         AdvancedPlotter.show(block=False)
 
 
-def wait_interrupt():
-    try:
-        while True:
-            time.sleep(0.5)
-            pass
-    except KeyboardInterrupt:
-        pass
+def result_build(config: Config, stage_name: str):
+    # Collect result
+    result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
+                                           treada_raw_output_path=config.paths.output.raw)
+    # Set transient parameters
+    result_collector.transient.set_window_size_denominator(
+        config.advanced_settings.transient.window_size_denominator
+    )
+    result_collector.transient.set_window_size(config.advanced_settings.transient.window_size)
+    # Prepare result
+    result_collector.prepare_result_data()
+
+    # Save data in result file and output in console
+    result_builder = ResultBuilder(result_collector,
+                                   result_path=config.paths.output.result,
+                                   stage=stage_name)
+
+    # Creation of plot builder object
+    plot_builder = TreadaPlotBuilder(result_path=result_builder.result_path,
+                                     stage=stage_name,
+                                     result_data=result_builder.results,
+                                     skip_rows=result_builder.header_length)
+
+    # Display advanced info
+    if config.flags.plotting.advanced_info:
+        plot_builder.set_advanced_info()
+    else:
+        plot_builder.set_loaded_info()
+
+    # Save plot to file
+    full_plot_path = result_builder.file_name_build(result_path=config.paths.output.plots,
+                                                    stage=stage_name,
+                                                    file_extension='png')
+    plot_builder.save_plot(full_plot_path)
 
 
 if __name__ == '__main__':

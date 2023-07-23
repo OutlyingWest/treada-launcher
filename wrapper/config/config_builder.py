@@ -8,12 +8,19 @@ from typing import Union
 
 
 @dataclass
+class StageNames:
+    light_on: str
+    light_off: str
+
+
+@dataclass
 class Stages:
     """
     Info about switching rules for "Treada" work stages.
     """
     light_off: dict
     light_on: dict
+    names: StageNames
 
 
 # Paths section
@@ -79,6 +86,7 @@ class Flags:
     """
     plotting: PlottingFlags
     auto_ending: bool
+    dark_result_saving: bool
 
 
 @dataclass
@@ -133,11 +141,15 @@ def load_config(config_name: str = None):
             ),
         ),
         stages=Stages(light_off=config_dict['stages']['light_off'],
-                      light_on=config_dict['stages']['light_on'],),
+                      light_on=config_dict['stages']['light_on'],
+                      names=StageNames(light_off=config_dict['stages']['names']['light_off'],
+                                       light_on=config_dict['stages']['names']['light_on'],)
+                      ),
         modes=Modes(udrm_vector_mode=config_dict['modes']['UDRM_vector_mode'],),
         flags=Flags(plotting=PlottingFlags(enable=config_dict['flags']['plotting']['enable'],
                                            advanced_info=config_dict['flags']['plotting']['advanced_info']),
-                    auto_ending=config_dict['flags']['auto_ending'],),
+                    auto_ending=config_dict['flags']['auto_ending'],
+                    dark_result_saving=config_dict['flags']['dark_result_saving'],),
         advanced_settings=AdvancedSettings(transient=TransientSettings(
             window_size=config_dict['advanced_settings']['transient']['window_size'],
             window_size_denominator=config_dict['advanced_settings']['transient']['window_size_denominator'],)

@@ -281,6 +281,7 @@ class TransientData:
         self.ending_index_low: Union[int, None] = kwargs.get('ending_index_low')
         self.ending_index_high: Union[int, None] = kwargs.get('ending_index_high')
         self.current_density: Union[float, None] = kwargs.get('current_density')
+        self.last_mean_current_density: Union[float, None] = kwargs.get('last_mean_current_density')
         self.time: Union[float, None] = kwargs.get('time')
         self.corrected_time: Union[float, None] = kwargs.get('corrected_time')
         self.corrected_density: Union[float, None] = kwargs.get('corrected_density')
@@ -388,14 +389,22 @@ class ResultDataCollector:
         self.transient = TransientData()
         self.result_dataframe = None
 
+        # Additional result
+        self.last_mean_time = None
+        self.last_mean_current_density = None
+
     def prepare_result_data(self):
         self.time_col_calculate()
         self.current_density_col_calculate()
         self.transient.time = self.find_transient_time()
         self.result_dataframe = self.dataframe[[col_names.time, col_names.current_density]]
-        ending_index = self.transient.get_ending_index()
-        # self.transient.current_density = self.result_dataframe[col_names.current_density].iloc[ending_index]
+        self.transient.get_ending_index()
         self.correct_transient_time(window_size=self.transient.window_size)
+
+        self.last_mean_time, self.last_mean_current_density = (
+            self.mean_dataframe[[col_names.time, col_names.current_density]].tail(50).mean()
+        )
+
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
@@ -515,15 +524,7 @@ class ResultDataCollector:
         ending_density = self.transient.get_current_density()
         # Get transient ending border data
         ending_center_index = self.transient.get_ending_index()
-        ending_center_density = self.transient.current_density
-        # ending_center_density = self.mean_dataframe[col_names.current_density].loc[ending_center_index]
 
-        # ending_prev_time = (
-        #     self.mean_dataframe[col_names.time].loc[ending_center_index - window_size]
-        # )
-        # ending_prev_index = (
-        #     self.mean_dataframe.loc[ending_prev_time == self.mean_dataframe[col_names.time]].index.values[0]
-        # )
         ending_next_time = (
             self.mean_dataframe[col_names.time].loc[ending_center_index + window_size]
         )
@@ -533,14 +534,6 @@ class ResultDataCollector:
 
         self.transient.ending_index_low = ending_center_index
         self.transient.ending_index_high = ending_next_index
-
-        # Check is border low or high
-        # if ending_center_density <= ending_density:
-        #     self.transient.ending_index_low = ending_center_index
-        #     self.transient.ending_index_high = ending_next_index
-        # elif ending_center_density > ending_density:
-        #     self.transient.ending_index_low = ending_prev_index
-        #     self.transient.ending_index_high = ending_center_index
 
         # Get borders' times and densities
         ending_index_low, ending_index_high = self.transient.get_ending_indexes()
@@ -595,8 +588,9 @@ class ResultBuilder:
         self.result_collector = result_collector
         self.results = self._extract_results()
         self.result_path = self.file_name_build(result_path, stage=stage)
-        # Dictionary for extracted results preserving
-        self.save_data()
+        header = self._header_build()
+        self.header_length = len(header)
+        self.save_data(header)
 
     def _extract_results(self) -> ResultData:
         results = ResultData(
@@ -612,13 +606,12 @@ class ResultBuilder:
     def file_name_build(self, result_path: str, stage: str, file_extension='txt'):
         return f'{result_path.split(".")[0]}u({self.results.udrm})_{stage}.{file_extension}'
 
-    def save_data(self):
-        header = self._header_build()
-        self._header_print(header)
+    def save_data(self, header) -> int:
         # Create output dir if it does not exist
         create_dir(self.result_path)
         self._header_dump_to_file(header)
         self._dump_dataframe_to_file()
+        return len(header)
 
     def _header_build(self):
 
@@ -640,8 +633,12 @@ class ResultBuilder:
             'Maximum Edge of Illumination Bandwidth:',
             f'EMAXI = {self.results.emaxi} eV',
             '',
-            'Transient time:',
+            'Transient process:',
             f'TRANSIENT_TIME = {self.results.transient.corrected_time} ps',
+            f'TRANSIENT_CURRENT_DENSITY = {self.results.transient.corrected_density} mA/cm^2',
+            '',
+            f'LAST_MEAN_TIME = {self.result_collector.last_mean_time} ps',
+            f'LAST_MEAN_DENSITY = {self.result_collector.last_mean_current_density} mA/cm^2',
             '',
             '',
         ]

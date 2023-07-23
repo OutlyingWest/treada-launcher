@@ -36,11 +36,12 @@ def lines_intersection(coefficients_1: list, coefficients_2: list) -> tuple:
     return x, y
 
 
-def extend_line(x_coords: list, y_coords: list) -> Tuple[list, list]:
+def extend_line(x_coords: list, y_coords: list, line_length=None) -> Tuple[list, list]:
     x1, x2 = x_coords
     y1, y2 = y_coords
     k, b_coef = line_coefficients([x1, y1], [x2, y2])
-    line_length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    if line_length is None:
+        line_length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
     x_plus = x2 + line_length
     y_plus = k * x_plus + b_coef
     x_minus = x1 - line_length
@@ -98,7 +99,7 @@ if __name__ == '__main__':
     # Settings
     ax.legend()
     ax.grid(True)
-    ax.set_aspect('equal')
+    # ax.set_aspect('equal')
     plt.xlim(-5, 5)
     plt.ylim(-5, 5)
 
