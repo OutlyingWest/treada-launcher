@@ -16,14 +16,16 @@ arg_dict = {
     '-l': light_result_regex,
 }
 
+numeric_var_regex = r'(-?\d+\.\d+[eE]?-?\d+)'
+
 var_names_dict = {
     # 'UDRM',
     # 'EMINI',
     # 'EMAXI',
-    # 'TRANSIENT_TIME',
-    # 'TRANSIENT_CURRENT_DENSITY',
-    'LAST_MEAN_TIME': r'(-?\d+\.\d+[eE]?-?\d+)',
-    'LAST_MEAN_DENSITY': r'(-?\d+\.\d+[eE]?-?\d+)',
+    'TRANSIENT_TIME': numeric_var_regex,
+    'TRANSIENT_CURRENT_DENSITY': numeric_var_regex,
+    'LAST_MEAN_TIME': numeric_var_regex,
+    'LAST_MEAN_DENSITY': numeric_var_regex,
 }
 
 
