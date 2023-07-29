@@ -216,7 +216,7 @@ class TreadaOutputParser:
     def clean_data(self, data_list: list):
         start_time = time.time()
         # Get pure source current list
-        keep_line_regex_func = self.keep_line_regex
+        keep_line_regex_func = self.keep_currents_line_regex
         pure_data_lines = [line.split(' ', 1)[0] for line in data_list if keep_line_regex_func(line)]
 
         end_time = time.time()
@@ -246,10 +246,18 @@ class TreadaOutputParser:
         return relative_time
 
     @staticmethod
-    def keep_line_regex(string: str):
+    def keep_currents_line_regex(string: str) -> bool:
         numeric_data_pattern = r"[-+]?\d+\.\d+[eE][-+]?\d+\s+\d+\."
         match = re.match(numeric_data_pattern, string)
         if match:
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def temporary_results_line_found(string: str) -> bool:
+        substring_index = string.find('TIME STEPS WERE MADE WITH STEP LENGTH HT')
+        if substring_index != -1:
             return True
         else:
             return False

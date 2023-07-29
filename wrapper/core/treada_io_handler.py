@@ -7,7 +7,7 @@ import numpy as np
 
 from wrapper.core.ending_conditions import current_value_prepare
 from wrapper.core import ending_conditions as ec
-
+from wrapper.core.data_management import TreadaOutputParser
 
 def main():
     path_to_executable = sys.argv[1]
@@ -56,7 +56,10 @@ class TreadaSwitcher:
 
 
 class StdoutCapturer:
-    def __init__(self, process: subprocess.Popen, ending_condition_params, auto_ending=False):
+    def __init__(self, process: subprocess.Popen,
+                 ending_condition_params,
+                 auto_ending=False,
+                 preserve_temporary=False):
         # Running of the executable file
         self.process = process
         # Shut down shortcut configure
@@ -74,6 +77,11 @@ class StdoutCapturer:
         #                                              chunk_size=100,
         #                                              big_step_multiplier=100,
         #                                              low_step_border=100)
+
+        # Preserve temporary Treada's files flag
+        self.preserve_temporary = preserve_temporary
+        self.temporary_dumping_begins = False
+
         # Can be defined by setter
         self.runtime_console_info = ''
 
@@ -129,6 +137,8 @@ class StdoutCapturer:
                             # if current_value and self.ending_condition.check(str_counter, current_value):
                             if current_value and self.ending_condition.check(current_value):
                                 self.running_flag = False
+                        if self.preserve_temporary:
+                            self.preserve_temporary_results(output_string=clean_decoded_output)
                         # Write *.exe output to file
                         if output_file:
                             output_file.write(clean_decoded_output)
@@ -150,6 +160,22 @@ class StdoutCapturer:
 
     def set_runtime_console_info(self, info: str):
         self.runtime_console_info = info
+
+    def preserve_temporary_results(self, output_string: str):
+        """
+        Preserve Treada's temporary files that are generated and rewritten
+        on runtime to "result/temporary" directory.
+        :return:
+        """
+        # Find the beginning line of temporary results dumping info
+        if (TreadaOutputParser.temporary_results_line_found(output_string) and
+           not self.temporary_dumping_begins):
+            self.temporary_dumping_begins = True
+        if self.temporary_dumping_begins:
+            # Check is dumping has ended
+            if TreadaOutputParser.keep_currents_line_regex(output_string):
+                self.temporary_dumping_begins = False
+                # TODO: add save temporaries to file logic
 
 
 class EndingCondition:
