@@ -15,7 +15,7 @@ def main():
         from config.config_builder import load_config
 
         config = load_config('config.json')
-        result_path = os.path.split(config.paths.output.result)[0] + os.sep
+        result_path = os.path.split(config.paths.result.main)[0] + os.sep
         print(f'{result_path=}')
     except ModuleNotFoundError:
         print('Finding of input file by full path...')

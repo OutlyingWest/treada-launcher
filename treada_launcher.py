@@ -1,19 +1,17 @@
-import time
-
 import colorama
 from colorama import Fore, Style
 
 from wrapper.core.treada_io_handler import TreadaSwitcher
 from wrapper.config.config_builder import load_config, Config
 from wrapper.core.data_management import MtutStageConfiger, ResultBuilder, ResultDataCollector
-from wrapper.initializations import init_dirs
+from wrapper.misc.initializations import init_dirs
 from wrapper.states.states_management import StatesMachine, StateStatuses
 from wrapper.ui.plotting import TreadaPlotBuilder, AdvancedPlotter
 
 
 def main():
     config = load_config('config.json')
-    init_dirs(paths=config.paths)
+    # init_dirs(paths=config.paths)
 
     treada_run_loop(config)
 
@@ -41,7 +39,7 @@ def treada_run_loop(config: Config):
         mtut_stage_configer.light_off(config.stages.light_off)
         treada = TreadaSwitcher(config)
         if config.flags.dark_result_saving:
-            treada.light_off(config.paths.output.raw)
+            treada.light_off(config.paths.result.temporary.raw)
             # Collect data and build result
             result_build(config, stage_name=config.stages.names.light_off)
         else:
@@ -50,7 +48,7 @@ def treada_run_loop(config: Config):
         # Stage 2 - with light
         mtut_stage_configer.light_on(config.stages.light_on)
         treada = TreadaSwitcher(config)
-        treada.light_on(config.paths.output.raw)
+        treada.light_on(config.paths.result.temporary.raw)
         # Collect data and build result
         result_build(config, stage_name=config.stages.names.light_on)
 
@@ -62,7 +60,7 @@ def treada_run_loop(config: Config):
 def result_build(config: Config, stage_name: str):
     # Collect result
     result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
-                                           treada_raw_output_path=config.paths.output.raw)
+                                           treada_raw_output_path=config.paths.result.temporary.raw)
     # Set transient parameters
     result_collector.transient.set_window_size_denominator(
         config.advanced_settings.transient.window_size_denominator
@@ -73,7 +71,7 @@ def result_build(config: Config, stage_name: str):
 
     # Save data in result file and output in console
     result_builder = ResultBuilder(result_collector,
-                                   result_path=config.paths.output.result,
+                                   result_path=config.paths.result.main,
                                    stage=stage_name)
 
     # Creation of plot builder object
@@ -89,7 +87,7 @@ def result_build(config: Config, stage_name: str):
         plot_builder.set_loaded_info()
 
     # Save plot to file
-    full_plot_path = result_builder.file_name_build(result_path=config.paths.output.plots,
+    full_plot_path = result_builder.file_name_build(result_path=config.paths.result.plots,
                                                     stage=stage_name,
                                                     file_extension='png')
     plot_builder.save_plot(full_plot_path)

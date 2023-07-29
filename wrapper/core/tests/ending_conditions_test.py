@@ -125,7 +125,7 @@ class MeansEndingConditionTests(unittest.TestCase):
         # self.Y = -600 / np.exp(self.X/60) + 600
 
         # -- Real --
-        result_path = os.path.split(self.config.paths.output.result)[0] + os.sep + 'res_u(-7.0).txt'
+        result_path = os.path.split(self.config.paths.result.main)[0] + os.sep + 'res_u(-7.0).txt'
         # Load result data from file
         self.result_df = pd.read_csv(result_path, skiprows=11, header=0, sep='\s+')
         # Extract result data

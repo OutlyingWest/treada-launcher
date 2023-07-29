@@ -35,7 +35,7 @@ def main():
 
     # Set result path
     config = load_config('config.json')
-    result_path = os.path.split(config.paths.output.result)[0] + os.sep
+    result_path = os.path.split(config.paths.result.main)[0] + os.sep
 
     # Get list of selected result names
     res_list = get_result_names(result_regex,

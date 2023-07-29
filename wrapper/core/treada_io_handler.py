@@ -161,10 +161,9 @@ class StdoutCapturer:
     def set_runtime_console_info(self, info: str):
         self.runtime_console_info = info
 
-    def preserve_temporary_results(self, output_string: str):
+    def preserve_distributions(self, output_string: str):
         """
-        Preserve Treada's temporary files that are generated and rewritten
-        on runtime to "result/temporary" directory.
+        Preserve distributions of several values that contain in Treada's temporary files.
         :return:
         """
         # Find the beginning line of temporary results dumping info
@@ -176,6 +175,14 @@ class StdoutCapturer:
             if TreadaOutputParser.keep_currents_line_regex(output_string):
                 self.temporary_dumping_begins = False
                 # TODO: add save temporaries to file logic
+
+    def copy_temporary_files(self):
+        """
+        Preserve Treada's temporary files that are generated and rewritten
+        on runtime to "result/temporary/distributions" directory.
+        :return:
+        """
+        pass
 
 
 class EndingCondition:

@@ -43,13 +43,22 @@ class InputPaths:
 
 
 @dataclass
-class OutputPaths:
+class TemporaryResultFilePaths:
+    """
+    Paths to text result data of treada_launcher program.
+    """
+    raw: str
+    distributions: str
+
+
+@dataclass
+class ResultPaths:
     """
     Paths to output of treada_launcher program.
     """
-    raw: str
-    result: str
+    main: str
     plots: str
+    temporary: TemporaryResultFilePaths
 
 
 @dataclass
@@ -59,7 +68,7 @@ class Paths:
     """
     treada_core: TreadaCorePaths
     input: InputPaths
-    output: OutputPaths
+    result: ResultPaths
 
 
 @dataclass
@@ -134,10 +143,13 @@ def load_config(config_name: str = None):
                 udrm=project_path + config_dict['paths']['input']['udrm'],
                 current_state=project_path + config_dict['paths']['input']['state'],
             ),
-            output=OutputPaths(
-                raw=project_path + config_dict['paths']['output']['raw'],
-                result=project_path + config_dict['paths']['output']['results'],
-                plots=project_path + config_dict['paths']['output']['plots'],
+            result=ResultPaths(
+                main=project_path + config_dict['paths']['result']['main'],
+                plots=project_path + config_dict['paths']['result']['plots'],
+                temporary=TemporaryResultFilePaths(
+                    raw=project_path + config_dict['paths']['result']['temporary']['raw'],
+                    distributions=project_path + config_dict['paths']['result']['temporary']['distributions'],
+                ),
             ),
         ),
         stages=Stages(light_off=config_dict['stages']['light_off'],

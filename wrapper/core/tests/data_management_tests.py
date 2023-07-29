@@ -48,7 +48,7 @@ class TreadaOutputParserTests(unittest.TestCase):
         self.config = load_config('config.json')
         self.mtut = FileManager(self.config.paths.treada_core.mtut)
         self.mtut.load_file()
-        self.parser = TreadaOutputParser(self.config.paths.output.raw)
+        self.parser = TreadaOutputParser(self.config.paths.result.temporary.raw)
 
     # def test_prepare_data_speed(self):
     #     prepare_data_time = timeit.repeat('parser.prepare_data()',
@@ -71,7 +71,7 @@ class TreadaOutputParserTests(unittest.TestCase):
     def test_clean_data_speed(self):
         clean_data_time = timeit.repeat('prepared_dataframe = parser.clean_data(data_list)',
                                           setup=f"from wrapper.core.data_management import TreadaOutputParser;"
-                                                f"parser = TreadaOutputParser(fr'{self.config.paths.output.raw}');"
+                                                f"parser = TreadaOutputParser(fr'{self.config.paths.result.temporary.raw}');"
                                                 f"raw_output_path = parser.raw_output_path;"
                                                 f"data_list = parser.load_raw_file(raw_output_path);"
                                                 f"",
@@ -85,7 +85,7 @@ class TreadaOutputParserTests(unittest.TestCase):
 class ResultDataCollectorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
-        self.rdc = ResultDataCollector(self.config.paths.treada_core.mtut, self.config.paths.output.raw)
+        self.rdc = ResultDataCollector(self.config.paths.treada_core.mtut, self.config.paths.result.temporary.raw)
         self.rdc.prepare_result_data()
         # self.df = self.rdc.get_result_dataframe()
 
