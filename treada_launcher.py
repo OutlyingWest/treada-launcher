@@ -11,8 +11,7 @@ from wrapper.ui.plotting import TreadaPlotBuilder, AdvancedPlotter
 
 def main():
     config = load_config('config.json')
-    # init_dirs(paths=config.paths)
-
+    init_dirs(paths=config.paths)
     treada_run_loop(config)
 
     print(f'To complete the program, push the {Fore.GREEN}Enter{Style.RESET_ALL} button. '

@@ -1,4 +1,5 @@
 import os
+from dataclasses import is_dataclass
 from typing import List
 
 
@@ -31,3 +32,21 @@ def create_dirs(dirs: List[list]):
     """
     for directory, with_file in dirs:
         create_dir(directory, with_file)
+
+
+def get_from_nested_dataclass(dclass) -> dict:
+    """
+    Goes through nested dataclass recursively.
+    Returns items from the deepest layers of nested branches.
+    :param dclass: dataclass object
+    :return: dictionary with items from the deepest layers of nested dataclass
+    """
+    items_dict = {}
+    if is_dataclass(dclass):
+        for key, value in dclass.__dict__.items():
+            if is_dataclass(value):
+                nested_items = get_from_nested_dataclass(value)
+                items_dict.update(nested_items)
+            else:
+                items_dict[key] = value
+    return items_dict
