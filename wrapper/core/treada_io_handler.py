@@ -2,12 +2,16 @@ import os
 import sys
 import subprocess
 import time
+import shutil
 from typing import Union
+
 import numpy as np
 
+from wrapper.config.config_builder import Config
 from wrapper.core.ending_conditions import current_value_prepare
 from wrapper.core import ending_conditions as ec
 from wrapper.core.data_management import TreadaOutputParser
+
 
 def main():
     path_to_executable = sys.argv[1]
@@ -25,7 +29,7 @@ class TreadaSwitcher:
     def __init__(self, config):
         self.exec_process = self.exe_runner(exe_path=config.paths.treada_core.exe)
         self.capturer = StdoutCapturer(process=self.exec_process,
-                                       auto_ending=config.flags.auto_ending,
+                                       config=config,
                                        ending_condition_params=None)
 
     def light_off(self, dark_output_file_path=''):
@@ -58,14 +62,15 @@ class TreadaSwitcher:
 class StdoutCapturer:
     def __init__(self, process: subprocess.Popen,
                  ending_condition_params,
-                 auto_ending=False,
-                 preserve_temporary=False):
+                 config: Config,
+                 preserve_temporary_distributions=False):
         # Running of the executable file
         self.process = process
-        # Shut down shortcut configure
+        # io_loop vars
         self.running_flag = True
+        self.str_counter = 0
         # Init auto ending prerequisites
-        self.auto_ending = auto_ending
+        self.auto_ending = config.flags.auto_ending
         self.ending_condition = ec.EndingCondition(chunk_size=5000,
                                                    equal_values_to_stop=10,
                                                    deviation_coef=1e-5)
@@ -79,8 +84,11 @@ class StdoutCapturer:
         #                                              low_step_border=100)
 
         # Preserve temporary Treada's files flag
-        self.preserve_temporary = preserve_temporary
+        self.preserve_temporary_distributions = preserve_temporary_distributions = True
         self.temporary_dumping_begins = False
+        self.distribution_filenames = config.distribution_filenames
+        self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
+        self.distribution_destination_path = config.paths.result.temporary.distributions
 
         # Can be defined by setter
         self.runtime_console_info = ''
@@ -110,7 +118,6 @@ class StdoutCapturer:
 
     def __io_loop(self, output_file=None):
 
-        str_counter = 0
         if len(sys.argv) > 2:
             num_of_str = int(sys.argv[2])
         else:
@@ -119,7 +126,7 @@ class StdoutCapturer:
         start_time = time.time()
         while self.running_flag:
             try:
-                if num_of_str and num_of_str <= str_counter:
+                if num_of_str and num_of_str <= self.str_counter:
                     break
                 # Get line from process object
                 treada_output: bytes = self.process.stdout.readline()
@@ -134,11 +141,11 @@ class StdoutCapturer:
                             current_value = (
                                 current_value_prepare(currents_string=clean_decoded_output)
                             )
-                            # if current_value and self.ending_condition.check(str_counter, current_value):
+                            # if current_value and self.ending_condition.check(self.str_counter, current_value):
                             if current_value and self.ending_condition.check(current_value):
                                 self.running_flag = False
-                        if self.preserve_temporary:
-                            self.preserve_temporary_results(output_string=clean_decoded_output)
+                        if self.preserve_temporary_distributions:
+                            self.preserve_distributions(output_string=clean_decoded_output)
                         # Write *.exe output to file
                         if output_file:
                             output_file.write(clean_decoded_output)
@@ -146,13 +153,13 @@ class StdoutCapturer:
                         decoded_output = treada_output
                     # Copy *.exe output to its own stdout
                     print(decoded_output.rstrip() + self.runtime_console_info)
-                    str_counter += 1
+                    self.str_counter += 1
             except KeyboardInterrupt:
                 self.running_flag = False
 
         end_time = time.time()
         execution_time = end_time - start_time
-        print('Number of strings:', str_counter)
+        print('Number of strings:', self.str_counter)
         print(f'Execution time in I/O loop:{execution_time:.2f}s')
 
     async def keyboard_catch(self):
@@ -174,15 +181,24 @@ class StdoutCapturer:
             # Check is dumping has ended
             if TreadaOutputParser.keep_currents_line_regex(output_string):
                 self.temporary_dumping_begins = False
-                # TODO: add save temporaries to file logic
+                self.copy_distribution_files()
 
-    def copy_temporary_files(self):
+    def copy_distribution_files(self):
         """
         Preserve Treada's temporary files that are generated and rewritten
         on runtime to "result/temporary/distributions" directory.
         :return:
         """
-        pass
+        extracted_distributions_dir_path = os.path.join(self.distribution_destination_path, str(self.str_counter), '')
+        print(f'{extracted_distributions_dir_path=}')
+        create_dir(extracted_distributions_dir_path)
+        for dist_file_name in self.distribution_filenames:
+            dist_initial_file_path = os.path.join(self.distribution_initial_path, dist_file_name)
+            dist_destination_file_path = os.path.join(extracted_distributions_dir_path, dist_file_name)
+            shutil.copy(dist_initial_file_path, dist_destination_file_path)
+
+
+
 
 
 class EndingCondition:

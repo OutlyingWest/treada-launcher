@@ -123,6 +123,7 @@ class Config:
     modes: Modes
     flags: Flags
     advanced_settings: AdvancedSettings
+    distribution_filenames: list
 
 
 def load_config(config_name: str = None):
@@ -165,7 +166,8 @@ def load_config(config_name: str = None):
         advanced_settings=AdvancedSettings(transient=TransientSettings(
             window_size=config_dict['advanced_settings']['transient']['window_size'],
             window_size_denominator=config_dict['advanced_settings']['transient']['window_size_denominator'],)
-        )
+        ),
+        distribution_filenames=config_dict['distribution_filenames']
     )
 
 
