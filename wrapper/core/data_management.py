@@ -175,7 +175,7 @@ class DataFrameColNames:
 
 
 col_names = DataFrameColNames(
-    time='time(ns)',
+    time='time(ps)',
     source_current='TSRS (mA)',
     current_density='I(mA/cm^2)',
     mean_density='mean_density',
