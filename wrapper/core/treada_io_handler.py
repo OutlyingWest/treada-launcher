@@ -89,6 +89,7 @@ class StdoutCapturer:
         self.distribution_filenames = config.distribution_filenames
         self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
         self.distribution_destination_path = config.paths.result.temporary.distributions
+        self.currents_str_counter = 0
 
         # Can be defined by setter
         self.runtime_console_info = ''
@@ -182,6 +183,9 @@ class StdoutCapturer:
             if TreadaOutputParser.keep_currents_line_regex(output_string):
                 self.temporary_dumping_begins = False
                 self.copy_distribution_files()
+        # Pure current lines' indexes counting
+        if TreadaOutputParser.keep_currents_line_regex(output_string):
+            self.currents_str_counter += 1
 
     def copy_distribution_files(self):
         """
@@ -189,15 +193,15 @@ class StdoutCapturer:
         on runtime to "result/temporary/distributions" directory.
         :return:
         """
-        extracted_distributions_dir_path = os.path.join(self.distribution_destination_path, str(self.str_counter), '')
+        extracted_distributions_dir_path = os.path.join(
+            self.distribution_destination_path, str(self.currents_str_counter), ''
+        )
         print(f'{extracted_distributions_dir_path=}')
         create_dir(extracted_distributions_dir_path)
         for dist_file_name in self.distribution_filenames:
             dist_initial_file_path = os.path.join(self.distribution_initial_path, dist_file_name)
             dist_destination_file_path = os.path.join(extracted_distributions_dir_path, dist_file_name)
             shutil.copy(dist_initial_file_path, dist_destination_file_path)
-
-
 
 
 
