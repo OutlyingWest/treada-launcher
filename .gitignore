@@ -20,3 +20,6 @@ wrapper/states/current_state.json
 
 # Ignore other txt files
 wrapper/misc/*.txt
+
+# Ignore subtasks data-collection scripts
+wrapper/misc/collections/
