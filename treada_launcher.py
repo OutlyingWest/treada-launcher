@@ -59,7 +59,7 @@ def treada_run_loop(config: Config):
 def result_build(config: Config, stage_name: str):
     # Collect result
     result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
-                                           treada_raw_output_path=config.paths.result.temporary.raw)
+                                           result_paths=config.paths.result)
     # Set transient parameters
     result_collector.transient.set_window_size_denominator(
         config.advanced_settings.transient.window_size_denominator
@@ -70,11 +70,12 @@ def result_build(config: Config, stage_name: str):
 
     # Save data in result file and output in console
     result_builder = ResultBuilder(result_collector,
-                                   result_path=config.paths.result.main,
+                                   result_paths=config.paths.result,
                                    stage=stage_name)
 
     # Creation of plot builder object
     plot_builder = TreadaPlotBuilder(result_path=result_builder.result_path,
+                                     dist_path=config.paths.result.temporary.distributions,
                                      stage=stage_name,
                                      result_data=result_builder.results,
                                      skip_rows=result_builder.header_length)

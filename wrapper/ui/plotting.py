@@ -61,12 +61,14 @@ class TreadaPlotBuilder:
     """
     def __init__(self,
                  result_path: str,
+                 dist_path: str,
                  stage='light',
                  result_data: Union[Any, None] = None,
                  ending_point_coords: Union[tuple, None] = None,
                  transient_time=-1.,
                  skip_rows=15):
         self.result_path = result_path
+        self.dist_path = dist_path
         # Load result data from file
         self.result_full_df = pd.read_csv(result_path, skiprows=skip_rows, header=0, sep='\s+')
         # Extract result data
@@ -99,9 +101,21 @@ class TreadaPlotBuilder:
     def set_loaded_info(self):
         loaded_result = self.load_result()
         self.plotter.set_info(loaded_result)
+        # Temporary
+        # Set distributions info if it exists
+        if self.result_data.ww_data_indexes:
+            ww_points_df = self.result_full_df.loc[self.result_data.ww_data_indexes]
+            self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
+                                                dist_densities=ww_points_df[col_names.current_density])
 
     def set_advanced_info(self):
         self.plotter.set_advanced_info(self.result_data)
+        # Set distributions info if it exists
+        if self.result_data.ww_data_indexes:
+            ww_points_df = self.result_full_df.loc[self.result_data.ww_data_indexes]
+            self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
+                                                dist_densities=ww_points_df[col_names.current_density])
+
 
     @staticmethod
     def _extract_udrm(res_path: str) -> Union[str, None]:
@@ -123,6 +137,7 @@ class TreadaPlotBuilder:
             emaxi=file_manager.get_var('EMAXI'),
             full_df=None,
             mean_df=None,
+            ww_data_indexes=None,
         )
         return results
 
@@ -173,7 +188,7 @@ class SpecialPointsMixin:
     Allows to draw and annotate special points on plots.
     """
     @staticmethod
-    def add_special_point(special_x, special_y, color='red', marker='o', size=30, zorder=2, **kwargs):
+    def add_special_point(special_x, special_y, color='red', marker='o', size=30, zorder=5, **kwargs):
         """
         Creates a special point on a plot.
 
@@ -281,6 +296,13 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
             self.ax.legend()
         else:
             raise ValueError('Results data does not set for plotting.')
+
+    def set_distributions_info(self, dist_times: Iterable, dist_densities: Iterable):
+        self.ax.scatter(dist_times,
+                        dist_densities,
+                        c='magenta', alpha=1, zorder=3,
+                        label='WW measures points')
+        self.ax.legend()
 
     @classmethod
     def show(cls, block=True):

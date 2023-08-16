@@ -1,3 +1,4 @@
+import shutil
 import warnings
 from dataclasses import dataclass
 import os
@@ -9,6 +10,8 @@ from colorama import Fore, Style
 
 import numpy as np
 import pandas as pd
+
+from wrapper.config.config_builder import Paths, ResultPaths
 
 try:
     from wrapper.misc.global_functions import create_dir
@@ -385,10 +388,10 @@ class TransientData:
 
 
 class ResultDataCollector:
-    def __init__(self, mtut_file_path, treada_raw_output_path):
+    def __init__(self, mtut_file_path, result_paths: ResultPaths):
         self.mtut_manager = MtutManager(mtut_file_path)
         self.mtut_manager.load_file()
-        self.treada_parser = TreadaOutputParser(treada_raw_output_path)
+        self.treada_parser = TreadaOutputParser(result_paths.temporary.raw)
         # Set dataframe col names
         self.dataframe = self.treada_parser.get_prepared_dataframe()
         # Create dataframe which contains mean current densities and its dependencies
@@ -400,6 +403,9 @@ class ResultDataCollector:
         # Additional result
         self.last_mean_time = None
         self.last_mean_current_density = None
+        # Distributios
+        self.dist_result_path = result_paths.temporary.distributions
+        self.ww_data_indexes = []
 
     def prepare_result_data(self):
         self.time_col_calculate()
@@ -412,7 +418,7 @@ class ResultDataCollector:
         self.last_mean_time, self.last_mean_current_density = (
             self.mean_dataframe[[col_names.time, col_names.current_density]].tail(50).mean()
         )
-
+        self.ww_data_indexes = self.set_distributions_indexes()
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
@@ -580,6 +586,12 @@ class ResultDataCollector:
         else:
             raise ValueError('mean_dataframe does not calculated yet. Call prepare_result_data() firstly.')
 
+    def set_distributions_indexes(self):
+        ww_data_indexes_iter = map(int, os.listdir(self.dist_result_path))
+        ww_data_indexes: list = sorted(ww_data_indexes_iter)
+        actual_ww_data_indexes = [index for index in ww_data_indexes if index < self.dataframe.index[-1]]
+        return actual_ww_data_indexes
+
 
 @dataclass
 class ResultData:
@@ -589,13 +601,14 @@ class ResultData:
     emaxi: str
     full_df: pd.DataFrame
     mean_df: pd.DataFrame
+    ww_data_indexes: list
 
 
 class ResultBuilder:
-    def __init__(self,  result_collector: ResultDataCollector, result_path: str, stage='light'):
+    def __init__(self,  result_collector: ResultDataCollector, result_paths: ResultPaths, stage='light'):
         self.result_collector = result_collector
         self.results = self._extract_results()
-        self.result_path = self.file_name_build(result_path, stage=stage)
+        self.result_path = self.file_name_build(result_paths.main, stage=stage)
         header = self._header_build()
         self.header_length = len(header)
         self.save_data(header)
@@ -608,6 +621,7 @@ class ResultBuilder:
             emaxi=self.result_collector.mtut_manager.get_var('EMAXI'),
             full_df=self.result_collector.get_result_dataframe(),
             mean_df=self.result_collector.mean_dataframe,
+            ww_data_indexes=self.result_collector.ww_data_indexes,
         )
         return results
 
