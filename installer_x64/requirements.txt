@@ -1,2 +1,3 @@
 pandas==2.0.2
 matplotlib==3.7.1
+dacite==1.8.1
