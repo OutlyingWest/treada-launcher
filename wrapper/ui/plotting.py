@@ -61,7 +61,7 @@ class TreadaPlotBuilder:
     """
     def __init__(self,
                  result_path: str,
-                 dist_path: str,
+                 dist_path: Union[str, None] = None,
                  stage='light',
                  result_data: Union[Any, None] = None,
                  ending_point_coords: Union[tuple, None] = None,
@@ -78,6 +78,7 @@ class TreadaPlotBuilder:
         self.plotter = AdvancedPlotter(time_column, current_density_column)
         # Construct plot
         self.set_descriptions(stage)
+        self.result_data = None
         if result_data:
             self.result_data = result_data
             ending_point_coords = (result_data.transient.corrected_time, result_data.transient.corrected_density)
@@ -91,19 +92,24 @@ class TreadaPlotBuilder:
         self.plotter.set_plot_title(plot_title)
         self.plotter.set_window_title(window_title)
         # Set axes labels
-        self.plotter.set_plot_axes_labels(x_label='time (ps)', y_label='I (mA/cm^2)')
+        self.plotter.set_plot_axes_labels(x_label='time (ps)', y_label='I (mA/cm²)')
 
-    def set_transient_ending_point(self, coords: tuple, annotation: str):
+    def set_transient_ending_point(self, coords: tuple, annotation: str, xytext=(10, -20)):
         time, current_density = coords
         self.plotter.add_special_point(time, current_density)
-        self.plotter.annotate_special_point(time, current_density, annotation)
+        self.plotter.annotate_special_point(time, current_density, annotation, xytext=xytext)
 
     def set_loaded_info(self):
         loaded_result = self.load_result()
         self.plotter.set_info(loaded_result)
+        # Plot accurate transient ending point
+        corrected_time = loaded_result.transient.corrected_time
+        corrected_density = loaded_result.transient.corrected_density
+        self.set_transient_ending_point((corrected_time, corrected_density),
+                                        annotation=f'Transient ending point')
         # Temporary
         # Set distributions info if it exists
-        if self.result_data.ww_data_indexes:
+        if self.result_data and self.result_data.ww_data_indexes:
             ww_points_df = self.result_full_df.loc[self.result_data.ww_data_indexes]
             self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
                                                 dist_densities=ww_points_df[col_names.current_density])
@@ -116,7 +122,6 @@ class TreadaPlotBuilder:
             self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
                                                 dist_densities=ww_points_df[col_names.current_density])
 
-
     @staticmethod
     def _extract_udrm(res_path: str) -> Union[str, None]:
         udrm: re.Match = re.search('(-?\d+\.?\d*)', res_path)
@@ -124,11 +129,14 @@ class TreadaPlotBuilder:
 
     def load_result(self) -> Any:
         file_manager = FileManager(self.result_path)
-        file_manager.load_file_head(num_lines=11)
+        file_manager.load_file_head(num_lines=15)
         transient_time_str = file_manager.get_var('TRANSIENT_TIME')
         transient_time = float(transient_time_str.strip(' ps'))
+        transient_density_str = file_manager.get_var('TRANSIENT_CURRENT_DENSITY')
+        transient_density = float(transient_density_str.rstrip(' mA/cm^2'))
         transient_data = TransientData(
-            corrected_time=transient_time
+            corrected_time=transient_time,
+            corrected_density=transient_density,
         )
         results = ResultData(
             transient=transient_data,
@@ -204,20 +212,21 @@ class SpecialPointsMixin:
         return special_x, special_y
 
     @staticmethod
-    def annotate_special_point(special_x, special_y, annotation=''):
+    def annotate_special_point(special_x, special_y, annotation='', xytext=(10, -20)):
         """
         Annotate special point.
 
         :param special_x: Special point x coordinate.
         :param special_y: Special point y coordinate.
         :param annotation: Point annotation.
+        :param xytext: Annotation text coords.
         :return:
         """
         if not annotation:
             annotation = f'({special_x:.5f}, {special_y:.5f})'
         plt.annotate(text=annotation,
                      xy=(special_x, special_y),
-                     xytext=(10, -20),
+                     xytext=xytext,
                      textcoords='offset points',
                      arrowprops=dict(arrowstyle='->', color='black'))
 
