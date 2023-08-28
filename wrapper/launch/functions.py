@@ -1,6 +1,32 @@
 from wrapper.config.config_builder import Config
-from wrapper.core.data_management import ResultDataCollector, ResultBuilder
+from wrapper.core.data_management import ResultDataCollector, ResultBuilder, MtutStageConfiger
 from wrapper.ui.plotting import TreadaPlotBuilder
+from wrapper.launch.scenarios import scenarios
+
+
+def call_active_scenario(mtut_stage_configer: MtutStageConfiger, config: Config):
+    all_scenario_module_names = dir(scenarios)
+    scenario_function_names = [name for name in all_scenario_module_names if callable(getattr(scenarios, name))]
+
+    active_scenario_function = None
+    for attr_name in all_scenario_module_names:
+        scenario_attr = getattr(scenarios, attr_name)
+        if callable(scenario_attr):
+            if attr_name.endswith('_scenario') and attr_name == config.scenario.active_name:
+                active_scenario_function = scenario_attr
+                break
+    if active_scenario_function:
+        active_scenario_function(mtut_stage_configer, config)
+    else:
+        raise AttributeError(f'active scenario function with name: "{config.scenario.active_name}" not found')
+
+
+
+    active_scenario_function_name = None
+    for scenario_function_name in scenario_function_names:
+        if scenario_function_name.endswith('_scenario') and scenario_function_name == config.scenario.active_name:
+            active_scenario_function = scenario_function_name
+
 
 
 def result_build(config: Config, stage_name: str):

@@ -2,7 +2,8 @@ import colorama
 from colorama import Fore, Style
 
 from wrapper.config.config_builder import load_config, Config
-from wrapper.launch import scenarios
+from wrapper import launch
+from wrapper.launch.scenarios import scenarios
 from wrapper.misc.initializations import init_dirs
 from wrapper.core.treada_io_handler import TreadaSwitcher
 from wrapper.core.data_management import MtutStageConfiger, ResultBuilder, ResultDataCollector
@@ -35,8 +36,7 @@ def treada_running_loop(config: Config):
         elif state_status == state_statuses.MANUAL:
             running_flag = False
 
-        # scenarios.dark_to_light(mtut_stage_configer, config)
-        scenarios.dark_light_dark(mtut_stage_configer, config)
+        launch.functions.call_active_scenario(mtut_stage_configer, config)
 
     # Show plot
     if config.flags.plotting.enable:

@@ -32,15 +32,15 @@ class TreadaSwitcher:
                                        config=config,
                                        ending_condition_params=None)
 
-    def light_off(self, dark_output_file_path=''):
-        self.capturer.set_runtime_console_info('   Dark')
+    def light_off(self, dark_output_file_path='', stage_name='Dark'):
+        self.capturer.set_runtime_console_info(f'   {stage_name}')
         if dark_output_file_path:
             self.capturer.stream_management(path_to_output=dark_output_file_path)
         else:
             self.capturer.stream_management()
 
-    def light_on(self, light_output_file_path: str):
-        self.capturer.set_runtime_console_info('   Light')
+    def light_on(self, light_output_file_path: str, stage_name='Light'):
+        self.capturer.set_runtime_console_info(f'   {stage_name}')
         self.capturer.stream_management(path_to_output=light_output_file_path)
 
     @staticmethod
@@ -202,7 +202,6 @@ class StdoutCapturer:
             dist_initial_file_path = os.path.join(self.distribution_initial_path, dist_file_name)
             dist_destination_file_path = os.path.join(extracted_distributions_dir_path, dist_file_name)
             shutil.copy(dist_initial_file_path, dist_destination_file_path)
-
 
 
 class EndingCondition:

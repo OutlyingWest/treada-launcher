@@ -8,6 +8,8 @@ from typing import Union
 
 from dacite import from_dict
 
+from wrapper.config.config_builder import Config
+
 
 @dataclass
 class Stage:
@@ -50,25 +52,21 @@ class DarkLightDarkScenario:
     stages: DarkLightDarkStages
 
 
-def load_scenario(scenarios_path: str, scenario_file_name: str) -> dataclass:
+def load_scenario(scenarios_path: str,
+                  scenario_file_name: str,
+                  scenario_dataclass: dataclass) -> Union[DarkToLightScenario,
+                                                          DarkLightDarkScenario]:
     """
     Returns scenario dataclass
     :param scenarios_path: path to scenarios folder
-    :param scenario_file_name: name of scenario file includes extension
+    :param scenario_file_name: name of scenario file excludes extension
+    :param scenario_dataclass: dataclass for scenario
     :return: scenario dataclass
     """
-    allowed_scenarios = {
-        'dark_to_light_scenario.json': DarkToLightScenario,
-        'dark_light_dark_scenario.json': DarkLightDarkScenario,
-    }
-    full_scenario_path = os.path.join(scenarios_path, scenario_file_name)
+    full_scenario_path = os.path.join(scenarios_path, f'{scenario_file_name}.json')
 
     with open(full_scenario_path, "r") as scenario_file:
         scenario_dict = json.load(scenario_file)
 
-    scenario = from_dict(data_class=allowed_scenarios[scenario_file_name], data=scenario_dict)
+    scenario = from_dict(data_class=scenario_dataclass, data=scenario_dict)
     return scenario
-
-
-
-
