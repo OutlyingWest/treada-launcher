@@ -1,0 +1,18 @@
+{
+    "stages": {
+        "dark": {
+            "name": "Dark",
+            "mtut_vars": {
+                "CKLKRS": "1.",
+                "ILUMEN": "0"
+            }
+        },
+        "light": {
+            "name": "Light",
+            "mtut_vars": {
+                "CKLKRS": "2.",
+                "ILUMEN": "1"
+            }
+        }
+    }
+}

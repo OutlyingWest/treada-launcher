@@ -70,7 +70,7 @@ class StatesMachine:
         Loads state from file
         :return: None
         """
-        state_file_path = self.config.paths.input.current_state
+        state_file_path = self.config.paths.input.state
         with open(state_file_path, "r") as state_file:
             state_dict = json.load(state_file)
         self.state = State(state_dict)
@@ -80,7 +80,7 @@ class StatesMachine:
         Dumps state value to current_state.json file
         :return: None
         """
-        state_file_path = self.config.paths.input.current_state
+        state_file_path = self.config.paths.input.state
         with open(state_file_path, "w") as state_file:
             json.dump(self.state.value, state_file)
 

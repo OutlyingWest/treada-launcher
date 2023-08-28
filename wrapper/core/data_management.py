@@ -205,7 +205,7 @@ class TreadaOutputParser:
         # Load raw treada output file
         data_list = self.load_raw_file(self.raw_output_path)
         # Set relative time
-        rel_time = self.set_relative_time(data_list)
+        rel_time = self.find_relative_time(data_list)
         # Create prepared dataframe with source currents
         prepared_dataframe = self.clean_data(data_list)
         return rel_time, prepared_dataframe
@@ -233,7 +233,7 @@ class TreadaOutputParser:
         return pure_df
 
     @staticmethod
-    def set_relative_time(data_list: list):
+    def find_relative_time(data_list: list):
         relative_time = None
         relatives_found = False
         line_cnt = 0
@@ -245,7 +245,7 @@ class TreadaOutputParser:
                 break
             line_cnt += 1
             if line_cnt > 500:
-                raise ValueError('Error: RELATIVE TIME is not found.')
+                raise ValueError('Error: RELATIVE TIME not found. Maybe EN language not enabled in MTUT file')
         return relative_time
 
     @staticmethod
