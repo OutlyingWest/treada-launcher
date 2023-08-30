@@ -63,10 +63,10 @@ class StdoutCapturer:
     def __init__(self, process: subprocess.Popen,
                  ending_condition_params,
                  config: Config,
-                 preserve_temporary_distributions=False):
+                 is_preserve_temp_distributions=False):
         # Running of the executable file
         self.process = process
-        # io_loop vars
+        # io_loop variables:
         self.running_flag = True
         self.str_counter = 0
         # Init auto ending prerequisites
@@ -83,11 +83,9 @@ class StdoutCapturer:
         #                                              big_step_multiplier=100,
         #                                              low_step_border=100)
 
+        # Distributions variables:
         # Preserve temporary Treada's files flag
-        if config.flags.preserve_distributions:
-            self.is_preserve_temp_distributions = True
-        else:
-            self.is_preserve_temp_distributions = False
+        self.is_preserve_temp_distributions = config.flags.preserve_distributions
         self.temporary_dumping_begins = False
         self.distribution_filenames = config.distribution_filenames
         self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
@@ -96,6 +94,11 @@ class StdoutCapturer:
 
         # Can be defined by setter
         self.runtime_console_info = ''
+
+        # Relative units variables:
+        self.is_find_relative_time = config.flags.runtime_find_relative_time
+        self.relatives_found = False
+        self.relative_time: Union[None, float] = None
 
     def stream_management(self, path_to_output=None):
         """
@@ -150,6 +153,16 @@ class StdoutCapturer:
                                 self.running_flag = False
                         if self.is_preserve_temp_distributions:
                             self.preserve_distributions(output_string=clean_decoded_output)
+                        if self.is_find_relative_time:
+                            if not self.relative_time:
+                                self.relative_time = self.runtime_find_relative_time(output_string=clean_decoded_output)
+                            if self.relative_time:
+                                pass
+                        # Pure current lines' indexes counting
+                        if self.is_preserve_temp_distributions or self.is_find_relative_time:
+                            if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
+                                self.currents_str_counter += 1  # increment must be after all additional loop conditions
+
                         # Write *.exe output to file
                         if output_file:
                             output_file.write(clean_decoded_output)
@@ -186,9 +199,6 @@ class StdoutCapturer:
             if TreadaOutputParser.keep_currents_line_regex(output_string):
                 self.temporary_dumping_begins = False
                 self.copy_distribution_files()
-        # Pure current lines' indexes counting
-        if TreadaOutputParser.keep_currents_line_regex(output_string):
-            self.currents_str_counter += 1
 
     def copy_distribution_files(self):
         """
@@ -205,6 +215,18 @@ class StdoutCapturer:
             dist_initial_file_path = os.path.join(self.distribution_initial_path, dist_file_name)
             dist_destination_file_path = os.path.join(extracted_distributions_dir_path, dist_file_name)
             shutil.copy(dist_initial_file_path, dist_destination_file_path)
+
+    def runtime_find_relative_time(self, output_string: str) -> Union[float, None]:
+        relative_time = None
+        if output_string.startswith('RELATIVE UNITES:'):
+            self.relatives_found = True
+        if self.relatives_found and output_string.startswith('TIME:'):
+            relative_time = float((output_string.split(' ')[2]))
+            print(f'{relative_time=}')
+            # input()
+        if self.str_counter > 500:
+            raise ValueError('Error: RELATIVE TIME not found on runtime. Maybe EN language not enabled in MTUT file')
+        return relative_time
 
 
 class EndingCondition:

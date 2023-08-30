@@ -105,6 +105,7 @@ class Flags:
     auto_ending: bool
     dark_result_saving: bool
     preserve_distributions: bool
+    runtime_find_relative_time: bool
 
 
 @dataclass
