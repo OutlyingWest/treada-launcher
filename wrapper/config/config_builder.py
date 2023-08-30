@@ -104,6 +104,7 @@ class Flags:
     plotting: PlottingFlags
     auto_ending: bool
     dark_result_saving: bool
+    preserve_distributions: bool
 
 
 @dataclass

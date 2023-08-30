@@ -84,7 +84,10 @@ class StdoutCapturer:
         #                                              low_step_border=100)
 
         # Preserve temporary Treada's files flag
-        self.preserve_temporary_distributions = preserve_temporary_distributions = True
+        if config.flags.preserve_distributions:
+            self.is_preserve_temp_distributions = True
+        else:
+            self.is_preserve_temp_distributions = False
         self.temporary_dumping_begins = False
         self.distribution_filenames = config.distribution_filenames
         self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
@@ -145,7 +148,7 @@ class StdoutCapturer:
                             # if current_value and self.ending_condition.check(self.str_counter, current_value):
                             if current_value and self.ending_condition.check(current_value):
                                 self.running_flag = False
-                        if self.preserve_temporary_distributions:
+                        if self.is_preserve_temp_distributions:
                             self.preserve_distributions(output_string=clean_decoded_output)
                         # Write *.exe output to file
                         if output_file:

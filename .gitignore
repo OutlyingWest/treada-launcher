@@ -8,6 +8,7 @@ TreadaTx_C/**
 !wrapper/core/treada_io_handler.py
 
 data/
+!data/input/scenarios
 
 # Ignore installer files
 installer_x64/*.log
