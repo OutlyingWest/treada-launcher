@@ -52,7 +52,7 @@ class EndingCondition:
             print(f'{difference=}')
             print(f'{2*deviation=}')
             return True
-        elif np.amax(np.abs(vector)) < 1e-11:
+        elif np.amax(np.abs(vector)) < 10e-11:
             print('Stopped by null condition.')
             return True
         else:

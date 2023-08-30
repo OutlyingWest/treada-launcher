@@ -10,20 +10,68 @@ from dacite import from_dict
 
 
 @dataclass
-class StageNames:
-    light_on: str
-    light_off: str
+class Scenario:
+    active_name: str
 
 
 @dataclass
-class Stages:
+class Modes:
     """
-    Info about switching rules for "Treada" work stages.
+    Keeps data about runtime modes of treada_launcher program.
     """
-    light_off: dict
-    light_on: dict
-    names: StageNames
+    udrm_vector_mode: bool
 
+
+@dataclass
+class PlottingFlags:
+    """
+    Keeps flags that set rules for plotting.
+    """
+    enable: bool
+    advanced_info: bool
+
+
+@dataclass
+class Flags:
+    """
+    Class that collects all flags.
+    """
+    plotting: PlottingFlags
+    auto_ending: bool
+    dark_result_saving: bool
+    preserve_distributions: bool
+
+
+@dataclass
+class LightImpulse:
+    """
+    """
+    consider_fixed_time: bool
+    fixed_time_ps: float
+
+
+@dataclass
+class RuntimeSettings:
+    """
+    """
+    find_relative_time: bool
+    light_impulse: LightImpulse
+
+
+@dataclass
+class TransientSettings:
+    """
+    """
+    window_size: int
+    window_size_denominator: Union[int, None]
+
+
+@dataclass
+class AdvancedSettings:
+    """
+    """
+    runtime: RuntimeSettings
+    transient: TransientSettings
 
 # Paths section
 @dataclass
@@ -75,60 +123,10 @@ class Paths:
 
 
 @dataclass
-class Scenario:
-    active_name: str
-
-
-@dataclass
-class Modes:
-    """
-    Keeps data about runtime modes of treada_launcher program.
-    """
-    udrm_vector_mode: bool
-
-
-@dataclass
-class PlottingFlags:
-    """
-    Keeps flags that set rules for plotting.
-    """
-    enable: bool
-    advanced_info: bool
-
-
-@dataclass
-class Flags:
-    """
-    Class that collects all flags.
-    """
-    plotting: PlottingFlags
-    auto_ending: bool
-    dark_result_saving: bool
-    preserve_distributions: bool
-    runtime_find_relative_time: bool
-
-
-@dataclass
-class TransientSettings:
-    """
-    """
-    window_size: int
-    window_size_denominator: Union[int, None]
-
-
-@dataclass
-class AdvancedSettings:
-    """
-    """
-    transient: TransientSettings
-
-
-@dataclass
 class Config:
     """
     Class that collects all data from config.json.
     """
-    stages: Stages
     scenario: Scenario
     modes: Modes
     flags: Flags

@@ -10,7 +10,7 @@ import numpy as np
 from wrapper.config.config_builder import Config
 from wrapper.core.ending_conditions import current_value_prepare
 from wrapper.core import ending_conditions as ec
-from wrapper.core.data_management import TreadaOutputParser
+from wrapper.core.data_management import TreadaOutputParser, MtutManager
 
 
 def main():
@@ -71,8 +71,8 @@ class StdoutCapturer:
         self.str_counter = 0
         # Init auto ending prerequisites
         self.auto_ending = config.flags.auto_ending
-        self.ending_condition = ec.EndingCondition(chunk_size=5000,
-                                                   equal_values_to_stop=10,
+        self.ending_condition = ec.EndingCondition(chunk_size=500,
+                                                   equal_values_to_stop=5,
                                                    deviation_coef=1e-5)
         # self.ending_condition = LineEndingCondition(precision=1e-2,
         #                                             chunk_size=100,
@@ -95,10 +95,20 @@ class StdoutCapturer:
         # Can be defined by setter
         self.runtime_console_info = ''
 
-        # Relative units variables:
-        self.is_find_relative_time = config.flags.runtime_find_relative_time
+        # Relative time variables:
+        self.is_find_relative_time = config.advanced_settings.runtime.find_relative_time
         self.relatives_found = False
         self.relative_time: Union[None, float] = None
+
+        # transient time calculation variables:
+        self.is_consider_fixed_light_time = config.advanced_settings.runtime.light_impulse.consider_fixed_time
+        if self.is_consider_fixed_light_time:
+            mtut_vars: dict = self.load_current_mtut_vars(config.paths.treada_core.mtut)
+            self.operating_time_step = mtut_vars['TSTEP']
+            self.ilumen = mtut_vars['ILUMEN']
+            self.timestep_constant: Union[None, float] = None
+            self.light_impulse_time_ps = config.advanced_settings.runtime.light_impulse.fixed_time_ps
+        self.light_impulse_time_condition = False
 
     def stream_management(self, path_to_output=None):
         """
@@ -157,7 +167,13 @@ class StdoutCapturer:
                             if not self.relative_time:
                                 self.relative_time = self.runtime_find_relative_time(output_string=clean_decoded_output)
                             if self.relative_time:
-                                pass
+                                # Check fixed light impulse time condition
+                                if self.is_consider_fixed_light_time:
+                                    transient_time = self.get_current_transient_time(self.relative_time)
+                                    if self.check_light_impulse_time_condition(transient_time,
+                                                                               self.light_impulse_time_ps,
+                                                                               self.ilumen):
+                                        self.running_flag = False
                         # Pure current lines' indexes counting
                         if self.is_preserve_temp_distributions or self.is_find_relative_time:
                             if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
@@ -227,6 +243,40 @@ class StdoutCapturer:
         if self.str_counter > 500:
             raise ValueError('Error: RELATIVE TIME not found on runtime. Maybe EN language not enabled in MTUT file')
         return relative_time
+
+    @staticmethod
+    def load_current_mtut_vars(mtut_file_path: str) -> dict:
+        # Get operating time step from MTUT file
+        mtut_manager = MtutManager(mtut_file_path)
+        mtut_manager.load_file()
+        mtut_vars = {
+            'TSTEP': float(mtut_manager.get_var('TSTEP')),
+            'ILUMEN': float(mtut_manager.get_var('ILUMEN')),
+        }
+        return mtut_vars
+
+    @staticmethod
+    def find_timestep_constant(operating_time_step: float, relative_time: float) -> float:
+        # Calculate timestep constant
+        time_step_const = operating_time_step * relative_time
+        return time_step_const
+
+    def get_current_transient_time(self, relative_time: float) -> Union[float, None]:
+        current_transient_time = None
+        if not self.timestep_constant:
+            self.timestep_constant = self.find_timestep_constant(self.operating_time_step, relative_time)
+        if self.timestep_constant:
+            current_transient_time = self.currents_str_counter * self.timestep_constant
+        return current_transient_time
+
+    def check_light_impulse_time_condition(self, current_transient_time: float,
+                                           light_impulse_time: float,
+                                           ilumen: float):
+        if current_transient_time > light_impulse_time and ilumen:
+            return True
+        elif not self.running_flag and ilumen:
+            self.running_flag = True
+            return False
 
 
 class EndingCondition:
