@@ -21,14 +21,6 @@ def call_active_scenario(mtut_stage_configer: MtutStageConfiger, config: Config)
         raise AttributeError(f'active scenario function with name: "{config.scenario.active_name}" not found')
 
 
-
-    active_scenario_function_name = None
-    for scenario_function_name in scenario_function_names:
-        if scenario_function_name.endswith('_scenario') and scenario_function_name == config.scenario.active_name:
-            active_scenario_function = scenario_function_name
-
-
-
 def result_build(config: Config, stage_name: str):
     # Collect result
     result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
