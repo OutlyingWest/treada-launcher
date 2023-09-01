@@ -52,10 +52,28 @@ class DarkLightDarkScenario:
     stages: DarkLightDarkStages
 
 
+########################################################
+# Turn-on diode in the dark scenario description classes
+########################################################
+@dataclass
+class TurnOnImpulseDarkStages:
+    turn_off_impulse: Stage
+    turn_on_impulse: Stage
+
+
+@dataclass
+class TurnOnImpulseDarkScenario:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
+    stages: TurnOnImpulseDarkStages
+
+
 def load_scenario(scenarios_path: str,
                   scenario_file_name: str,
                   scenario_dataclass: dataclass) -> Union[DarkToLightScenario,
-                                                          DarkLightDarkScenario]:
+                                                          DarkLightDarkScenario,
+                                                          TurnOnImpulseDarkScenario]:
     """
     Returns scenario dataclass
     :param scenarios_path: path to scenarios folder
