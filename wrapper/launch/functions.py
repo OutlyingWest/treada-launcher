@@ -59,8 +59,6 @@ def result_build(config: Config, stage_name: str):
     result_collector.transient.set_criteria_calculating_df_slice(
         config.advanced_settings.transient.criteria_calculating_df_slice
     )
-    print(f'{result_collector.transient.get_criteria_calculating_df_slice()=}')
-    input()
     # Prepare result
     result_collector.prepare_result_data()
 

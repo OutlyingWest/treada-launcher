@@ -442,13 +442,34 @@ class ResultDataCollector:
         # print(transient_time)
 
     def time_col_calculate(self):
+        # Get initial time step from MTUT file
+        initial_time_step = float(self.mtut_manager.get_var('TSTEPH'))
+        # Number of Time Seps Before the Change Initial/Operating Time Step.
+        initial_steps_number = int(self.mtut_manager.get_var('NMBPZ0'))
         # Get operating time step from MTUT file
         operating_time_step = float(self.mtut_manager.get_var('TSTEP'))
         # Get relative time from treada raw output file
         relative_time = self.treada_parser.get_relative_time()
-        # Calculate timestep constant
-        time_step_const = operating_time_step * relative_time
-        self.dataframe[col_names.time] = self.dataframe.index.values * time_step_const
+        # Calculate timestep constants
+        initial_time_step_const = initial_time_step * relative_time
+        operating_time_step_const = operating_time_step * relative_time
+        self.dataframe.loc[
+            self.dataframe.index.values < initial_steps_number,
+            col_names.time
+        ] = self.dataframe.index.values[:initial_steps_number] * initial_time_step_const
+        self.dataframe.loc[
+            self.dataframe.index.values >= initial_steps_number,
+            col_names.time
+        ] = self.dataframe.index.values[initial_steps_number:] * operating_time_step_const
+        # self.dataframe[col_names.time] = self.dataframe.index.values * operating_time_step_const
+
+        pd.set_option('display.max_rows', None)
+        print(self.dataframe)
+        print(f'{initial_time_step=}')
+        print(f'{operating_time_step=}')
+        print(f'{initial_time_step_const=}')
+        print(f'{operating_time_step_const=}')
+        input()
 
     def get_mean_current_density_seria(self, window_size_denominator: Union[None, int]) -> pd.Series:
         dataframe_length = self.dataframe.shape[0]
@@ -461,7 +482,7 @@ class ResultDataCollector:
             .rolling(window=self.transient.window_size, step=self.transient.window_size, center=True)
             .mean()
         )
-        print(f'{self.transient.window_size=}')
+        print(f'transient.window_size={self.transient.window_size}')
         return mean_densities
 
     def current_density_col_calculate(self):
@@ -502,11 +523,6 @@ class ResultDataCollector:
         max_density = dropped_mean_dataframe[col_names.current_density].max()
         min_density = dropped_mean_dataframe[col_names.current_density].min()
         ending_difference = 0.01*(max_density - min_density)
-        print(dropped_mean_dataframe)
-        print()
-        print(self.mean_dataframe)
-        print(f'{max_density=}, {min_density=}')
-        input()
         # Get last value in current col and calculate criteria of transient ending
         tr_criteria = dict()
         last_density_value = dropped_mean_dataframe[col_names.current_density].iloc[-1]
@@ -521,10 +537,6 @@ class ResultDataCollector:
         # self.mean_dataframe['transient_criteria'] = 0
         self.mean_dataframe['compare_plus'] = 0
         self.mean_dataframe['compare_minus'] = 0
-        # self.mean_dataframe.loc[
-        #         (self.mean_dataframe[col_names.current_density] < tr_criteria['plus']) &
-        #         (self.mean_dataframe[col_names.current_density] > tr_criteria['minus']),
-        #         'transient_criteria'] = 1
         self.mean_dataframe.loc[self.mean_dataframe[col_names.current_density] > tr_criteria['minus'],
                                 'compare_minus'] = 1
         self.mean_dataframe.loc[self.mean_dataframe[col_names.current_density] < tr_criteria['plus'],
@@ -637,6 +649,9 @@ class ResultBuilder:
         self.save_data(header)
 
     def _extract_results(self) -> ResultData:
+        # TODO implement udrm correction
+        # udrm = self.result_collector.mtut_manager.get_var('UDRM')
+
         results = ResultData(
             transient=self.result_collector.transient,
             udrm=self.result_collector.mtut_manager.get_var('UDRM'),
