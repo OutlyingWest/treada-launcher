@@ -296,6 +296,7 @@ class TransientData:
         self.time: Union[float, None] = kwargs.get('time')
         self.corrected_time: Union[float, None] = kwargs.get('corrected_time')
         self.corrected_density: Union[float, None] = kwargs.get('corrected_density')
+        self.criteria_calculating_df_slice: Tuple[Union[int, None]] = kwargs.get('criteria_calculating_df_slice')
 
     def set_window_size(self, window_size):
         self._window_size = window_size
@@ -382,6 +383,21 @@ class TransientData:
             return self.corrected_time
         else:
             raise ValueError('corrected_time does not calculated yet. Call prepare_result_data() firstly.')
+
+    def set_criteria_calculating_df_slice(self, slice_dict: Dict[str, Union[int, None]]):
+        """
+        Set tuple: (start, stop, step) of means_dataframe slice, that may be set to exclude anomaly values
+        form transient criteria calculations.
+        :param slice_dict: slice indexes dict, that may be red from config file.
+        """
+        self.criteria_calculating_df_slice = (slice_dict['start'], slice_dict['stop'], slice_dict['step'])
+
+    def get_criteria_calculating_df_slice(self):
+        """
+        Returns tuple: (start, stop, step) of means_dataframe slice, that may be set to exclude anomaly values
+        form transient criteria calculations.
+        """
+        return self.criteria_calculating_df_slice
 
     window_size = property(fset=set_window_size, fget=get_window_size)
     window_size_denominator = property(fset=set_window_size_denominator, fget=get_window_size_denominator)
@@ -479,14 +495,21 @@ class ResultDataCollector:
         return self.mean_dataframe[col_names.time].loc[self.transient.ending_index]
 
     def transient_criteria_calculate(self) -> dict:
+        # Excluding of anomaly values if it necessary
+        start, stop, step = self.transient.get_criteria_calculating_df_slice()
+        dropped_mean_dataframe = self.mean_dataframe.iloc[start:stop:step]
         # Get max and min current from col
-        max_density = self.mean_dataframe[col_names.current_density].max()
-        min_density = self.mean_dataframe[col_names.current_density].min()
+        max_density = dropped_mean_dataframe[col_names.current_density].max()
+        min_density = dropped_mean_dataframe[col_names.current_density].min()
         ending_difference = 0.01*(max_density - min_density)
-
+        print(dropped_mean_dataframe)
+        print()
+        print(self.mean_dataframe)
+        print(f'{max_density=}, {min_density=}')
+        input()
         # Get last value in current col and calculate criteria of transient ending
         tr_criteria = dict()
-        last_density_value = self.mean_dataframe[col_names.current_density].iloc[-1]
+        last_density_value = dropped_mean_dataframe[col_names.current_density].iloc[-1]
         tr_criteria['plus'] = last_density_value + ending_difference
         tr_criteria['minus'] = last_density_value - ending_difference
         # print(f'{last_density_value=}')

@@ -4,7 +4,7 @@ Contains features for load configuration
 import os
 import json
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, Dict
 
 from dacite import from_dict
 
@@ -64,6 +64,7 @@ class TransientSettings:
     """
     window_size: int
     window_size_denominator: Union[int, None]
+    criteria_calculating_df_slice: dict
 
 
 @dataclass

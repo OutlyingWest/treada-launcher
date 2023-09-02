@@ -8,8 +8,6 @@ from wrapper.launch.scenarios import scenarios
 
 def call_active_scenario(mtut_stage_configer: MtutStageConfiger, config: Config):
     all_scenario_module_names = dir(scenarios)
-    scenario_function_names = [name for name in all_scenario_module_names if callable(getattr(scenarios, name))]
-
     active_scenario_function = None
     for attr_name in all_scenario_module_names:
         scenario_attr = getattr(scenarios, attr_name)
@@ -58,6 +56,11 @@ def result_build(config: Config, stage_name: str):
         config.advanced_settings.transient.window_size_denominator
     )
     result_collector.transient.set_window_size(config.advanced_settings.transient.window_size)
+    result_collector.transient.set_criteria_calculating_df_slice(
+        config.advanced_settings.transient.criteria_calculating_df_slice
+    )
+    print(f'{result_collector.transient.get_criteria_calculating_df_slice()=}')
+    input()
     # Prepare result
     result_collector.prepare_result_data()
 
