@@ -68,10 +68,11 @@ def result_build(config: Config, stage_name: str):
                                    stage=stage_name)
 
     # Creation of plot builder object
-    plot_builder = TreadaPlotBuilder(result_path=result_builder.result_path,
+    plot_builder = TreadaPlotBuilder(mtut_path=config.paths.treada_core.mtut,
+                                     result_path=result_builder.result_path,
                                      dist_path=config.paths.result.temporary.distributions,
                                      stage=stage_name,
-                                     result_data=result_builder.results,
+                                     runtime_result_data=result_builder.results,
                                      skip_rows=result_builder.header_length)
 
     # Display advanced info

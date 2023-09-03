@@ -6,7 +6,7 @@ from wrapper.launch.scenarios import scenario_builder as sb
 
 
 @scenario_function(data_class=sb.DarkToLightScenario)
-def dark_to_light_scenario(scenario, mtut_stage_configer: MtutStageConfiger, config: Config):
+def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger):
     # Stage 1 - without light
     stages.without_light(mtut_stage_configer, config, scenario.stages.dark)
 
@@ -15,7 +15,7 @@ def dark_to_light_scenario(scenario, mtut_stage_configer: MtutStageConfiger, con
 
 
 @scenario_function(data_class=sb.DarkLightDarkScenario)
-def dark_light_dark_scenario(scenario, mtut_stage_configer: MtutStageConfiger, config: Config):
+def dark_light_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger):
     # Stage 1 - without light
     stages.without_light(mtut_stage_configer, config, scenario.stages.dark_first)
 

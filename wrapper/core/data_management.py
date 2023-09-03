@@ -1,6 +1,6 @@
 import shutil
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 import re
 import time
@@ -649,9 +649,12 @@ class ResultData:
     udrm: str
     emini: str
     emaxi: str
-    full_df: Union[pd.DataFrame, None]
-    mean_df: Union[pd.DataFrame, None]
-    ww_data_indexes: Union[list, None]
+    full_df: pd.DataFrame
+    mean_df: pd.DataFrame = field(default=None)
+    ww_data_indexes: list = field(default=None)
+    drstp: str = field(default=None)
+    jpush: str = field(default=None)
+    cklkrs: str = field(default=None)
 
 
 class ResultBuilder:
@@ -664,9 +667,6 @@ class ResultBuilder:
         self.save_data(header)
 
     def _extract_results(self) -> ResultData:
-        # TODO implement udrm correction
-        # udrm = self.result_collector.mtut_manager.get_var('UDRM')
-
         results = ResultData(
             transient=self.result_collector.transient,
             udrm=self.result_collector.mtut_manager.get_var('UDRM'),

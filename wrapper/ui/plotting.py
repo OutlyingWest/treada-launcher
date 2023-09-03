@@ -60,18 +60,17 @@ class TreadaPlotBuilder:
         save_plot(plot_path: str): save plot to file
     """
     def __init__(self,
+                 mtut_path:str,
                  result_path: str,
                  dist_path: Union[str, None] = None,
                  stage='light',
-                 result_data: Union[Any, None] = None,
+                 runtime_result_data: Union[Any, None] = None,
                  ending_point_coords: Union[tuple, None] = None,
                  transient_time=-1.,
                  skip_rows=15):
-        self.result_path = result_path
         self.dist_path = dist_path
-        self.skip_rows = skip_rows
         # Load result data from file
-        self.result = self.load_result(result_path, skip_rows)
+        self.result = self.load_result(mtut_path, result_path, skip_rows)
         # Extract result data
         time_column = self.result.full_df[self.result.full_df.columns[0]]
         current_density_column = self.result.full_df[self.result.full_df.columns[1]]
@@ -79,17 +78,28 @@ class TreadaPlotBuilder:
         self.plotter = AdvancedPlotter(time_column, current_density_column)
         # Construct plot
         self.set_descriptions(stage)
-        self.result_data = None
-        if result_data:
-            self.result_data = result_data
-            ending_point_coords = (result_data.transient.corrected_time, result_data.transient.corrected_density)
+        self.runtime_result_data = None
+        if runtime_result_data:
+            self.runtime_result_data = runtime_result_data
+            ending_point_coords = (runtime_result_data.transient.corrected_time, runtime_result_data.transient.corrected_density)
             self.set_transient_ending_point(ending_point_coords, f'Transient ending point')
+
+    def construct_plot_title(self):
+        udrm = float(self.result.udrm)
+        jpush = int(self.result.jpush)
+        cklkrs = float(self.result.cklkrs)
+        drstp = float(self.result.drstp)
+        # If enabled point of drain (gate) potentials changing mode, show corresponding info, else show Udrm
+        if jpush == 1 and cklkrs > 1:
+            plot_title = f'Reaction for voltage step: Udrm = {udrm} → {udrm + drstp} V'
+        else:
+            plot_title = f'Udrm = {udrm} V'
+        return plot_title
 
     def set_descriptions(self, stage_name: str):
         # Set titles
-        udrm: str = self._extract_udrm(self.result_path)
-        plot_title = f'Udrm = {udrm} V'
-        window_title = f'{plot_title} stage: {stage_name}'
+        plot_title = self.construct_plot_title()
+        window_title = f'Udrm = {self.result.udrm} V stage: {stage_name}'
         self.plotter.set_plot_title(plot_title)
         self.plotter.set_window_title(window_title)
         # Set axes labels
@@ -109,16 +119,16 @@ class TreadaPlotBuilder:
                                         annotation=f'Transient ending point')
         # Temporary
         # Set distributions info if it exists
-        if self.result_data and self.result_data.ww_data_indexes:
-            ww_points_df = self.result.full_df.loc[self.result_data.ww_data_indexes]
+        if self.runtime_result_data and self.runtime_result_data.ww_data_indexes:
+            ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
             self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
                                                 dist_densities=ww_points_df[col_names.current_density])
 
     def set_advanced_info(self):
-        self.plotter.set_advanced_info(self.result_data)
+        self.plotter.set_advanced_info(self.runtime_result_data)
         # Set distributions info if it exists
-        if self.result_data.ww_data_indexes:
-            ww_points_df = self.result.full_df.loc[self.result_data.ww_data_indexes]
+        if self.runtime_result_data.ww_data_indexes:
+            ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
             self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
                                                 dist_densities=ww_points_df[col_names.current_density])
 
@@ -128,12 +138,14 @@ class TreadaPlotBuilder:
         return udrm.group()
 
     @staticmethod
-    def load_result(result_path: str, skip_rows: int) -> Any:
-        file_manager = FileManager(result_path)
-        file_manager.load_file_head(num_lines=15)
-        transient_time_str = file_manager.get_var('TRANSIENT_TIME')
+    def load_result(mtut_path: str, result_path: str, skip_rows: int) -> Any:
+        result_file_manager = FileManager(result_path)
+        result_file_manager.load_file_head(num_lines=15)
+        mtut_file_manager = MtutManager(mtut_path)
+        mtut_file_manager.load_file()
+        transient_time_str = result_file_manager.get_var('TRANSIENT_TIME')
         transient_time = float(transient_time_str.strip(' ps'))
-        transient_density_str = file_manager.get_var('TRANSIENT_CURRENT_DENSITY')
+        transient_density_str = result_file_manager.get_var('TRANSIENT_CURRENT_DENSITY')
         transient_density = float(transient_density_str.rstrip(' mA/cm^2'))
         transient_data = TransientData(
             corrected_time=transient_time,
@@ -141,12 +153,13 @@ class TreadaPlotBuilder:
         )
         results = ResultData(
             transient=transient_data,
-            udrm=file_manager.get_var('UDRM'),
-            emini=file_manager.get_var('EMINI'),
-            emaxi=file_manager.get_var('EMAXI'),
+            udrm=result_file_manager.get_var('UDRM').strip(' V'),
+            drstp=mtut_file_manager.get_var('DRSTP'),
+            jpush=mtut_file_manager.get_var('JPUSH'),
+            cklkrs=mtut_file_manager.get_var('CKLKRS'),
+            emini=result_file_manager.get_var('EMINI'),
+            emaxi=result_file_manager.get_var('EMAXI'),
             full_df=pd.read_csv(result_path, skiprows=skip_rows, header=0, sep='\s+'),
-            mean_df=None,
-            ww_data_indexes=None,
         )
         return results
 
@@ -326,10 +339,10 @@ if __name__ == '__main__':
     # Add path to "wrapper" directory in environ variable - PYTHONPATH
     wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     sys.path.append(wrapper_path)
-    from core.data_management import ResultData, col_names, FileManager, TransientData
+    from core.data_management import ResultData, col_names, FileManager, TransientData, MtutManager
     from config.config_builder import load_config
     main()
 else:
-    from wrapper.core.data_management import ResultData, col_names, FileManager, TransientData
+    from wrapper.core.data_management import ResultData, col_names, FileManager, TransientData, MtutManager
     from wrapper.config.config_builder import load_config
     from wrapper.misc import lin_alg as la
