@@ -649,9 +649,9 @@ class ResultData:
     udrm: str
     emini: str
     emaxi: str
-    full_df: pd.DataFrame
-    mean_df: pd.DataFrame
-    ww_data_indexes: list
+    full_df: Union[pd.DataFrame, None]
+    mean_df: Union[pd.DataFrame, None]
+    ww_data_indexes: Union[list, None]
 
 
 class ResultBuilder:

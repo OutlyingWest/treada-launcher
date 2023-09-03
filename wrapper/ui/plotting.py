@@ -69,11 +69,12 @@ class TreadaPlotBuilder:
                  skip_rows=15):
         self.result_path = result_path
         self.dist_path = dist_path
+        self.skip_rows = skip_rows
         # Load result data from file
-        self.result_full_df = pd.read_csv(result_path, skiprows=skip_rows, header=0, sep='\s+')
+        self.result = self.load_result(result_path, skip_rows)
         # Extract result data
-        time_column = self.result_full_df[self.result_full_df.columns[0]]
-        current_density_column = self.result_full_df[self.result_full_df.columns[1]]
+        time_column = self.result.full_df[self.result.full_df.columns[0]]
+        current_density_column = self.result.full_df[self.result.full_df.columns[1]]
         # Create plotter object
         self.plotter = AdvancedPlotter(time_column, current_density_column)
         # Construct plot
@@ -100,17 +101,16 @@ class TreadaPlotBuilder:
         self.plotter.annotate_special_point(time, current_density, annotation, xytext=xytext)
 
     def set_loaded_info(self):
-        loaded_result = self.load_result()
-        self.plotter.set_info(loaded_result)
+        self.plotter.set_info(self.result)
         # Plot accurate transient ending point
-        corrected_time = loaded_result.transient.corrected_time
-        corrected_density = loaded_result.transient.corrected_density
+        corrected_time = self.result.transient.corrected_time
+        corrected_density = self.result.transient.corrected_density
         self.set_transient_ending_point((corrected_time, corrected_density),
                                         annotation=f'Transient ending point')
         # Temporary
         # Set distributions info if it exists
         if self.result_data and self.result_data.ww_data_indexes:
-            ww_points_df = self.result_full_df.loc[self.result_data.ww_data_indexes]
+            ww_points_df = self.result.full_df.loc[self.result_data.ww_data_indexes]
             self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
                                                 dist_densities=ww_points_df[col_names.current_density])
 
@@ -118,7 +118,7 @@ class TreadaPlotBuilder:
         self.plotter.set_advanced_info(self.result_data)
         # Set distributions info if it exists
         if self.result_data.ww_data_indexes:
-            ww_points_df = self.result_full_df.loc[self.result_data.ww_data_indexes]
+            ww_points_df = self.result.full_df.loc[self.result_data.ww_data_indexes]
             self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
                                                 dist_densities=ww_points_df[col_names.current_density])
 
@@ -127,8 +127,9 @@ class TreadaPlotBuilder:
         udrm: re.Match = re.search('(-?\d+\.?\d*)', res_path)
         return udrm.group()
 
-    def load_result(self) -> Any:
-        file_manager = FileManager(self.result_path)
+    @staticmethod
+    def load_result(result_path: str, skip_rows: int) -> Any:
+        file_manager = FileManager(result_path)
         file_manager.load_file_head(num_lines=15)
         transient_time_str = file_manager.get_var('TRANSIENT_TIME')
         transient_time = float(transient_time_str.strip(' ps'))
@@ -143,7 +144,7 @@ class TreadaPlotBuilder:
             udrm=file_manager.get_var('UDRM'),
             emini=file_manager.get_var('EMINI'),
             emaxi=file_manager.get_var('EMAXI'),
-            full_df=None,
+            full_df=pd.read_csv(result_path, skiprows=skip_rows, header=0, sep='\s+'),
             mean_df=None,
             ww_data_indexes=None,
         )
