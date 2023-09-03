@@ -11,15 +11,12 @@ import pandas as pd
 
 
 def main():
-    try:
-        from config.config_builder import load_config
-
-        config = load_config('config.json')
-        result_path = os.path.split(config.paths.result.main)[0] + os.sep
-        print(f'{result_path=}')
-    except ModuleNotFoundError:
-        print('Finding of input file by full path...')
-        result_path = ''
+    config = load_config('config.json')
+    result_path = os.path.split(config.paths.result.main)[0] + os.sep
+    script_path = os.path.dirname((os.path.abspath(__file__)))
+    project_path = script_path.rsplit(sep=os.path.sep, maxsplit=2)[0]
+    print(f'{result_path=}')
+    print(f'{project_path=}')
     run_flag = True
     while run_flag:
         if len(sys.argv) > 1:
@@ -30,16 +27,17 @@ def main():
             if res_name == '':
                 break
 
-        full_result_path = result_path + res_name
+        full_result_path = os.path.join(project_path, result_path, res_name)
+        print(f'{full_result_path=}')
+        full_mtut_path = os.path.join(project_path, config.paths.treada_core.mtut)
         try:
             # Creation of plot builder object
-            plot_builder = TreadaPlotBuilder(result_path=full_result_path)
+            plot_builder = TreadaPlotBuilder(mtut_path=full_mtut_path, result_path=full_result_path)
+            plot_builder.set_loaded_info()
+            # Show plot
+            plot_builder.plotter.show(block=False)
         except FileNotFoundError:
             print('Wrong file path or name.')
-            continue
-        plot_builder.set_loaded_info()
-        # Show plot
-        plot_builder.plotter.show(block=False)
 
 
 class TreadaPlotBuilder:
@@ -63,7 +61,7 @@ class TreadaPlotBuilder:
                  mtut_path:str,
                  result_path: str,
                  dist_path: Union[str, None] = None,
-                 stage='light',
+                 stage='none',
                  runtime_result_data: Union[Any, None] = None,
                  ending_point_coords: Union[tuple, None] = None,
                  transient_time=-1.,

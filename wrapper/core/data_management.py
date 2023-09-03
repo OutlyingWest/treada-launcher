@@ -11,12 +11,12 @@ from colorama import Fore, Style
 import numpy as np
 import pandas as pd
 
-from wrapper.config.config_builder import Paths, ResultPaths
-
 try:
+    from wrapper.config.config_builder import Paths, ResultPaths
     from wrapper.misc.global_functions import create_dir
     from wrapper.misc import lin_alg as alg
 except ModuleNotFoundError:
+    from config.config_builder import Paths, ResultPaths
     from misc.global_functions import create_dir
     from misc import lin_alg as alg
 
@@ -453,21 +453,22 @@ class ResultDataCollector:
         # Calculate timestep constants
         initial_time_step_const = initial_time_step * relative_time
         operating_time_step_const = operating_time_step * relative_time
+        incremented_initial_steps_number = initial_steps_number + 1
         self.dataframe.loc[
-            self.dataframe.index.values < initial_steps_number,
+            self.dataframe.index.values < incremented_initial_steps_number,
             col_names.time
-        ] = self.dataframe.index.values[:initial_steps_number] * initial_time_step_const
+        ] = self.dataframe.index.values[:incremented_initial_steps_number] * initial_time_step_const
 
-        last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number - 1]
+        last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number]
         print(f'{last_initial_time=}')
 
         # decremented_initial_steps_number = initial_steps_number - 1
 
         self.dataframe.loc[
-            self.dataframe.index.values >= initial_steps_number,
+            self.dataframe.index.values >= incremented_initial_steps_number,
             col_names.time
         ] = (
-                (self.dataframe.index.values[initial_steps_number:] - initial_steps_number + 1) *
+                (self.dataframe.index.values[incremented_initial_steps_number:] - initial_steps_number) *
                 operating_time_step_const + last_initial_time
         )
 
