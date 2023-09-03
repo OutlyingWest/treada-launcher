@@ -457,10 +457,24 @@ class ResultDataCollector:
             self.dataframe.index.values < initial_steps_number,
             col_names.time
         ] = self.dataframe.index.values[:initial_steps_number] * initial_time_step_const
+
+        last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number - 1]
+        print(f'{last_initial_time=}')
+
+        # decremented_initial_steps_number = initial_steps_number - 1
+
         self.dataframe.loc[
             self.dataframe.index.values >= initial_steps_number,
             col_names.time
-        ] = self.dataframe.index.values[initial_steps_number:] * operating_time_step_const
+        ] = (
+                (self.dataframe.index.values[initial_steps_number:] - initial_steps_number + 1) *
+                operating_time_step_const + last_initial_time
+        )
+
+        # self.dataframe.loc[
+        #     self.dataframe.index.values >= initial_steps_number,
+        #     col_names.time
+        # ] = self.dataframe.index.values[initial_steps_number:] * operating_time_step_const
         # self.dataframe[col_names.time] = self.dataframe.index.values * operating_time_step_const
 
         pd.set_option('display.max_rows', None)
@@ -469,6 +483,7 @@ class ResultDataCollector:
         print(f'{operating_time_step=}')
         print(f'{initial_time_step_const=}')
         print(f'{operating_time_step_const=}')
+        print(f'{relative_time=}')
         input()
 
     def get_mean_current_density_seria(self, window_size_denominator: Union[None, int]) -> pd.Series:
