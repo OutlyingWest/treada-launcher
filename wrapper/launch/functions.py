@@ -60,7 +60,7 @@ def result_build(config: Config, stage_name: str):
         config.advanced_settings.transient.criteria_calculating_df_slice
     )
     # Prepare result
-    result_collector.prepare_result_data()
+    result_collector.prepare_result_data(stage_name)
 
     # Save data in result file and output in console
     result_builder = ResultBuilder(result_collector,

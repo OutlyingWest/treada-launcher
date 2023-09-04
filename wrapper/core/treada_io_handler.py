@@ -33,6 +33,7 @@ class TreadaSwitcher:
                                        ending_condition_params=None)
 
     def light_off(self, dark_output_file_path='', stage_name='Dark'):
+        self.capturer.set_stage_name(stage_name)
         self.capturer.set_runtime_console_info(f'   {stage_name}')
         if dark_output_file_path:
             self.capturer.stream_management(path_to_output=dark_output_file_path)
@@ -40,6 +41,7 @@ class TreadaSwitcher:
             self.capturer.stream_management()
 
     def light_on(self, light_output_file_path: str, stage_name='Light'):
+        self.capturer.set_stage_name(stage_name)
         self.capturer.set_runtime_console_info(f'   {stage_name}')
         self.capturer.stream_management(path_to_output=light_output_file_path)
 
@@ -69,6 +71,7 @@ class StdoutCapturer:
         # io_loop variables:
         self.running_flag = True
         self.str_counter = 0
+        self.currents_str_counter = 0
         # Init auto ending prerequisites
         self.auto_ending = config.flags.auto_ending
         self.ending_condition = ec.EndingCondition(chunk_size=500,
@@ -86,11 +89,12 @@ class StdoutCapturer:
         # Distributions variables:
         # Preserve temporary Treada's files flag
         self.is_preserve_temp_distributions = config.flags.preserve_distributions
-        self.temporary_dumping_begins = False
-        self.distribution_filenames = config.distribution_filenames
-        self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
-        self.distribution_destination_path = config.paths.result.temporary.distributions
-        self.currents_str_counter = 0
+        if self.is_preserve_temp_distributions:
+            self.stage_name = ''
+            self.temporary_dumping_begins = False
+            self.distribution_filenames = config.distribution_filenames
+            self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
+            self.distribution_destination_path = config.paths.result.temporary.distributions
 
         # Can be defined by setter
         self.runtime_console_info = ''
@@ -199,7 +203,10 @@ class StdoutCapturer:
         pass
 
     def set_runtime_console_info(self, info: str):
-        self.runtime_console_info = info
+        self.runtime_console_info = info.title()
+
+    def set_stage_name(self, stage_name: str):
+        self.stage_name = stage_name
 
     def preserve_distributions(self, output_string: str):
         """
@@ -208,12 +215,15 @@ class StdoutCapturer:
         """
         # Find the beginning line of temporary results dumping info
         if (TreadaOutputParser.temporary_results_line_found(output_string) and
+           self.currents_str_counter > 0 and
            not self.temporary_dumping_begins):
+            print(f'{output_string=}')
             self.temporary_dumping_begins = True
         if self.temporary_dumping_begins:
             # Check is dumping has ended
             if TreadaOutputParser.keep_currents_line_regex(output_string):
                 self.temporary_dumping_begins = False
+                print(f'{self.currents_str_counter=}')
                 self.copy_distribution_files()
 
     def copy_distribution_files(self):
@@ -223,7 +233,7 @@ class StdoutCapturer:
         :return:
         """
         extracted_distributions_dir_path = os.path.join(
-            self.distribution_destination_path, str(self.currents_str_counter), ''
+            self.distribution_destination_path, self.stage_name, str(self.currents_str_counter), ''
         )
         print(f'{extracted_distributions_dir_path=}')
         create_dir(extracted_distributions_dir_path)

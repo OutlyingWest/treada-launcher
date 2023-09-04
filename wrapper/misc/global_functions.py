@@ -50,3 +50,22 @@ def get_from_nested_dataclass(dclass) -> dict:
             else:
                 items_dict[key] = value
     return items_dict
+
+
+def set_to_nested_dataclass(dclass, items_dict: dict):
+    """
+    Goes through nested dataclass recursively.
+    Returns items from the deepest layers of nested branches.
+    :param dclass: dataclass object
+    :param items_dict: dictionary with items which set to the deepest layers of nested dataclass
+    """
+    if is_dataclass(dclass):
+        for key, value in dclass.__dict__.items():
+            if is_dataclass(value):
+                set_to_nested_dataclass(value, items_dict)
+            else:
+                dclass.__dict__[key] = items_dict.get(key, value)
+
+
+if __name__ == '__main__':
+    pass
