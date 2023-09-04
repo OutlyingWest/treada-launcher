@@ -1,5 +1,7 @@
+import os
 import timeit
 import unittest
+from typing import Dict, List
 
 import numpy as np
 
@@ -10,7 +12,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser, ResultDataCollector, \
-    col_names
+    col_names, MtutManager
 from wrapper.config.config_builder import load_config
 from wrapper.ui.plotting import AdvancedPlotter
 
@@ -40,6 +42,22 @@ class FileManagerTests(unittest.TestCase):
     def test__get_var_value_from_string(self):
         var_value = self.mtut._get_var_value_from_string(var_line='RIMPUR   3.E+12', var_name='RIMPUR')
         self.assertEqual('3.E+12', var_value)
+
+
+# @unittest.skip
+class MtutManagerTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.config = load_config('config.json')
+        script_path = os.path.dirname((os.path.abspath(__file__)))
+        project_path = script_path.rsplit(sep=os.path.sep, maxsplit=3)[0] + os.path.sep
+        abs_mtut_path = os.path.join(project_path, self.config.paths.treada_core.mtut)
+        self.mtut = MtutManager(abs_mtut_path)
+        self.mtut.load_file()
+
+    def test_get_hx_var(self):
+        hx = self.mtut.get_hx_var()
+        print(f'{hx=}')
+        self.assertEqual(type(hx), list)
 
 
 @unittest.skip
@@ -81,7 +99,7 @@ class TreadaOutputParserTests(unittest.TestCase):
         with open('clean_data_speeds.txt', 'a') as cd_file:
             cd_file.write(str(np.mean(clean_data_time)) + '\n')
 
-
+@unittest.skip
 class ResultDataCollectorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')

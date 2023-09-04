@@ -56,6 +56,7 @@ class FileManager:
         set_var(var_name: str, new_value: str) Set a new value for a variable in configuration file.
 
     """
+
     def __init__(self, file_path: str):
         """
          Initialize the FileManager object. Sets path and loads data from configuration file.
@@ -63,7 +64,7 @@ class FileManager:
         :param file_path: Path to configuration file.
         """
         self.path = file_path
-        self.data: Union[list, None] = None
+        self.data: Union[List[str], None] = None
 
     def load_file(self) -> list:
         """
@@ -165,8 +166,36 @@ class MtutManager(FileManager):
     Attributes:
         mtut_file_path: Path to data file
     """
+
     def __init__(self, mtut_file_path: str):
         super().__init__(mtut_file_path)
+
+    def get_hx_var(self) -> List[Dict[str, float]]:
+        """
+        Get variable by its name from configuration file.
+        :return: Variable value.
+        """
+        hx_name = 'HX'
+        first_hx_index = self.find_var_string(hx_name)
+        if first_hx_index == -1:
+            print(f'This variable: {hx_name} does not exist in configuration file.')
+            raise ValueError
+        hx_values_list = list()
+        for hx_index in range(first_hx_index, first_hx_index + 30):
+            hx_line = self.data[hx_index]
+            if hx_line.startswith('*'):
+                break
+            hx_values = re.split('[()]|\s+', hx_line)
+            hx_values_list.append({'steps_amount': float(hx_values[1]), 'step': float(hx_values[2])})
+            hx_index += 1
+        return hx_values_list
+
+    def get_collection_var(self, var_name: str, values_type=float) -> List[Any]:
+        """
+        Get variable that consists of values separated by commas.
+        :return: list of variable values
+        """
+        pass
 
 
 @dataclass(frozen=True)
@@ -195,6 +224,7 @@ class TreadaOutputParser:
 
     Methods:
     """
+
     def __init__(self, raw_output_path: str):
         self.raw_output_path = raw_output_path
         rel_time, prepared_dataframe = self.prepare_data()
@@ -284,6 +314,7 @@ class TransientData:
         time: rough value of time on which transient process ends.
         corrected_time: accurate value of time density on which transient process ends. Additionally corrected.
     """
+
     def __init__(self, **kwargs):
         self._window_size_denominator: Union[int, None] = kwargs.get('window_size_denominator')
         self._window_size: Union[int, None] = kwargs.get('window_size')
@@ -415,15 +446,15 @@ class ResultDataCollector:
         # Result data
         self.transient = TransientData()
         self.result_dataframe = None
-
         # Additional result
         self.last_mean_time = None
         self.last_mean_current_density = None
-        # Distributios
+        # Distributions
         self.dist_result_path = result_paths.temporary.distributions
         self.ww_data_indexes = []
 
     def prepare_result_data(self):
+        self.add_null_current_on_first_stage()
         self.time_col_calculate()
         self.current_density_col_calculate()
         self.transient.time = self.find_transient_time()
@@ -440,6 +471,19 @@ class ResultDataCollector:
         # pd.set_option('display.width', None)
         # print(result_dataframe)
         # print(transient_time)
+
+    def add_null_current_on_first_stage(self):
+        """
+        Add an initial null source current value to current dataframe on first stage of Treada's work
+        """
+        stage_indication_var = float(self.mtut_manager.get_var('CKLKRS'))
+        if stage_indication_var < 2:
+            # Adding a 0 current value to string with index = -1
+            self.dataframe.loc[-1] = 0
+            # Shifting index
+            self.dataframe.index = self.dataframe.index + 1
+            # Sorting by index
+            self.dataframe = self.dataframe.sort_index()
 
     def time_col_calculate(self):
         # Get initial time step from MTUT file
@@ -460,9 +504,6 @@ class ResultDataCollector:
         ] = self.dataframe.index.values[:incremented_initial_steps_number] * initial_time_step_const
 
         last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number]
-        print(f'{last_initial_time=}')
-
-        # decremented_initial_steps_number = initial_steps_number - 1
 
         self.dataframe.loc[
             self.dataframe.index.values >= incremented_initial_steps_number,
@@ -472,19 +513,14 @@ class ResultDataCollector:
                 operating_time_step_const + last_initial_time
         )
 
-        # self.dataframe.loc[
-        #     self.dataframe.index.values >= initial_steps_number,
-        #     col_names.time
-        # ] = self.dataframe.index.values[initial_steps_number:] * operating_time_step_const
-        # self.dataframe[col_names.time] = self.dataframe.index.values * operating_time_step_const
-
-        pd.set_option('display.max_rows', None)
-        print(self.dataframe)
-        print(f'{initial_time_step=}')
-        print(f'{operating_time_step=}')
-        print(f'{initial_time_step_const=}')
-        print(f'{operating_time_step_const=}')
-        print(f'{relative_time=}')
+        # pd.set_option('display.max_rows', None)
+        # print(self.dataframe)
+        # print(f'{last_initial_time=}')
+        # print(f'{initial_time_step=}')
+        # print(f'{operating_time_step=}')
+        # print(f'{initial_time_step_const=}')
+        # print(f'{operating_time_step_const=}')
+        # print(f'{relative_time=}')
         input()
 
     def get_mean_current_density_seria(self, window_size_denominator: Union[None, int]) -> pd.Series:
@@ -508,7 +544,7 @@ class ResultDataCollector:
         hy = float(self.mtut_manager.get_var('HY').rstrip(')').split('(')[1])
         # Calculate density col
         self.dataframe[col_names.current_density] = (
-            self.dataframe[col_names.source_current] / (2*hy * device_width * 1e-8)
+                self.dataframe[col_names.source_current] / (2 * hy * device_width * 1e-8)
         )
 
     def find_transient_time(self) -> float:
@@ -538,7 +574,7 @@ class ResultDataCollector:
         # Get max and min current from col
         max_density = dropped_mean_dataframe[col_names.current_density].max()
         min_density = dropped_mean_dataframe[col_names.current_density].min()
-        ending_difference = 0.01*(max_density - min_density)
+        ending_difference = 0.01 * (max_density - min_density)
         # Get last value in current col and calculate criteria of transient ending
         tr_criteria = dict()
         last_density_value = dropped_mean_dataframe[col_names.current_density].iloc[-1]
@@ -659,7 +695,7 @@ class ResultData:
 
 
 class ResultBuilder:
-    def __init__(self,  result_collector: ResultDataCollector, result_paths: ResultPaths, stage='light'):
+    def __init__(self, result_collector: ResultDataCollector, result_paths: ResultPaths, stage='light'):
         self.result_collector = result_collector
         self.results = self._extract_results()
         self.result_path = self.file_name_build(result_paths.main, stage=stage)
@@ -690,7 +726,6 @@ class ResultBuilder:
         return len(header)
 
     def _header_build(self):
-
         # with open(answer_with_path, mode='r', encoding='utf-8') as answr:
         #     answer_string = answr.read()
         # answer_string_with_format = answer_string.format(
@@ -740,6 +775,7 @@ class UdrmVectorManager:
     """
     Manage UDRM vector file, which is used if UDRM_vector_mode set in UDRM_vector_mode config.json
     """
+
     def __init__(self, udrm_vector_file_path):
         self.file_path = udrm_vector_file_path
         self.max_index: Union[int, None] = None
@@ -773,4 +809,3 @@ class UdrmVectorManager:
 
 if __name__ == '__main__':
     pass
-

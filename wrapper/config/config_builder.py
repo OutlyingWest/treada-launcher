@@ -145,4 +145,5 @@ def load_config(config_name: str = None) -> Config:
         config_dict = json.load(config_file)
     # load configuration from file
     config = from_dict(data_class=Config, data=config_dict)
+    # TODO: # Construct absolute paths
     return config
