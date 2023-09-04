@@ -4,11 +4,10 @@ from dataclasses import dataclass, field
 import os
 import re
 import time
-from typing import Union, List, Tuple, Dict, Any
+from typing import Union, List, Tuple, Dict
 
 from colorama import Fore, Style
 
-import numpy as np
 import pandas as pd
 
 try:
@@ -173,7 +172,7 @@ class MtutManager(FileManager):
     def get_hx_var(self) -> List[Dict[str, float]]:
         """
         Get variable by its name from configuration file.
-        :return: Variable value.
+        :return: list of HX values dictionaries: {'steps_amount': float, 'step': float}
         """
         hx_name = 'HX'
         first_hx_index = self.find_var_string(hx_name)
@@ -190,12 +189,20 @@ class MtutManager(FileManager):
             hx_index += 1
         return hx_values_list
 
-    def get_collection_var(self, var_name: str, values_type=float) -> List[Any]:
+    def get_list_var(self, var_name: str, values_type=None) -> list:
         """
         Get variable that consists of values separated by commas.
+        :param var_name: MTUTM file variable name.
+        :param values_type: the type to which values will be cast.
         :return: list of variable values
         """
-        pass
+        var_string = self.get_var(var_name)
+        var_list = re.split('\s*,\s*', var_string)
+        if values_type:
+            cast_var_list = [values_type(value) for value in var_list]
+            return cast_var_list
+        else:
+            return var_list
 
 
 @dataclass(frozen=True)
@@ -453,7 +460,7 @@ class ResultDataCollector:
         self.dist_result_path = result_paths.temporary.distributions
         self.ww_data_indexes = []
 
-    def prepare_result_data(self):
+    def prepare_result_data(self, stage_name: str):
         self.add_null_current_on_first_stage()
         self.time_col_calculate()
         self.current_density_col_calculate()
@@ -465,7 +472,7 @@ class ResultDataCollector:
         self.last_mean_time, self.last_mean_current_density = (
             self.mean_dataframe[[col_names.time, col_names.current_density]].tail(50).mean()
         )
-        self.ww_data_indexes = self.set_distributions_indexes()
+        self.ww_data_indexes = self.set_distributions_indexes(stage_name)
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
@@ -673,8 +680,9 @@ class ResultDataCollector:
         else:
             raise ValueError('mean_dataframe does not calculated yet. Call prepare_result_data() firstly.')
 
-    def set_distributions_indexes(self):
-        ww_data_indexes_iter = map(int, os.listdir(self.dist_result_path))
+    def set_distributions_indexes(self, stage_name: str):
+        full_dist_result_path = os.path.join(self.dist_result_path, stage_name)
+        ww_data_indexes_iter = map(int, os.listdir(full_dist_result_path))
         ww_data_indexes: list = sorted(ww_data_indexes_iter)
         actual_ww_data_indexes = [index for index in ww_data_indexes if index < self.dataframe.index[-1]]
         return actual_ww_data_indexes

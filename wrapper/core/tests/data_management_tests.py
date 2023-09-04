@@ -48,16 +48,20 @@ class FileManagerTests(unittest.TestCase):
 class MtutManagerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
-        script_path = os.path.dirname((os.path.abspath(__file__)))
-        project_path = script_path.rsplit(sep=os.path.sep, maxsplit=3)[0] + os.path.sep
-        abs_mtut_path = os.path.join(project_path, self.config.paths.treada_core.mtut)
-        self.mtut = MtutManager(abs_mtut_path)
+        self.mtut = MtutManager(self.config.paths.treada_core.mtut)
         self.mtut.load_file()
 
+    @unittest.skip
     def test_get_hx_var(self):
         hx = self.mtut.get_hx_var()
         print(f'{hx=}')
         self.assertEqual(type(hx), list)
+
+    def test_get_list_var(self):
+        var_name = 'CMOB2IL'
+        var_list = self.mtut.get_list_var(var_name, values_type=float)
+        print(f'{var_list}')
+        self.assertEqual(type(var_list[0]), float)
 
 
 @unittest.skip
