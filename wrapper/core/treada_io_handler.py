@@ -215,7 +215,6 @@ class StdoutCapturer:
         """
         # Find the beginning line of temporary results dumping info
         if (TreadaOutputParser.temporary_results_line_found(output_string) and
-           self.currents_str_counter > 0 and
            not self.temporary_dumping_begins):
             print(f'{output_string=}')
             self.temporary_dumping_begins = True
