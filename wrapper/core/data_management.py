@@ -528,7 +528,6 @@ class ResultDataCollector:
         # print(f'{initial_time_step_const=}')
         # print(f'{operating_time_step_const=}')
         # print(f'{relative_time=}')
-        input()
 
     def get_mean_current_density_seria(self, window_size_denominator: Union[None, int]) -> pd.Series:
         dataframe_length = self.dataframe.shape[0]
@@ -680,9 +679,12 @@ class ResultDataCollector:
         else:
             raise ValueError('mean_dataframe does not calculated yet. Call prepare_result_data() firstly.')
 
-    def set_distributions_indexes(self, stage_name: str):
+    def set_distributions_indexes(self, stage_name: str) -> Union[List[int], None]:
         full_dist_result_path = os.path.join(self.dist_result_path, stage_name)
-        ww_data_indexes_iter = map(int, os.listdir(full_dist_result_path))
+        try:
+            ww_data_indexes_iter = map(int, os.listdir(full_dist_result_path))
+        except FileNotFoundError:
+            return None
         ww_data_indexes: list = sorted(ww_data_indexes_iter)
         actual_ww_data_indexes = [index for index in ww_data_indexes if index < self.dataframe.index[-1]]
         return actual_ww_data_indexes
@@ -812,7 +814,7 @@ class UdrmVectorManager:
         if isinstance(self.max_index, int):
             return self.max_index
         elif self.max_index is None:
-            raise ValueError('max_index has not calculated yet')
+            raise ValueError('max_index not calculated yet')
 
 
 if __name__ == '__main__':
