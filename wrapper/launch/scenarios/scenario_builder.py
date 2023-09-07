@@ -3,7 +3,7 @@ Contains features to load treada launch scenario
 """
 import os.path
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Union
 
 from dacite import from_dict
@@ -15,6 +15,7 @@ from wrapper.config.config_builder import Config
 class Stage:
     name: str
     mtut_vars: dict
+    skip_initial_time_step: bool = field(default=False)
 
 
 #############################################

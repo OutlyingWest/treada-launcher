@@ -1,5 +1,3 @@
-import shutil
-import warnings
 from dataclasses import dataclass, field
 import os
 import re
@@ -9,6 +7,8 @@ from typing import Union, List, Tuple, Dict
 from colorama import Fore, Style
 
 import pandas as pd
+
+from wrapper.launch.scenarios.scenario_builder import Stage
 
 try:
     from wrapper.config.config_builder import Paths, ResultPaths
@@ -460,9 +460,10 @@ class ResultDataCollector:
         self.dist_result_path = result_paths.temporary.distributions
         self.ww_data_indexes = []
 
-    def prepare_result_data(self, stage_name: str):
+    def prepare_result_data(self, stage: Stage):
         self.add_null_current_on_first_stage()
-        self.time_col_calculate()
+
+        self.time_col_calculate(stage.skip_initial_time_step)
         self.current_density_col_calculate()
         self.transient.time = self.find_transient_time()
         self.result_dataframe = self.dataframe[[col_names.time, col_names.current_density]]
@@ -472,7 +473,7 @@ class ResultDataCollector:
         self.last_mean_time, self.last_mean_current_density = (
             self.mean_dataframe[[col_names.time, col_names.current_density]].tail(50).mean()
         )
-        self.ww_data_indexes = self.set_distributions_indexes(stage_name)
+        self.ww_data_indexes = self.set_distributions_indexes(stage.name)
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
@@ -492,7 +493,7 @@ class ResultDataCollector:
             # Sorting by index
             self.dataframe = self.dataframe.sort_index()
 
-    def time_col_calculate(self):
+    def time_col_calculate(self, skip_initial_time_step=False):
         # Get initial time step from MTUT file
         initial_time_step = float(self.mtut_manager.get_var('TSTEPH'))
         # Number of Time Seps Before the Change Initial/Operating Time Step.
@@ -502,7 +503,10 @@ class ResultDataCollector:
         # Get relative time from treada raw output file
         relative_time = self.treada_parser.get_relative_time()
         # Calculate timestep constants
-        initial_time_step_const = initial_time_step * relative_time
+        if skip_initial_time_step:
+            initial_time_step_const = operating_time_step * relative_time
+        else:
+            initial_time_step_const = initial_time_step * relative_time
         operating_time_step_const = operating_time_step * relative_time
         incremented_initial_steps_number = initial_steps_number + 1
         self.dataframe.loc[
@@ -528,6 +532,7 @@ class ResultDataCollector:
         # print(f'{initial_time_step_const=}')
         # print(f'{operating_time_step_const=}')
         # print(f'{relative_time=}')
+
 
     def get_mean_current_density_seria(self, window_size_denominator: Union[None, int]) -> pd.Series:
         dataframe_length = self.dataframe.shape[0]
@@ -705,10 +710,10 @@ class ResultData:
 
 
 class ResultBuilder:
-    def __init__(self, result_collector: ResultDataCollector, result_paths: ResultPaths, stage='light'):
+    def __init__(self, result_collector: ResultDataCollector, result_paths: ResultPaths, stage_name='light'):
         self.result_collector = result_collector
         self.results = self._extract_results()
-        self.result_path = self.file_name_build(result_paths.main, stage=stage)
+        self.result_path = self.file_name_build(result_paths.main, stage_name=stage_name)
         header = self._header_build()
         self.header_length = len(header)
         self.save_data(header)
@@ -725,8 +730,8 @@ class ResultBuilder:
         )
         return results
 
-    def file_name_build(self, result_path: str, stage: str, file_extension='txt'):
-        return f'{result_path.split(".")[0]}u({self.results.udrm})_{stage}.{file_extension}'
+    def file_name_build(self, result_path: str, stage_name: str, file_extension='txt'):
+        return f'{result_path.split(".")[0]}u({self.results.udrm})_{stage_name}.{file_extension}'
 
     def save_data(self, header) -> int:
         # Create output dir if it does not exist

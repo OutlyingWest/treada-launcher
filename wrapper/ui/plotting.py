@@ -61,7 +61,7 @@ class TreadaPlotBuilder:
                  mtut_path:str,
                  result_path: str,
                  dist_path: Union[str, None] = None,
-                 stage='none',
+                 stage_name='none',
                  runtime_result_data: Union[Any, None] = None,
                  ending_point_coords: Union[tuple, None] = None,
                  transient_time=-1.,
@@ -75,7 +75,7 @@ class TreadaPlotBuilder:
         # Create plotter object
         self.plotter = AdvancedPlotter(time_column, current_density_column)
         # Construct plot
-        self.set_descriptions(stage)
+        self.set_descriptions(stage_name)
         self.runtime_result_data = None
         if runtime_result_data:
             self.runtime_result_data = runtime_result_data

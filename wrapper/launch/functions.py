@@ -1,6 +1,6 @@
 from wrapper.config.config_builder import Config
 from wrapper.core.data_management import ResultDataCollector, ResultBuilder, MtutStageConfiger, MtutManager
-from wrapper.launch.scenarios.scenario_builder import load_scenario
+from wrapper.launch.scenarios.scenario_builder import load_scenario, Stage
 from wrapper.misc.global_functions import get_from_nested_dataclass
 from wrapper.ui.plotting import TreadaPlotBuilder
 from wrapper.launch.scenarios import scenarios
@@ -47,7 +47,7 @@ def scenario_function(data_class):
     return scenario_decorator_wrapper
 
 
-def result_build(config: Config, stage_name: str):
+def result_build(config: Config, stage: Stage):
     # Collect result
     result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
                                            result_paths=config.paths.result)
@@ -60,18 +60,18 @@ def result_build(config: Config, stage_name: str):
         config.advanced_settings.transient.criteria_calculating_df_slice
     )
     # Prepare result
-    result_collector.prepare_result_data(stage_name)
+    result_collector.prepare_result_data(stage)
 
     # Save data in result file and output in console
     result_builder = ResultBuilder(result_collector,
                                    result_paths=config.paths.result,
-                                   stage=stage_name)
+                                   stage_name=stage.name)
 
     # Creation of plot builder object
     plot_builder = TreadaPlotBuilder(mtut_path=config.paths.treada_core.mtut,
                                      result_path=result_builder.result_path,
                                      dist_path=config.paths.result.temporary.distributions,
-                                     stage=stage_name,
+                                     stage_name=stage.name,
                                      runtime_result_data=result_builder.results,
                                      skip_rows=result_builder.header_length)
 
@@ -83,6 +83,6 @@ def result_build(config: Config, stage_name: str):
 
     # Save plot to file
     full_plot_path = result_builder.file_name_build(result_path=config.paths.result.plots,
-                                                    stage=stage_name,
+                                                    stage_name=stage.name,
                                                     file_extension='png')
     plot_builder.save_plot(full_plot_path)

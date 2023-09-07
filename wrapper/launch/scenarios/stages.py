@@ -14,7 +14,7 @@ def without_light(mtut_stage_configer: MtutStageConfiger, config: Config,
     if config.flags.dark_result_saving:
         treada.light_off(config.paths.result.temporary.raw, stage_name=scenario_stage.name)
         # Collect data and build result
-        result_build(config, stage_name=scenario_stage.name)
+        result_build(config, stage=scenario_stage)
     else:
         treada.light_off(stage_name=scenario_stage.name)
 
@@ -24,7 +24,7 @@ def with_light(mtut_stage_configer: MtutStageConfiger, config: Config, scenario_
     treada = TreadaSwitcher(config)
     treada.light_on(config.paths.result.temporary.raw, stage_name=scenario_stage.name.title())
     # Collect data and build result
-    result_build(config, stage_name=scenario_stage.name)
+    result_build(config, stage=scenario_stage)
 
 
 
