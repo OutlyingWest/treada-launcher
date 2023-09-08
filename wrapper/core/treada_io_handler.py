@@ -15,38 +15,38 @@ from wrapper.core.data_management import TreadaOutputParser, MtutManager
 
 def main():
     path_to_executable = sys.argv[1]
-    runner = TreadaSwitcher
+    runner = TreadaRunner
     exec_process = runner.exe_runner(exe_path=path_to_executable)
     capturer = StdoutCapturer(process=exec_process)
     output_path = path_to_executable.strip('. ').split('.')[0]
     capturer.stream_management(path_to_output=output_path)
 
 
-class TreadaSwitcher:
+class TreadaRunner:
     """
-    Responsible for stages switching of "Treada" work
+    Responsible for launch of "Treada" program.
     """
     def __init__(self, config):
-        self.exec_process = self.exe_runner(exe_path=config.paths.treada_core.exe)
+        self.exec_process = self._exe_runner(exe_path=config.paths.treada_core.exe)
         self.capturer = StdoutCapturer(process=self.exec_process,
                                        config=config,
                                        ending_condition_params=None)
 
-    def light_off(self, dark_output_file_path='', stage_name='Dark'):
+    def run(self, output_file_path='', stage_name='None Stage'):
+        """
+        Runs Treada's program working stage.
+        :param output_file_path: path to raw Treada's program output file
+        :param stage_name: Treada's working stage name
+        """
         self.capturer.set_stage_name(stage_name)
         self.capturer.set_runtime_console_info(f'   {stage_name}')
-        if dark_output_file_path:
-            self.capturer.stream_management(path_to_output=dark_output_file_path)
+        if output_file_path:
+            self.capturer.stream_management(path_to_output=output_file_path)
         else:
             self.capturer.stream_management()
 
-    def light_on(self, light_output_file_path: str, stage_name='Light'):
-        self.capturer.set_stage_name(stage_name)
-        self.capturer.set_runtime_console_info(f'   {stage_name}')
-        self.capturer.stream_management(path_to_output=light_output_file_path)
-
     @staticmethod
-    def exe_runner(exe_path: str) -> subprocess.Popen:
+    def _exe_runner(exe_path: str) -> subprocess.Popen:
         """
         Runs *.exe and returns itself like subprocess.Popen object.
 
@@ -59,6 +59,12 @@ class TreadaSwitcher:
                                     cwd=working_directory_path)
         except FileNotFoundError:
             print('Executable file not found, Path:', exe_path)
+
+    def get_last_step_current(self) -> float:
+        """
+        Can be used only after run() function.
+        """
+        return TreadaOutputParser.get_single_current_from_line(self.capturer.last_step_string)
 
 
 class StdoutCapturer:
@@ -113,6 +119,7 @@ class StdoutCapturer:
             self.timestep_constant: Union[None, float] = None
             self.light_impulse_time_ps = config.advanced_settings.runtime.light_impulse.fixed_time_ps
         self.light_impulse_time_condition = False
+        self.last_step_string = None
 
     def stream_management(self, path_to_output=None):
         """
@@ -143,6 +150,7 @@ class StdoutCapturer:
         else:
             num_of_str = None
 
+        clean_decoded_output = None
         start_time = time.time()
         while self.running_flag:
             try:
@@ -197,6 +205,9 @@ class StdoutCapturer:
         execution_time = end_time - start_time
         print('Number of strings:', self.str_counter)
         print(f'Execution time in I/O loop:{execution_time:.2f}s')
+        # Preserve last step string
+        self.last_step_string = clean_decoded_output
+
 
     async def keyboard_catch(self):
         pass

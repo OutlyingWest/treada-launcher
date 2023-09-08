@@ -270,6 +270,10 @@ class TreadaOutputParser:
         return pure_df
 
     @staticmethod
+    def get_single_current_from_line(current_line: str):
+        return float(current_line.split(' ', 1)[0])
+
+    @staticmethod
     def find_relative_time(data_list: list):
         relative_time = None
         relatives_found = False
@@ -486,12 +490,7 @@ class ResultDataCollector:
         Add an initial null source current value to current dataframe on first stage of Treada's work
         """
         if self.treada_state['stage'] < 2:
-            # Adding a 0 current value to string with index = -1
-            self.dataframe.loc[-1] = 0
-            # Shifting index
-            self.dataframe.index = self.dataframe.index + 1
-            # Sorting by index
-            self.dataframe = self.dataframe.sort_index()
+            self._add_first_df_current(value=0)
 
     def get_last_current_from_stage(self):
         """
@@ -500,8 +499,9 @@ class ResultDataCollector:
         with JPUSH 1 setting in MTUT
         :return:
         """
+        pass
 
-    def add_previous_last_current_to_stage(self, previous_last_current):
+    def add_previous_last_current_on_stage(self, previous_last_current: float):
         """
         Add previous last source current value as the first value of current stage dataframe if
         Treada program do not proceed to the next point of drain (gate) potentials (or currents)
@@ -510,9 +510,15 @@ class ResultDataCollector:
         """
         if self.treada_state['jpush'] == '0':
             if self.treada_state['stage'] > 1:
-                pass
-            else:
-                pass
+                self._add_first_df_current(value=previous_last_current)
+
+    def _add_first_df_current(self, value: float):
+        # Adding a current value to string with index = -1
+        self.dataframe.loc[-1] = value
+        # Shifting index
+        self.dataframe.index = self.dataframe.index + 1
+        # Sorting by index
+        self.dataframe = self.dataframe.sort_index()
 
     def _treada_state_definition(self) -> dict:
         """

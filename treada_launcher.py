@@ -5,7 +5,7 @@ from wrapper.config.config_builder import load_config, Config
 from wrapper import launch
 from wrapper.launch.scenarios import scenarios
 from wrapper.misc.initializations import init_dirs
-from wrapper.core.treada_io_handler import TreadaSwitcher
+from wrapper.core.treada_io_handler import TreadaRunner
 from wrapper.core.data_management import MtutStageConfiger, ResultBuilder, ResultDataCollector
 from wrapper.states.states_management import StatesMachine, StateStatuses
 from wrapper.ui.plotting import TreadaPlotBuilder, AdvancedPlotter
