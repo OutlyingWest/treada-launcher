@@ -459,10 +459,11 @@ class ResultDataCollector:
         # Distributions
         self.dist_result_path = result_paths.temporary.distributions
         self.ww_data_indexes = []
+        # Define Treada's MTUT vars on current stage
+        self.treada_state = self._treada_state_definition()
 
     def prepare_result_data(self, stage: Stage):
         self.add_null_current_on_first_stage()
-
         self.time_col_calculate(stage.skip_initial_time_step)
         self.current_density_col_calculate()
         self.transient.time = self.find_transient_time()
@@ -484,14 +485,46 @@ class ResultDataCollector:
         """
         Add an initial null source current value to current dataframe on first stage of Treada's work
         """
-        stage_indication_var = float(self.mtut_manager.get_var('CKLKRS'))
-        if stage_indication_var < 2:
+        if self.treada_state['stage'] < 2:
             # Adding a 0 current value to string with index = -1
             self.dataframe.loc[-1] = 0
             # Shifting index
             self.dataframe.index = self.dataframe.index + 1
             # Sorting by index
             self.dataframe = self.dataframe.sort_index()
+
+    def get_last_current_from_stage(self):
+        """
+        Get last source current value from the last value of current stage dataframe if
+        Treada program do not proceed to the next point of drain (gate) potentials (or currents)
+        with JPUSH 1 setting in MTUT
+        :return:
+        """
+
+    def add_previous_last_current_to_stage(self, previous_last_current):
+        """
+        Add previous last source current value as the first value of current stage dataframe if
+        Treada program do not proceed to the next point of drain (gate) potentials (or currents)
+        with JPUSH 1 setting in MTUT
+        :return:
+        """
+        if self.treada_state['jpush'] == '0':
+            if self.treada_state['stage'] > 1:
+                pass
+            else:
+                pass
+
+    def _treada_state_definition(self) -> dict:
+        """
+        Returns MTUT vars that indicate the Treada program's current state
+        """
+        jpush = self.mtut_manager.get_var('JPUSH')
+        stage_indication_var = float(self.mtut_manager.get_var('CKLKRS'))
+        state: dict = {
+            'jpush': jpush,
+            'stage': stage_indication_var,
+        }
+        return state
 
     def time_col_calculate(self, skip_initial_time_step=False):
         # Get initial time step from MTUT file
@@ -532,7 +565,6 @@ class ResultDataCollector:
         # print(f'{initial_time_step_const=}')
         # print(f'{operating_time_step_const=}')
         # print(f'{relative_time=}')
-
 
     def get_mean_current_density_seria(self, window_size_denominator: Union[None, int]) -> pd.Series:
         dataframe_length = self.dataframe.shape[0]

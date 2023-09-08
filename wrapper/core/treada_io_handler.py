@@ -130,7 +130,6 @@ class StdoutCapturer:
         else:
             # Creates output dir if it does not exist
             create_dir(path_to_output)
-
             with open(path_to_output, "w") as output_file:
                 self.__io_loop(output_file)
 
