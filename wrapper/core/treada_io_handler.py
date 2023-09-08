@@ -60,11 +60,14 @@ class TreadaRunner:
         except FileNotFoundError:
             print('Executable file not found, Path:', exe_path)
 
-    def get_last_step_current(self) -> float:
+    def get_last_step_current(self) -> Union[float, None]:
         """
         Can be used only after run() function.
         """
-        return TreadaOutputParser.get_single_current_from_line(self.capturer.last_step_string)
+        if self.capturer.last_step_string:
+            return TreadaOutputParser.get_single_current_from_line(self.capturer.last_step_string)
+        else:
+            return None
 
 
 class StdoutCapturer:

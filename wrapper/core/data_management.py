@@ -466,8 +466,11 @@ class ResultDataCollector:
         # Define Treada's MTUT vars on current stage
         self.treada_state = self._treada_state_definition()
 
-    def prepare_result_data(self, stage: Stage):
+    def prepare_result_data(self, stage: Stage, prev_stage_last_current: Union[float, None]):
         self.add_null_current_on_first_stage()
+        self.add_previous_last_current_on_stage(prev_stage_last_current)
+        print(self.dataframe)
+        input()
         self.time_col_calculate(stage.skip_initial_time_step)
         self.current_density_col_calculate()
         self.transient.time = self.find_transient_time()
@@ -501,14 +504,14 @@ class ResultDataCollector:
         """
         pass
 
-    def add_previous_last_current_on_stage(self, previous_last_current: float):
+    def add_previous_last_current_on_stage(self, previous_last_current: Union[float, None]):
         """
         Add previous last source current value as the first value of current stage dataframe if
         Treada program do not proceed to the next point of drain (gate) potentials (or currents)
         with JPUSH 1 setting in MTUT
         :return:
         """
-        if self.treada_state['jpush'] == '0':
+        if previous_last_current and self.treada_state['jpush'] == '0':
             if self.treada_state['stage'] > 1:
                 self._add_first_df_current(value=previous_last_current)
 

@@ -1,3 +1,5 @@
+from typing import Union
+
 from wrapper.config.config_builder import Config
 from wrapper.core.data_management import ResultDataCollector, ResultBuilder, MtutStageConfiger, MtutManager
 from wrapper.launch.scenarios.scenario_builder import load_scenario, Stage
@@ -47,7 +49,7 @@ def scenario_function(data_class):
     return scenario_decorator_wrapper
 
 
-def result_build(config: Config, stage: Stage):
+def result_build(config: Config, stage: Stage, prev_stage_last_current: Union[float, None]):
     # Collect result
     result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
                                            result_paths=config.paths.result)
@@ -59,8 +61,9 @@ def result_build(config: Config, stage: Stage):
     result_collector.transient.set_criteria_calculating_df_slice(
         config.advanced_settings.transient.criteria_calculating_df_slice
     )
+    print(f'{prev_stage_last_current=}')
     # Prepare result
-    result_collector.prepare_result_data(stage)
+    result_collector.prepare_result_data(stage, prev_stage_last_current)
 
     # Save data in result file and output in console
     result_builder = ResultBuilder(result_collector,
