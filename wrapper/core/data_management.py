@@ -584,7 +584,7 @@ class ResultDataCollector:
             .rolling(window=self.transient.window_size, step=self.transient.window_size, center=True)
             .mean()
         )
-        print(f'transient.window_size={self.transient.window_size}')
+        print(f'transient.window_size={self.transient.window_size}', end='\n\n')
         return mean_densities
 
     def current_density_col_calculate(self):

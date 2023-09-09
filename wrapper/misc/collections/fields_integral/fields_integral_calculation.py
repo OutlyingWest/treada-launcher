@@ -119,8 +119,9 @@ def find_fields_integral(fields_seria: pd.Series, dx_const: float, q_mobility: f
 
 
 def save_integral_results(results: dict, mtut_vars: MtutVars):
-    res_path = r''
-    with open(f'res_u({mtut_vars.udrm}).json', 'w') as fields_result_file:
+    script_path = os.path.dirname((os.path.abspath(__file__)))
+    res_file_path = os.path.join(script_path, 'results', f'res_u({mtut_vars.udrm}).json')
+    with open(res_file_path, 'w') as fields_result_file:
         json.dump(results, fields_result_file, indent=4)
 
 

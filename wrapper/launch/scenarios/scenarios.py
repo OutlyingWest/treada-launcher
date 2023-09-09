@@ -9,13 +9,14 @@ from wrapper.launch.scenarios import scenario_builder as sb
 def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger):
     stages = Stages()
     # Stage 1 - without light
-    stages.without_light(mtut_stage_configer, config, scenario.stages.dark)
+    # stages.without_light(mtut_stage_configer, config, scenario.stages.dark)
 
     # Stage 2 - with light
-    stages.with_light(mtut_stage_configer, config, scenario.stages.light)
+    # stages.with_light(mtut_stage_configer, config, scenario.stages.light)
 
-    # Stage 3 - fields integral calculation
-
+    # Stage 3 (additional) - fields integral calculation
+    if config.flags.fields_calculation:
+        stages.fields_integral_calculation(scenario, config)
 
 
 @scenario_function(data_class=sb.DarkLightDarkScenario)
