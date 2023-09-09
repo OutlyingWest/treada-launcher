@@ -1,7 +1,7 @@
-from dataclasses import dataclass, field
 import os
 import re
 import time
+from dataclasses import dataclass, field
 from typing import Union, List, Tuple, Dict
 
 from colorama import Fore, Style

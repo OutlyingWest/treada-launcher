@@ -1,6 +1,6 @@
 from wrapper.config.config_builder import Config
 from wrapper.core.data_management import MtutStageConfiger
-from wrapper.launch.functions import scenario_function
+from wrapper.launch.scenarios.scenario_management import scenario_function
 from wrapper.launch.scenarios.stages import Stages
 from wrapper.launch.scenarios import scenario_builder as sb
 
@@ -9,10 +9,10 @@ from wrapper.launch.scenarios import scenario_builder as sb
 def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger):
     stages = Stages()
     # Stage 1 - without light
-    # stages.without_light(mtut_stage_configer, config, scenario.stages.dark)
+    stages.without_light(mtut_stage_configer, config, scenario.stages.dark)
 
     # Stage 2 - with light
-    # stages.with_light(mtut_stage_configer, config, scenario.stages.light)
+    stages.with_light(mtut_stage_configer, config, scenario.stages.light)
 
     # Stage 3 (additional) - fields integral calculation
     if config.flags.fields_calculation:

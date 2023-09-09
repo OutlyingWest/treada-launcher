@@ -2,13 +2,11 @@ import colorama
 from colorama import Fore, Style
 
 from wrapper.config.config_builder import load_config, Config
-from wrapper import launch
-from wrapper.launch.scenarios import scenarios
+from wrapper.launch.scenarios import launch
 from wrapper.misc.initializations import init_dirs
-from wrapper.core.treada_io_handler import TreadaRunner
-from wrapper.core.data_management import MtutStageConfiger, ResultBuilder, ResultDataCollector
+from wrapper.core.data_management import MtutStageConfiger
 from wrapper.states.states_management import StatesMachine, StateStatuses
-from wrapper.ui.plotting import TreadaPlotBuilder, AdvancedPlotter
+from wrapper.ui.plotting import AdvancedPlotter
 
 
 def main():
@@ -36,7 +34,7 @@ def treada_running_loop(config: Config):
         elif state_status == state_statuses.MANUAL:
             running_flag = False
 
-        launch.functions.call_active_scenario(mtut_stage_configer, config)
+        launch.call_active_scenario(mtut_stage_configer, config)
 
     # Show plot
     if config.flags.plotting.enable:

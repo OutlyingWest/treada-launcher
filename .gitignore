@@ -29,5 +29,10 @@ wrapper/misc/*.txt
 wrapper/misc/*
 !wrapper/misc/collections/
 wrapper/misc/collections/*
-!wrapper/misc/collections/*.py
+!wrapper/misc/collections/fields_integral/*.py
+!wrapper/misc/collections/ww_data_collecting/*.py
+
+#!wrapper/misc/collections/ww_data_collecting/
+#!wrapper/misc/collections/ww_data_collecting/*.py
+
 
