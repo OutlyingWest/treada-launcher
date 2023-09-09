@@ -205,9 +205,12 @@ class MtutManager(FileManager):
             return var_list
 
 
-@dataclass(frozen=True)
+@dataclass
 class DataFrameColNames:
-    time: str
+    """
+    Treada's result datafame col names.
+    """
+    time:  str
     source_current: str
     current_density: str
     mean_density: str
@@ -215,8 +218,8 @@ class DataFrameColNames:
 
 col_names = DataFrameColNames(
     time='time(ps)',
-    source_current='TSRS (mA)',
-    current_density='I(mA/cm^2)',
+    source_current='TSRS(mA)',
+    current_density ='I(mA/cm^2)',
     mean_density='mean_density',
 )
 
@@ -472,8 +475,8 @@ class ResultDataCollector:
         self.time_col_calculate(stage.skip_initial_time_step)
         self.current_density_col_calculate()
         self.transient.time = self.find_transient_time()
-        self.result_dataframe = self.dataframe[[col_names.time, col_names.current_density]]
-        self.transient.get_ending_index()
+        # print(self.dataframe)
+        self.result_dataframe = self.dataframe[[col_names.time, col_names.source_current, col_names.current_density]]
         self.correct_transient_time(window_size=self.transient.window_size)
 
         self.last_mean_time, self.last_mean_current_density = (

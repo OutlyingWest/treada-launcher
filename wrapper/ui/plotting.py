@@ -70,8 +70,8 @@ class TreadaPlotBuilder:
         # Load result data from file
         self.result = self.load_result(mtut_path, result_path, skip_rows)
         # Extract result data
-        time_column = self.result.full_df[self.result.full_df.columns[0]]
-        current_density_column = self.result.full_df[self.result.full_df.columns[1]]
+        time_column = self.result.full_df[col_names.time]
+        current_density_column = self.result.full_df[col_names.current_density]
         # Create plotter object
         self.plotter = AdvancedPlotter(time_column, current_density_column)
         # Construct plot
