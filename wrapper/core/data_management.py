@@ -469,8 +469,6 @@ class ResultDataCollector:
     def prepare_result_data(self, stage: Stage, prev_stage_last_current: Union[float, None]):
         self.add_null_current_on_first_stage()
         self.add_previous_last_current_on_stage(prev_stage_last_current)
-        print(self.dataframe)
-        input()
         self.time_col_calculate(stage.skip_initial_time_step)
         self.current_density_col_calculate()
         self.transient.time = self.find_transient_time()

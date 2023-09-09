@@ -41,6 +41,7 @@ class Flags:
     auto_ending: bool
     dark_result_saving: bool
     preserve_distributions: bool
+    fields_calculation: bool
 
 
 @dataclass

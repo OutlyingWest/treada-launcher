@@ -34,6 +34,9 @@ class Stages:
         result_build(config, scenario_stage, self.previous_stage_last_current)
         self.previous_stage_last_current = treada.get_last_step_current()
 
+    def fields_integral_calculation(self, config: Config):
+        pass
+
 
 
 

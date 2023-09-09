@@ -14,6 +14,9 @@ def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutSt
     # Stage 2 - with light
     stages.with_light(mtut_stage_configer, config, scenario.stages.light)
 
+    # Stage 3 - fields integral calculation
+
+
 
 @scenario_function(data_class=sb.DarkLightDarkScenario)
 def dark_light_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger):
