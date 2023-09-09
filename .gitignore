@@ -7,7 +7,7 @@ TreadaTx_C/**
 !TreadaTx_C/README.txt
 !wrapper/core/treada_io_handler.py
 
-# Ignore rules of data folder
+# Ignore rules of data folder and scenarios
 data/*
 !/data/input/
 /data/input/*
@@ -26,4 +26,8 @@ wrapper/states/current_state.json
 wrapper/misc/*.txt
 
 # Ignore subtasks data-collection scripts
-wrapper/misc/collections/
+wrapper/misc/*
+!wrapper/misc/collections/
+wrapper/misc/collections/*
+!wrapper/misc/collections/*.py
+
