@@ -7,8 +7,11 @@ TreadaTx_C/**
 !TreadaTx_C/README.txt
 !wrapper/core/treada_io_handler.py
 
-data/
-!data/input/scenarios
+# Ignore rules of data folder
+data/*
+!/data/input/
+/data/input/*
+!/data/input/scenarios/
 
 # Ignore installer files
 installer_x64/*.log

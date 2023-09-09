@@ -1,0 +1,21 @@
+{
+    "stages": {
+        "turn_off_impulse": {
+            "name": "turn_off_dark",
+            "mtut_vars": {
+                "CKLKRS": "1.",
+                "NDRN": 2,
+                "ILUMEN": 0,
+                "DRSTP": 1.5,
+                "JPUSH": 0
+            }
+        },
+        "turn_on_impulse": {
+            "name": "turn_on_dark",
+            "mtut_vars": {
+                "CKLKRS": "2.",
+                "JPUSH": 1
+            }
+        }
+    }
+}
