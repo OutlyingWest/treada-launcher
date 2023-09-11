@@ -100,7 +100,11 @@ def field_integral_calculation(field: pd.Series, dx: pd.Series, q_mobility: floa
     :param q_mobility: Electron or holes mobility
     :return: full time calculated for field range
     """
-    time_seria: pd.Series = (dx / (q_mobility * field * 1e3)) * 1e12
+    velocity = q_mobility * field * 1e3
+    # Carries velocity restriction
+    if velocity > 1e-7:
+        velocity = 1e-7
+    time_seria: pd.Series = (dx / velocity) * 1e12
 
     # pd.set_option('display.max_rows', None)
     # print(pd.DataFrame({'field': field, 'time': time_seria}))
