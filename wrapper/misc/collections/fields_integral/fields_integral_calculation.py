@@ -5,7 +5,7 @@ from typing import List, Dict
 
 import numpy as np
 import pandas as pd
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, peak_widths
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -74,21 +74,36 @@ def load_fields_data(distributions_path: str, scenario) -> dict:
         stage_name = stage.name
         stage_data_path = os.path.join(distributions_path, stage_name)
         stage_data_indexes: list = sorted(os.listdir(stage_data_path), key=int)
-        # data_indexes_show = [light_data_indexes[ind] for ind in list(range(0, len(light_data_indexes), 3))]
-        data_indexes_show = stage_data_indexes[-1:]
-        print(f'{stage_data_indexes=}')
+        last_index_list = stage_data_indexes[-1:]
+        print(f'{stage.name}: {stage_data_indexes=}')
 
         fields_dict[stage_name] = load_ww_data(abs_res_path=distributions_path,
                                                stage_dir_name=stage_name,
-                                               ww_dir_indexes=data_indexes_show,
+                                               ww_dir_indexes=last_index_list,
                                                ww_aliases=fields_alias)
     return fields_dict
 
 
 def find_between_peaks_field_range(field: pd.Series, height: float) -> np.array:
     field_peaks, _ = find_peaks(field, height=height)
-    if len(field_peaks) > 2:
+    field_peaks_len = len(field_peaks)
+    if field_peaks_len > 2:
         raise ValueError('Field peaks number > 2')
+    if field_peaks_len == 1:
+        peak_width_params = peak_widths(field, peaks=field_peaks)
+        peak_width = peak_width_params[0][0]
+
+        single_peak_middle_index = field_peaks[0]
+        single_peak_edge_indexes = [
+            round(single_peak_middle_index - peak_width/2),
+            round(single_peak_middle_index + peak_width/2 + 1)
+        ]
+        # with pd.option_context('display.max_rows', None):
+        #     print(field)
+        print(f'{field_peaks=}')
+        print(f'{peak_width=}')
+        print(f'{single_peak_edge_indexes=}')
+        return single_peak_edge_indexes
     field_peaks[-1] += 1
     return field_peaks
 
@@ -101,9 +116,13 @@ def field_integral_calculation(field: pd.Series, dx: pd.Series, q_mobility: floa
     :return: full time calculated for field range
     """
     velocity = q_mobility * field * 1e3
-    # Carries velocity restriction
-    if velocity > 1e-7:
-        velocity = 1e-7
+
+    print('velocity:')
+    print(velocity)
+
+    # Carries' velocity restriction
+    velocity.loc[velocity > 1e7] = 1e7
+
     time_seria: pd.Series = (dx / velocity) * 1e12
 
     # pd.set_option('display.max_rows', None)
@@ -113,9 +132,10 @@ def field_integral_calculation(field: pd.Series, dx: pd.Series, q_mobility: floa
     return full_time
 
 
-def find_fields_integral(fields_seria: pd.Series, dx_const: float, q_mobility: float) -> float:
-    low_field_ind, high_field_ind = find_between_peaks_field_range(fields_seria, height=1)
+def find_fields_integral(fields_seria: pd.Series, dx_const: float, q_mobility: float, height=1) -> float:
+    low_field_ind, high_field_ind = find_between_peaks_field_range(fields_seria, height=height)
     # print(f'{low_field_ind=}, {high_field_ind=}')
+    # input()
     stripped_fields_seria = fields_seria.iloc[low_field_ind:high_field_ind]
     dx = pd.Series(dx_const, index=stripped_fields_seria.index)  # cm
     time = field_integral_calculation(stripped_fields_seria, dx, q_mobility)
@@ -129,7 +149,7 @@ def save_integral_results(results: dict, mtut_vars: MtutVars):
         json.dump(results, fields_result_file, indent=4)
 
 
-def perform_fields_integral_finding(scenario, config: Config, mtut_vars: MtutVars):
+def perform_fields_integral_finding(scenario, config: Config, mtut_vars: MtutVars, is_plot=False):
     extract_stages_ww_data(distributions_path=config.paths.result.temporary.distributions)
     fields_data = load_fields_data(distributions_path=config.paths.result.temporary.distributions, scenario=scenario)
     print(fields_data)
@@ -149,6 +169,11 @@ def perform_fields_integral_finding(scenario, config: Config, mtut_vars: MtutVar
         print(f'stage: {stage.name}')
 
         fields_df: pd.DataFrame = next(iter(fields_data[stage.name].values()))[6]
+
+        if is_plot:
+            plt.plot(fields_df['x'], fields_df['fields'], label=f'stage: {stage.name}')
+            # plt.plot(fields_df.index, fields_df['fields'], label=f'stage: {stage.name}')
+
         e_time = find_fields_integral(fields_seria=fields_df['fields'],
                                       dx_const=dx_const,
                                       q_mobility=mtut_vars.e_mobility)
@@ -163,6 +188,12 @@ def perform_fields_integral_finding(scenario, config: Config, mtut_vars: MtutVar
             'e_time': e_time,
             'h_time': h_time,
         }
+
+    if is_plot:
+        plt.grid(True)
+        plt.legend()
+        plt.show(block=True)
+
     return results
 
 
@@ -173,11 +204,7 @@ def main():
 
     mtut_vars = load_mtut_vars(config.paths.treada_core.mtut)
 
-    perform_fields_integral_finding(scenario, config, mtut_vars)
-    # plt.plot(fields_df['x'], fields_df['fields'])
-    # # plt.yscale('log', base=10)
-    # plt.grid(True)
-    # plt.show()
+    perform_fields_integral_finding(scenario, config, mtut_vars, is_plot=True)
 
 
 if __name__ == '__main__':
