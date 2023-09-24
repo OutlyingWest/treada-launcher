@@ -174,7 +174,7 @@ class SimplePlotter:
         fig: Matplotlib Figure object
         ax: Matplotlib Axes object
     """
-    def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
+    def __init__(self, x: Iterable, y: Iterable, label='', plot_type='plot'):
         """
         Take coords to plot.
         :param x: Iterable vector of x coordinates
@@ -185,9 +185,9 @@ class SimplePlotter:
         self.ax: plt.Axes = ax
         self.ax.grid(True)
         if plot_type == 'plot':
-            self.ax.plot(x, y)
+            self.ax.plot(x, y, label=label)
         elif plot_type == 'scatter':
-            self.ax.scatter(x, y)
+            self.ax.scatter(x, y, label=label)
         else:
             raise ValueError('Wrong type')
 
@@ -201,6 +201,12 @@ class SimplePlotter:
 
     def set_plot_title(self, title='plot title'):
         self.ax.set_title(title)
+
+    def add_plot(self, x, y, *args, **kwargs):
+        self.ax.plot(x, y, *args, **kwargs)
+
+    def legend(self):
+        self.ax.legend()
 
 
 class SpecialPointsMixin:
@@ -324,6 +330,25 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
                         c='magenta', alpha=1, zorder=3,
                         label='WW measures points')
         self.ax.legend()
+
+    @classmethod
+    def show(cls, block=True):
+        try:
+            plt.show(block=block)
+        except KeyboardInterrupt:
+            pass
+
+
+class WWDataPlotter(SimplePlotter):
+    def __init__(self, ww_dict: dict, plot_type='plot'):
+        ww_dir_key, ww_number_dict = ww_dict.popitem()
+        ww_number, ww_df = ww_number_dict.popitem()
+        super().__init__(x=ww_df['x'], y=ww_df[ww_df.columns[2]], plot_type=plot_type)
+
+        for ww_dir_key, ww_number_dict in ww_dict.items():
+            ww_number, ww_df = next(iter(ww_number_dict.items()))
+            self.add_plot(x=ww_df['x'], y=ww_df[ww_df.columns[2]], label=ww_dir_key)
+        self.legend()
 
     @classmethod
     def show(cls, block=True):

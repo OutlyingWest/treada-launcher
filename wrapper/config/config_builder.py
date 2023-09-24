@@ -123,6 +123,7 @@ class Paths:
     input: InputPaths
     result: ResultPaths
     scenarios: str
+    resources: str
 
 
 @dataclass

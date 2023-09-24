@@ -14,8 +14,7 @@ import matplotlib.pyplot as plt
 from wrapper.core.data_management import MtutManager
 from wrapper.config.config_builder import load_config, Config
 from wrapper.launch.scenarios.scenario_builder import TurnOnImpulseDarkScenario, DarkToLightScenario, load_scenario
-from wrapper.misc.collections.ww_data_collecting.collect_ww_data import load_ww_data
-from wrapper.misc.collections.ww_data_collecting.extract_ww_data import extract_ww_data
+from wrapper.misc.collections.ww_data_collecting.collect_ww_data import WWDataCollector
 
 
 @dataclass
@@ -62,7 +61,7 @@ def extract_stages_ww_data(distributions_path: str):
     for stage_folder_path in os.listdir(distributions_path):
         stage_folder_path = os.path.join(distributions_path, stage_folder_path)
         if not is_ww_data_exists(stage_folder_path):
-            extract_ww_data(stage_folder_path)
+            WWDataCollector.extract_ww_data(stage_folder_path)
 
 
 def load_fields_data(distributions_path: str, scenario) -> dict:
@@ -77,10 +76,10 @@ def load_fields_data(distributions_path: str, scenario) -> dict:
         last_index_list = stage_data_indexes[-1:]
         print(f'{stage.name}: {stage_data_indexes=}')
 
-        fields_dict[stage_name] = load_ww_data(abs_res_path=distributions_path,
-                                               stage_dir_name=stage_name,
-                                               ww_dir_indexes=last_index_list,
-                                               ww_aliases=fields_alias)
+        fields_dict[stage_name] = WWDataCollector.load_ww_data(abs_res_path=distributions_path,
+                                                               stage_dir_name=stage_name,
+                                                               ww_dir_indexes=last_index_list,
+                                                               ww_aliases=fields_alias)
     return fields_dict
 
 
@@ -116,12 +115,15 @@ def field_integral_calculation(field: pd.Series, dx: pd.Series, q_mobility: floa
     :return: full time calculated for field range
     """
     velocity = q_mobility * field * 1e3
-
-    print('velocity:')
-    print(velocity)
+    with pd.option_context('display.max_rows', None):
+        print('velocity:')
+        print(velocity)
 
     # Carries' velocity restriction
     velocity.loc[velocity > 1e7] = 1e7
+    with pd.option_context('display.max_rows', None):
+        print('velocity restricted:')
+        print(velocity)
 
     time_seria: pd.Series = (dx / velocity) * 1e12
 
