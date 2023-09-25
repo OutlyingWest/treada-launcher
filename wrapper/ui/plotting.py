@@ -205,8 +205,8 @@ class SimplePlotter:
     def add_plot(self, x, y, *args, **kwargs):
         self.ax.plot(x, y, *args, **kwargs)
 
-    def legend(self):
-        self.ax.legend()
+    def legend(self, legends_list: list):
+        self.ax.legend(legends_list)
 
 
 class SpecialPointsMixin:
@@ -341,14 +341,27 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
 
 class WWDataPlotter(SimplePlotter):
     def __init__(self, ww_dict: dict, plot_type='plot'):
-        ww_dir_key, ww_number_dict = ww_dict.popitem()
-        ww_number, ww_df = ww_number_dict.popitem()
-        super().__init__(x=ww_df['x'], y=ww_df[ww_df.columns[2]], plot_type=plot_type)
+        last_ww_dir_key, last_ww_number_dict = ww_dict.popitem()
+        _, last_ww_df = last_ww_number_dict.popitem()
+        super().__init__(x=last_ww_df['x'], y=last_ww_df[last_ww_df.columns[2]],
+                         label=last_ww_dir_key, plot_type=plot_type)
+        legends_list = self.add_bulk_plots(ww_dict)
+        legends_list.append(last_ww_dir_key)
+        self.legend(legends_list)
 
+    def add_bulk_plots(self, ww_dict) -> list:
+        old_legend = self.ax.get_legend()
+        legends_list = list()
         for ww_dir_key, ww_number_dict in ww_dict.items():
             ww_number, ww_df = next(iter(ww_number_dict.items()))
-            self.add_plot(x=ww_df['x'], y=ww_df[ww_df.columns[2]], label=ww_dir_key)
-        self.legend()
+            self.add_plot(x=ww_df['x'], y=ww_df[ww_df.columns[2]])
+            legends_list.append(ww_dir_key)
+        if old_legend:
+            old_legends_list = [text.get_text() for text in old_legend.get_texts()]
+            old_legends_list.extend(legends_list)
+            return old_legends_list
+        else:
+            return legends_list
 
     @classmethod
     def show(cls, block=True):
