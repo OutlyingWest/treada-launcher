@@ -5,14 +5,22 @@ from typing import Dict, Union, List
 import subprocess
 
 import pandas as pd
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtWidgets import QApplication
 
 
 def main():
     config = load_config('config.json')
     ww_descriptions_path = os.path.join(config.paths.resources, 'ww_descriptions.csv')
     ww_data_collector = WWDataCollector(ww_descriptions_path, config.paths.result.temporary.distributions)
-    user_interactor = WWDataCmdUserInteractor(ww_data_collector)
-    user_interactor.run_interact_loop()
+    if len(sys.argv) < 2:
+        user_interactor = WWDataCmdUserInteractor(ww_data_collector)
+    elif '--gui' in sys.argv:
+        user_interactor = WWDataInterfaceUserInteractor(ww_data_collector)
+    else:
+        print('Wrong command line argument.')
+        return -1
+    user_interactor.run()
 
 
 class WWDataCollector:
@@ -114,6 +122,12 @@ class WWDataUserInteractor:
         else:
             return None
 
+    def run(self):
+        """
+        Method to run user interactor application in cmd or interface mode.
+        """
+        pass
+
 
 class WWDataCmdUserInteractor(WWDataUserInteractor):
     # ww_data_plotter object can be created outside the __init__() function.
@@ -122,7 +136,7 @@ class WWDataCmdUserInteractor(WWDataUserInteractor):
     def __init__(self, ww_data_collector: WWDataCollector):
         super().__init__(ww_data_collector)
 
-    def run_interact_loop(self):
+    def run(self):
         running_flag = True
         while running_flag:
             self._greetings()
@@ -158,13 +172,13 @@ class WWDataCmdUserInteractor(WWDataUserInteractor):
                         if self.is_add_to_exists:
                             self.is_add_to_exists = False
                             if hasattr(self, 'ww_data_plotter'):
-                                legends_list = self.ww_data_plotter.add_bulk_plots(ww_dict)
+                                legends_list = self.ww_data_plotter.add_bulk_plots(ww_dict, stage_name)
                                 self.ww_data_plotter.legend(legends_list)
                                 self.ww_data_plotter.show(block=False)
                             else:
                                 print('Plot object not exists. Adding unavailable.')
                         else:
-                            self.ww_data_plotter = WWDataPlotter(ww_dict)
+                            self.ww_data_plotter = WWDataPlotter(ww_dict, stage_name)
                             self.ww_data_plotter.set_plot_axes_labels(x_label='x', y_label=ww_description)
                             if df_col_name:
                                 self.ww_data_plotter.set_plot_title(df_col_name)
@@ -308,6 +322,13 @@ class WWDataInterfaceUserInteractor(WWDataUserInteractor):
     def __init__(self, ww_data_collector: WWDataCollector):
         super().__init__(ww_data_collector)
 
+    def run(self):
+        app = QApplication()
+        main_window = MainWindow(ww_descriptions=self.data_collector.descriptions['description'],
+                                 file_manager_root_path=self.data_collector.distributions_path)
+        main_window.show()
+        sys.exit(app.exec())
+
 
 if __name__ == '__main__':
     # Add path to "project" directory in environ variable - PYTHONPATH
@@ -315,6 +336,7 @@ if __name__ == '__main__':
     sys.path.append(project_path)
     from wrapper.config.config_builder import load_config
     from wrapper.ui.plotting import WWDataPlotter
+    from wrapper.misc.collections.ww_data_collecting.ui.main_window import MainWindow
 
     main()
 
