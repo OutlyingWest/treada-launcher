@@ -1,36 +1,41 @@
 {
-    "stages": {
-        "light_off": {
-            "CKLKRS": "1.",
-            "ILUMEN": "0"
-        },
-        "light_on": {
-            "CKLKRS": "2.",
-            "ILUMEN": "1"
-        }
+    "scenario": {
+        "active_name": "dark_to_light_scenario"
     },
     "modes": {
-        "UDRM_vector_mode": false
+        "udrm_vector_mode": false
     },
     "flags": {
         "plotting": {
             "enable": true,
             "advanced_info": false
         },
-        "auto_ending": true
+        "auto_ending": true,
+        "dark_result_saving": true,
+        "preserve_distributions": true,
+        "fields_calculation": true
     },
     "advanced_settings": {
-        "runtime_ending_condition": {
-            "chunk_size": 100,
-            "equal_values_to_stop": 10,
-            "deviation_coef": 1e-5,
-            "precision": 2e-5,
-            "big_step_multiplier": 100,
-            "low_step_border": 100
+        "runtime": {
+            "find_relative_time": true,
+            "light_impulse": {
+                "consider_fixed_time": true,
+                "fixed_time_ps": 3758.26152
+            },
+            "ending_condition": {
+                "chunk_size": 100,
+                "equal_values_to_stop": 10,
+                "deviation_coef": 1e-5,
+                "precision": 2e-5,
+                "big_step_multiplier": 100,
+                "low_step_border": 100
+            }
         },
+
         "transient": {
             "window_size": 100,
-            "window_size_denominator": null
+            "window_size_denominator": null,
+            "criteria_calculating_df_slice": {"start": null, "stop": null, "step": null}
         }
     },
     "paths": {
@@ -42,10 +47,16 @@
             "udrm": "data\\input\\UDRM.txt",
             "state": "wrapper\\states\\current_state.json"
         },
-        "output": {
-            "raw": "data\\treada_raw_output.txt",
-            "results": "data\\result\\res_.txt",
-            "plots": "data\\result\\plots\\res_.txt"
-        }
-    }
+        "result": {
+            "main": "data\\result\\res_.txt",
+            "plots": "data\\result\\plots\\res_.txt",
+            "temporary": {
+                "raw": "data\\result\\temp\\raw\\treada_raw_output.txt",
+                "distributions": "data\\result\\temp\\distributions\\"
+            }
+        },
+        "scenarios": "data\\input\\scenarios",
+        "resources": "wrapper\\resources"
+    },
+    "distribution_filenames": ["MSRS", "MTDRIV", "MTOKI", "MTOV", "MTUT"]
 }
