@@ -115,14 +115,12 @@ class WWDataUserInteractor:
             return None
 
 
-class WWDataCmdUserInteractor:
+class WWDataCmdUserInteractor(WWDataUserInteractor):
     # ww_data_plotter object can be created outside the __init__() function.
-    __slots__ = ['__dict__', 'ww_data_plotter']
+    __slots__ = ['ww_data_plotter']
 
     def __init__(self, ww_data_collector: WWDataCollector):
-        self.data_collector = ww_data_collector
-        self.is_add_to_exists = False
-        self.is_log_scale = False
+        super().__init__(ww_data_collector)
 
     def run_interact_loop(self):
         running_flag = True
@@ -198,11 +196,12 @@ class WWDataCmdUserInteractor:
                 print('Wrong WW number. Not in available range.')
                 return None
 
-    def _input_stage_name(self):
+    def _input_stage_name(self, stage_name=''):
         print("Введите имя директории в distributions/, соответствующей этапу работы Tread'ы:")
         stage_name = input()
-        if stage_name in os.listdir(self.data_collector.distributions_path):
-            return stage_name
+        correct_stage_name = super(WWDataCmdUserInteractor, self)._input_stage_name(stage_name)
+        if correct_stage_name:
+            return correct_stage_name
         else:
             print('Wrong WW dir name')
             return None
@@ -268,14 +267,10 @@ class WWDataCmdUserInteractor:
         else:
             return 0
 
-    def _input_ww_folder_path(self):
-        is_right_path = False
+    def _input_ww_folder_path(self, stage_name=''):
         ww_folder_path = None
-        while not is_right_path:
-            stage_name = self._input_stage_name()
-            if stage_name:
-                is_right_path = True
-                ww_folder_path = os.path.join(self.data_collector.distributions_path, stage_name)
+        while not ww_folder_path:
+            ww_folder_path = super(WWDataCmdUserInteractor, self)._input_ww_folder_path(stage_name)
         return ww_folder_path
 
     def _print_ww_descriptions(self):
@@ -304,6 +299,14 @@ class WWDataCmdUserInteractor:
                 df_format_str = df_indent.join(df_list)
                 print(df_format_str)
                 print('}\n')
+
+
+class WWDataInterfaceUserInteractor(WWDataUserInteractor):
+    # ww_data_plotter object can be created outside the __init__() function.
+    __slots__ = ['ww_data_plotter']
+
+    def __init__(self, ww_data_collector: WWDataCollector):
+        super().__init__(ww_data_collector)
 
 
 if __name__ == '__main__':
