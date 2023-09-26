@@ -1,5 +1,6 @@
 pandas==2.0.2
 matplotlib==3.7.1
 dacite==1.8.1
+colorama==0.4.6
 scipy==1.11.1
 PySide6==6.1.3
