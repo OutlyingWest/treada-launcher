@@ -5,8 +5,7 @@ from typing import Dict, Union, List
 import subprocess
 
 import pandas as pd
-from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import QApplication
+# from PySide6.QtWidgets import QApplication
 
 
 def main():
@@ -323,11 +322,12 @@ class WWDataInterfaceUserInteractor(WWDataUserInteractor):
         super().__init__(ww_data_collector)
 
     def run(self):
-        app = QApplication()
-        main_window = MainWindow(ww_descriptions=self.data_collector.descriptions['description'],
-                                 file_manager_root_path=self.data_collector.distributions_path)
-        main_window.show()
-        sys.exit(app.exec())
+        pass
+#         app = QApplication()
+#         main_window = MainWindow(ww_descriptions=self.data_collector.descriptions['description'],
+#                                  file_manager_root_path=self.data_collector.distributions_path)
+#         main_window.show()
+#         sys.exit(app.exec())
 
 
 if __name__ == '__main__':
