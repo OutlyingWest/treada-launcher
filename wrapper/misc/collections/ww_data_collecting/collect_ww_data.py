@@ -5,7 +5,16 @@ from typing import Dict, Union, List
 import subprocess
 
 import pandas as pd
-# from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
+
+
+# Add path to "project" directory in environ variable - PYTHONPATH
+project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.sep.join([".."] * 4)))
+sys.path.append(project_path)
+
+from wrapper.config.config_builder import load_config
+from wrapper.ui.plotting import WWDataPlotter
+from wrapper.misc.collections.ww_data_collecting.ui.main_window import MainWindow
 
 
 def main():
@@ -323,20 +332,13 @@ class WWDataInterfaceUserInteractor(WWDataUserInteractor):
 
     def run(self):
         pass
-#         app = QApplication()
-#         main_window = MainWindow(ww_descriptions=self.data_collector.descriptions['description'],
-#                                  file_manager_root_path=self.data_collector.distributions_path)
-#         main_window.show()
-#         sys.exit(app.exec())
+        app = QApplication()
+        main_window = MainWindow(ww_descriptions=self.data_collector.descriptions['description'],
+                                 file_manager_root_path=self.data_collector.distributions_path)
+        main_window.show()
+        sys.exit(app.exec())
 
 
 if __name__ == '__main__':
-    # Add path to "project" directory in environ variable - PYTHONPATH
-    project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.sep.join([".."] * 4)))
-    sys.path.append(project_path)
-    from wrapper.config.config_builder import load_config
-    from wrapper.ui.plotting import WWDataPlotter
-    from wrapper.misc.collections.ww_data_collecting.ui.main_window import MainWindow
-
     main()
 

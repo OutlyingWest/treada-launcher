@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from dataclasses import dataclass
 from typing import List, Dict
 
@@ -11,10 +12,16 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
+
+# Add path to "project" directory in environ variable - PYTHONPATH
+project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.sep.join([".."] * 4)))
+sys.path.append(project_path)
+
 from wrapper.core.data_management import MtutManager
 from wrapper.config.config_builder import load_config, Config
 from wrapper.launch.scenarios.scenario_builder import TurnOnImpulseDarkScenario, DarkToLightScenario, load_scenario
 from wrapper.misc.collections.ww_data_collecting.collect_ww_data import WWDataCollector
+
 
 
 @dataclass
@@ -115,15 +122,15 @@ def field_integral_calculation(field: pd.Series, dx: pd.Series, q_mobility: floa
     :return: full time calculated for field range
     """
     velocity = q_mobility * field * 1e3
-    with pd.option_context('display.max_rows', None):
-        print('velocity:')
-        print(velocity)
+    # with pd.option_context('display.max_rows', None):
+    #     print('velocity:')
+    #     print(velocity)
 
     # Carries' velocity restriction
     velocity.loc[velocity > 1e7] = 1e7
-    with pd.option_context('display.max_rows', None):
-        print('velocity restricted:')
-        print(velocity)
+    # with pd.option_context('display.max_rows', None):
+    #     print('velocity restricted:')
+    #     print(velocity)
 
     time_seria: pd.Series = (dx / velocity) * 1e12
 
@@ -200,6 +207,7 @@ def perform_fields_integral_finding(scenario, config: Config, mtut_vars: MtutVar
 
 
 def main():
+
     config = load_config('config.json')
     # Load active scenario data
     scenario = load_scenario(config.paths.scenarios, config.scenario.active_name, DarkToLightScenario)
