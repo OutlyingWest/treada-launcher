@@ -31,7 +31,7 @@ class Stages:
     def with_light(self, mtut_stage_configer: MtutStageConfiger, config: Config, scenario_stage: Stage):
         mtut_stage_configer.light_on(scenario_stage.mtut_vars)
         treada = TreadaRunner(config)
-        treada.run(config.paths.result.temporary.raw, stage_name=scenario_stage.name.title())
+        treada.run(config.paths.result.temporary.raw, stage_name=scenario_stage.name)
         # Collect data and build result
         result_build(config, scenario_stage, self.previous_stage_last_current)
         self.previous_stage_last_current = treada.get_last_step_current()

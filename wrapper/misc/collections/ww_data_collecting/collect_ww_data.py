@@ -11,7 +11,7 @@ def main():
     config = load_config('config.json')
     ww_descriptions_path = os.path.join(config.paths.resources, 'ww_descriptions.csv')
     ww_data_collector = WWDataCollector(ww_descriptions_path, config.paths.result.temporary.distributions)
-    user_interactor = WWDataCmdUserInteractor(ww_data_collector, config.paths)
+    user_interactor = WWDataCmdUserInteractor(ww_data_collector)
     user_interactor.run_interact_loop()
 
 
@@ -92,14 +92,34 @@ class WWDataCollector:
 
 
 class WWDataUserInteractor:
-    def __init__(self, ww_data_collector: WWDataCollector, paths):
-        pass
+    # ww_data_plotter object can be created outside the __init__() function.
+    __slots__ = ['__dict__', 'ww_data_plotter']
+
+    def __init__(self, ww_data_collector: WWDataCollector):
+        self.data_collector = ww_data_collector
+        self.is_add_to_exists = False
+        self.is_log_scale = False
+
+    def _input_stage_name(self, stage_name=''):
+        if stage_name in os.listdir(self.data_collector.distributions_path):
+            return stage_name
+        else:
+            return None
+
+    def _input_ww_folder_path(self, stage_name=''):
+        stage_name = self._input_stage_name()
+        if stage_name:
+            ww_folder_path = os.path.join(self.data_collector.distributions_path, stage_name)
+            return ww_folder_path
+        else:
+            return None
 
 
 class WWDataCmdUserInteractor:
+    # ww_data_plotter object can be created outside the __init__() function.
     __slots__ = ['__dict__', 'ww_data_plotter']
 
-    def __init__(self, ww_data_collector: WWDataCollector, paths):
+    def __init__(self, ww_data_collector: WWDataCollector):
         self.data_collector = ww_data_collector
         self.is_add_to_exists = False
         self.is_log_scale = False
@@ -162,7 +182,7 @@ class WWDataCmdUserInteractor:
     @staticmethod
     def _greetings():
         print('Введите номер WW-файла для отображения или команду.')
-        print('Чтобы получить справку по командам, введите --help')
+        print('Чтобы получить справку по всем командам, введите --help')
         print('Доступные номера WW-файлов и их описания можно посмотреть с помощью команды --ww')
 
     @staticmethod

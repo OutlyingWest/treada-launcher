@@ -211,7 +211,6 @@ class StdoutCapturer:
         # Preserve last step string
         self.last_step_string = clean_decoded_output
 
-
     async def keyboard_catch(self):
         pass
 
