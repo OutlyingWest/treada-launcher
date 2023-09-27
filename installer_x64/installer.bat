@@ -21,10 +21,10 @@ echo %pyexist%
 if /I "%pyexist%" neq "Python" (
     :: Behavior if Python does not exist
     echo Python does not found in this system.
-    echo Installation of Python 3.8.0
+    echo Installation of Python 3.8.3
     echo Please wait a few minutes...
-    dependencies\python-3.8.0.exe /passive PrependPath=1 Include_test=0
-    echo Python 3.8.0 has been successfully installed!
+    dependencies\python-3.8.3-amd64.exe /passive PrependPath=1 Include_test=0
+    echo Python 3.8.3 has been successfully installed!
 ) else (
     :: If Python exists
     echo Python was found in this system.
