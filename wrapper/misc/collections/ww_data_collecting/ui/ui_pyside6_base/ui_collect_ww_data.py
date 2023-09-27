@@ -27,27 +27,35 @@ class Ui_MainWindow(object):
         self.centralwidget.setSizePolicy(sizePolicy)
         self.verticalLayout = QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.PlottingMainVerticalLayout = QVBoxLayout()
-        self.PlottingMainVerticalLayout.setObjectName(u"PlottingMainVerticalLayout")
         self.SelectWWLabel = QLabel(self.centralwidget)
         self.SelectWWLabel.setObjectName(u"SelectWWLabel")
 
-        self.PlottingMainVerticalLayout.addWidget(self.SelectWWLabel)
+        self.verticalLayout.addWidget(self.SelectWWLabel)
 
         self.SelectDistributionComboBox = QComboBox(self.centralwidget)
         self.SelectDistributionComboBox.setObjectName(u"SelectDistributionComboBox")
 
-        self.PlottingMainVerticalLayout.addWidget(self.SelectDistributionComboBox)
+        self.verticalLayout.addWidget(self.SelectDistributionComboBox)
 
+        self.CheckboxesHorizontalLayout = QHBoxLayout()
+        self.CheckboxesHorizontalLayout.setObjectName(u"CheckboxesHorizontalLayout")
         self.AddToExistsCheckBox = QCheckBox(self.centralwidget)
         self.AddToExistsCheckBox.setObjectName(u"AddToExistsCheckBox")
 
-        self.PlottingMainVerticalLayout.addWidget(self.AddToExistsCheckBox)
+        self.CheckboxesHorizontalLayout.addWidget(self.AddToExistsCheckBox)
+
+        self.LogScaleCheckBox = QCheckBox(self.centralwidget)
+        self.LogScaleCheckBox.setObjectName(u"LogScaleCheckBox")
+
+        self.CheckboxesHorizontalLayout.addWidget(self.LogScaleCheckBox)
+
+
+        self.verticalLayout.addLayout(self.CheckboxesHorizontalLayout)
 
         self.treeView = QTreeView(self.centralwidget)
         self.treeView.setObjectName(u"treeView")
 
-        self.PlottingMainVerticalLayout.addWidget(self.treeView)
+        self.verticalLayout.addWidget(self.treeView)
 
         self.LowPadHorizontalLayout = QHBoxLayout()
         self.LowPadHorizontalLayout.setObjectName(u"LowPadHorizontalLayout")
@@ -66,10 +74,7 @@ class Ui_MainWindow(object):
         self.LowPadHorizontalLayout.addWidget(self.PlotButton)
 
 
-        self.PlottingMainVerticalLayout.addLayout(self.LowPadHorizontalLayout)
-
-
-        self.verticalLayout.addLayout(self.PlottingMainVerticalLayout)
+        self.verticalLayout.addLayout(self.LowPadHorizontalLayout)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
@@ -89,6 +94,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.SelectWWLabel.setText(QCoreApplication.translate("MainWindow", u"Select distribution", None))
         self.AddToExistsCheckBox.setText(QCoreApplication.translate("MainWindow", u"Add data to exists plot", None))
+        self.LogScaleCheckBox.setText(QCoreApplication.translate("MainWindow", u"Log scale", None))
         self.ExtractButton.setText(QCoreApplication.translate("MainWindow", u"Extract", None))
         self.PlotButton.setText(QCoreApplication.translate("MainWindow", u"Plot", None))
     # retranslateUi

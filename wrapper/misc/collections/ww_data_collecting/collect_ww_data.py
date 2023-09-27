@@ -1,10 +1,14 @@
 import os
 import re
 import sys
+import time
+import weakref
+from time import sleep
 from typing import Dict, Union, List
 import subprocess
 
 import pandas as pd
+from PySide6.QtCore import QObject, Slot, Signal, QThread
 from PySide6.QtWidgets import QApplication
 
 
@@ -130,6 +134,38 @@ class WWDataUserInteractor:
         else:
             return None
 
+    def plot(self, stage_name: str,
+             ww_dir_numbers_list: list,
+             ww_number: int,
+             df_col_name: str,
+             backend='TkAgg') -> dict:
+        ww_dict = self.data_collector.load_ww_data(abs_res_path=self.data_collector.distributions_path,
+                                                   stage_dir_name=stage_name,
+                                                   ww_dir_indexes=ww_dir_numbers_list,
+                                                   ww_aliases={ww_number: df_col_name})
+
+        ww_description = self.data_collector.descriptions['description'].loc[ww_number]
+        if self.is_add_to_exists:
+            self.is_add_to_exists = False
+            if hasattr(self, 'ww_data_plotter'):
+                self.ww_data_plotter.interactive_mode_enable()
+                legends_list = self.ww_data_plotter.add_bulk_plots(ww_dict, stage_name)
+                self.ww_data_plotter.legend(legends_list)
+                # self.ww_data_plotter.show(block=False)
+            else:
+                print('Plot object not exists. Adding unavailable.')
+        else:
+            self.ww_data_plotter = WWDataPlotter(ww_dict, stage_name, backend=backend)
+            self.ww_data_plotter.set_plot_axes_labels(x_label='x', y_label=ww_description)
+            if df_col_name:
+                self.ww_data_plotter.set_plot_title(df_col_name)
+                self.ww_data_plotter.set_window_title(df_col_name)
+            if self.is_log_scale:
+                self.is_log_scale = False
+                self.ww_data_plotter.ax.set_yscale('log', base=10)
+            self.ww_data_plotter.show(block=False)
+        return ww_dict
+
     def run(self):
         """
         Method to run user interactor application in cmd or interface mode.
@@ -170,31 +206,11 @@ class WWDataCmdUserInteractor(WWDataUserInteractor):
                         ww_dir_numbers_range = all_ww_dir_numbers_list = None
                     if ww_dir_numbers_range:
                         ww_dir_numbers_list = self._ww_range_to_list(ww_dir_numbers_range, all_ww_dir_numbers_list)
-                        ww_dict = self.data_collector.load_ww_data(abs_res_path=self.data_collector.distributions_path,
-                                                                   stage_dir_name=stage_name,
-                                                                   ww_dir_indexes=ww_dir_numbers_list,
-                                                                   ww_aliases={ww_number: df_col_name})
+                        ww_dict = self.plot(stage_name=stage_name,
+                                            ww_dir_numbers_list=ww_dir_numbers_list,
+                                            ww_number=ww_number,
+                                            df_col_name=df_col_name)
                         self.print_ww_dict(ww_dict)
-
-                        ww_description = self.data_collector.descriptions['description'].loc[ww_number]
-                        if self.is_add_to_exists:
-                            self.is_add_to_exists = False
-                            if hasattr(self, 'ww_data_plotter'):
-                                legends_list = self.ww_data_plotter.add_bulk_plots(ww_dict, stage_name)
-                                self.ww_data_plotter.legend(legends_list)
-                                self.ww_data_plotter.show(block=False)
-                            else:
-                                print('Plot object not exists. Adding unavailable.')
-                        else:
-                            self.ww_data_plotter = WWDataPlotter(ww_dict, stage_name)
-                            self.ww_data_plotter.set_plot_axes_labels(x_label='x', y_label=ww_description)
-                            if df_col_name:
-                                self.ww_data_plotter.set_plot_title(df_col_name)
-                                self.ww_data_plotter.set_window_title(df_col_name)
-                            if self.is_log_scale:
-                                self.is_log_scale = False
-                                self.ww_data_plotter.ax.set_yscale('log', base=10)
-                            self.ww_data_plotter.show(block=False)
             except KeyboardInterrupt:
                 break
             self._footer()
@@ -323,18 +339,81 @@ class WWDataCmdUserInteractor(WWDataUserInteractor):
                 print('}\n')
 
 
-class WWDataInterfaceUserInteractor(WWDataUserInteractor):
-    # ww_data_plotter object can be created outside the __init__() function.
-    __slots__ = ['ww_data_plotter']
+class ExtractWorker(QObject):
+    statusbar_message_signal = Signal(str)
 
+    def __init__(self):
+        super().__init__()
+
+    @Slot(list)
+    def extract_slot(self, extracting_paths_list):
+        self.statusbar_message_signal.emit(f'Extracting...')
+        for path in extracting_paths_list:
+            WWDataCollector.extract_ww_data(data_folder_path=path)
+        self.statusbar_message_signal.emit('Extraction done!')
+        time.sleep(3)
+        self.statusbar_message_signal.emit('')
+
+
+class InterfaceDataManager(QObject):
+    statusbar_message_signal = Signal(str)
+
+    def __init__(self, user_interactor: WWDataUserInteractor):
+        super().__init__()
+        self.user_interactor = user_interactor
+
+        self.extract_worker = ExtractWorker()
+        self.extraction_thread = QThread()
+        self.extract_worker.moveToThread(self.extraction_thread)
+        self.extraction_thread.started.connect(self.extract_worker.extract_slot)
+        self.extraction_thread.start()
+
+    @Slot(dict)
+    def plot_slot(self, plotting_dict: dict):
+        # Set plot flags
+        self.user_interactor.is_add_to_exists = plotting_dict['is_add']
+        self.user_interactor.is_log_scale = plotting_dict['is_log']
+        # Unpack plot variables
+        ww_number = plotting_dict['ww_number']
+        df_col_name = self.user_interactor.data_collector.descriptions['df_col_name'].loc[ww_number]
+        # Plot data
+        for stage_name, ww_dir_list in plotting_dict['dirs'].items():
+            self.user_interactor.plot(stage_name=stage_name,
+                                      ww_dir_numbers_list=ww_dir_list,
+                                      ww_number=ww_number,
+                                      df_col_name=df_col_name,
+                                      backend='QtAgg')
+            self.user_interactor.is_add_to_exists = True
+
+    @Slot(list)
+    def extract_slot(self, extracting_paths_list: list):
+        self.statusbar_message_signal.emit(f'Extracting...')
+        for path in extracting_paths_list:
+            self.user_interactor.data_collector.extract_ww_data(data_folder_path=path)
+        self.statusbar_message_signal.emit('Extraction done!')
+        time.sleep(3)
+        self.statusbar_message_signal.emit('')
+
+    @Slot()
+    def close_event_slot(self):
+        self.extraction_thread.quit()
+        pass
+
+
+class WWDataInterfaceUserInteractor:
     def __init__(self, ww_data_collector: WWDataCollector):
-        super().__init__(ww_data_collector)
+
+        self.user_interactor = WWDataUserInteractor(ww_data_collector)
+        self.data_manager = InterfaceDataManager(self.user_interactor)
 
     def run(self):
-        pass
         app = QApplication()
-        main_window = MainWindow(ww_descriptions=self.data_collector.descriptions['description'],
-                                 file_manager_root_path=self.data_collector.distributions_path)
+        main_window = MainWindow(ww_descriptions=self.user_interactor.data_collector.descriptions['description'],
+                                 file_manager_root_path=self.user_interactor.data_collector.distributions_path)
+        main_window.plot_signal.connect(self.data_manager.plot_slot)
+        main_window.extract_signal.connect(self.data_manager.extract_worker.extract_slot)
+        main_window.close_event_signal.connect(self.data_manager.close_event_slot)
+        self.data_manager.extract_worker.statusbar_message_signal.connect(main_window.statusbar_message_slot)
         main_window.show()
         sys.exit(app.exec())
 

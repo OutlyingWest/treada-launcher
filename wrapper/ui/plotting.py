@@ -193,7 +193,14 @@ class SimplePlotter:
 
     def set_window_title(self, title='window title'):
         window = self.fig.canvas.manager.window
-        window.title(title)
+        # For QtAgg
+        backend_name = matplotlib.get_backend()
+        if backend_name == 'QtAgg':
+            window.setWindowTitle(title)
+        elif backend_name == 'TkAgg':
+            window.title(title)
+        else:
+            raise EnvironmentError('Wrong matplotlib backend. Use QtAgg or TkAgg')
 
     def set_plot_axes_labels(self, x_label='x', y_label='y'):
         self.ax.set_xlabel(x_label)
@@ -340,16 +347,19 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
 
 
 class WWDataPlotter(SimplePlotter):
-    def __init__(self, ww_dict: dict, stage_name: str, plot_type='plot'):
+    def __init__(self, ww_dict: dict, stage_name: str, plot_type='plot', backend='TkAgg'):
+        # Set backend (Qt applications often require QtAgg backend)
+        matplotlib.use(backend)
         last_ww_dir_key, last_ww_number_dict = ww_dict.popitem()
         ww_number, last_ww_df = last_ww_number_dict.popitem()
         super().__init__(x=last_ww_df['x'], y=last_ww_df[last_ww_df.columns[2]],
                          label=last_ww_dir_key, plot_type=plot_type)
-        legends_list = self.add_bulk_plots(ww_dict, stage_name)
+        legends_list = self.add_bulk_plots(ww_dict, stage_name, is_describe_first=False)
         legends_list.append(last_ww_dir_key)
+        legends_list[0] = f'{legends_list[0]} {stage_name} ww{ww_number}'
         self.legend(legends_list)
 
-    def add_bulk_plots(self, ww_dict, stage_name: str) -> list:
+    def add_bulk_plots(self, ww_dict, stage_name: str, is_describe_first=True) -> list:
         old_legend = self.ax.get_legend()
         legends_list = list()
         ww = -1
@@ -359,7 +369,8 @@ class WWDataPlotter(SimplePlotter):
             legends_list.append(ww_dir_key)
             ww = ww_number
         # Add descriptions to the first element of legend
-        legends_list[0] = f'{legends_list[0]} {stage_name} ww{ww}'
+        if is_describe_first:
+            legends_list[0] = f'{legends_list[0]} {stage_name} ww{ww}'
         if old_legend:
             old_legends_list = [text.get_text() for text in old_legend.get_texts()]
             old_legends_list.extend(legends_list)
@@ -371,6 +382,13 @@ class WWDataPlotter(SimplePlotter):
     def show(cls, block=True):
         try:
             plt.show(block=block)
+        except KeyboardInterrupt:
+            pass
+
+    @classmethod
+    def interactive_mode_enable(cls):
+        try:
+            plt.ion()
         except KeyboardInterrupt:
             pass
 

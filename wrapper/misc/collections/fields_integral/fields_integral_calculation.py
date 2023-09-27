@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 from dataclasses import dataclass
 from typing import List, Dict
@@ -9,6 +10,9 @@ import pandas as pd
 from scipy.signal import find_peaks, peak_widths
 
 import matplotlib
+
+from wrapper.misc.global_functions import create_dir
+
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
@@ -154,6 +158,7 @@ def find_fields_integral(fields_seria: pd.Series, dx_const: float, q_mobility: f
 def save_integral_results(results: dict, mtut_vars: MtutVars):
     script_path = os.path.dirname((os.path.abspath(__file__)))
     res_file_path = os.path.join(script_path, 'results', f'res_u({mtut_vars.udrm}).json')
+    create_dir(res_file_path)
     with open(res_file_path, 'w') as fields_result_file:
         json.dump(results, fields_result_file, indent=4)
 
