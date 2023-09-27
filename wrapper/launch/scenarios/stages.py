@@ -5,8 +5,7 @@ from wrapper.core.data_management import MtutStageConfiger
 from wrapper.core.treada_io_handler import TreadaRunner
 from wrapper.launch.result_builder import result_build
 from wrapper.launch.scenarios.scenario_builder import Stage
-from wrapper.misc.collections.fields_integral.fields_integral_calculation import load_mtut_vars, \
-    perform_fields_integral_finding, save_integral_results
+
 
 
 class Stages:
@@ -38,6 +37,10 @@ class Stages:
 
     @staticmethod
     def fields_integral_calculation(scenario, config: Config):
+        from wrapper.misc.collections.fields_integral.fields_integral_calculation import (
+            load_mtut_vars,
+            perform_fields_integral_finding,
+            save_integral_results)
         mtut_vars = load_mtut_vars(config.paths.treada_core.mtut)
         results_data = perform_fields_integral_finding(scenario, config, mtut_vars)
         save_integral_results(results_data, mtut_vars)
