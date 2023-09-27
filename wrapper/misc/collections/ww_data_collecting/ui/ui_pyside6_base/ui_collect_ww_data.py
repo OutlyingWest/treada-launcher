@@ -91,7 +91,7 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Distributions Collector", None))
         self.SelectWWLabel.setText(QCoreApplication.translate("MainWindow", u"Select distribution", None))
         self.AddToExistsCheckBox.setText(QCoreApplication.translate("MainWindow", u"Add data to exists plot", None))
         self.LogScaleCheckBox.setText(QCoreApplication.translate("MainWindow", u"Log scale", None))

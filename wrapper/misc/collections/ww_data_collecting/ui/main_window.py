@@ -26,7 +26,6 @@ class MainWindow(QMainWindow):
         self.populate_file_manager(file_manager_root_path)
         self.ui.PlotButton.clicked.connect(self.plot_clicked)
         self.ui.ExtractButton.clicked.connect(self.extract_clicked)
-        # self.setWindowTitle()
 
     def setup_select_distributions_combo_box(self, ww_descriptions: pd.Series):
         self.ui.SelectDistributionComboBox.addItems(ww_descriptions)
@@ -65,8 +64,6 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def extract_clicked(self):
-        self.ui.statusbar.showMessage('Extracting...')
-        # self.statusbar_message_slot('Extracting...')
         _, selected_stage_dir_paths = self._get_file_manager_selected()
         self.extract_signal.emit(selected_stage_dir_paths)
 
