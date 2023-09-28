@@ -85,7 +85,7 @@ class StdoutCapturer:
         self.auto_ending = config.flags.auto_ending
         self.ending_condition = ec.EndingCondition(chunk_size=500,
                                                    equal_values_to_stop=5,
-                                                   deviation_coef=1e-5)
+                                                   deviation_coef=1e-4)
         # self.ending_condition = LineEndingCondition(precision=1e-2,
         #                                             chunk_size=100,
         #                                             big_step_multiplier=100,

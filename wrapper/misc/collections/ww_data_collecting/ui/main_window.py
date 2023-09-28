@@ -28,7 +28,8 @@ class MainWindow(QMainWindow):
         self.ui.ExtractButton.clicked.connect(self.extract_clicked)
 
     def setup_select_distributions_combo_box(self, ww_descriptions: pd.Series):
-        self.ui.SelectDistributionComboBox.addItems(ww_descriptions)
+        descriptions_list = [f'{num + 1:2}. {description}' for num, description in enumerate(ww_descriptions)]
+        self.ui.SelectDistributionComboBox.addItems(descriptions_list)
 
     def get_add_checkbox_status(self):
         return self.ui.AddToExistsCheckBox.isChecked()
@@ -95,15 +96,8 @@ class MainWindow(QMainWindow):
         event.accept()
 
 
-def run_ui_application(ww_descriptions=pd.Series()):
-    app = QApplication()
-    main_window = MainWindow(ww_descriptions)
-    main_window.show()
-    sys.exit(app.exec())
-
-
 def main():
-    run_ui_application()
+    pass
 
 
 if __name__ == '__main__':

@@ -408,7 +408,8 @@ class WWDataInterfaceUserInteractor:
 
     def run(self):
         app = QApplication()
-        main_window = MainWindow(ww_descriptions=self.user_interactor.data_collector.descriptions['description'],
+        descriptions = self.user_interactor.data_collector.descriptions
+        main_window = MainWindow(ww_descriptions=descriptions['description'],
                                  file_manager_root_path=self.user_interactor.data_collector.distributions_path)
         main_window.plot_signal.connect(self.data_manager.plot_slot)
         main_window.extract_signal.connect(self.data_manager.extract_worker.extract_slot)
