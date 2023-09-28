@@ -29,8 +29,7 @@ class TreadaRunner:
     def __init__(self, config):
         self.exec_process = self._exe_runner(exe_path=config.paths.treada_core.exe)
         self.capturer = StdoutCapturer(process=self.exec_process,
-                                       config=config,
-                                       ending_condition_params=None)
+                                       config=config,)
 
     def run(self, output_file_path='', stage_name='None Stage'):
         """
@@ -71,10 +70,7 @@ class TreadaRunner:
 
 
 class StdoutCapturer:
-    def __init__(self, process: subprocess.Popen,
-                 ending_condition_params,
-                 config: Config,
-                 is_preserve_temp_distributions=False):
+    def __init__(self, process: subprocess.Popen, config: Config,):
         # Running of the executable file
         self.process = process
         # io_loop variables:
@@ -83,9 +79,10 @@ class StdoutCapturer:
         self.currents_str_counter = 0
         # Init auto ending prerequisites
         self.auto_ending = config.flags.auto_ending
-        self.ending_condition = ec.EndingCondition(chunk_size=500,
-                                                   equal_values_to_stop=5,
-                                                   deviation_coef=1e-4)
+        condition_params = config.advanced_settings.runtime.ending_condition
+        self.ending_condition = ec.EndingCondition(chunk_size=condition_params.chunk_size,
+                                                   equal_values_to_stop=condition_params.equal_values_to_stop,
+                                                   deviation_coef=condition_params.deviation)
         # self.ending_condition = LineEndingCondition(precision=1e-2,
         #                                             chunk_size=100,
         #                                             big_step_multiplier=100,

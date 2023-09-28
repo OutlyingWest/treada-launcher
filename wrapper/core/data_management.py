@@ -848,7 +848,7 @@ class UdrmVectorManager:
             if not udrm_list:
                 raise ValueError('UDRM vector is empty.')
             self.set_max_index(udrm_list)
-            udrm_float_list = [float(udrm.replace(',', '.')) for udrm in udrm_list]
+            udrm_float_list = [float(udrm.replace(',', '.', 1)) for udrm in udrm_list if udrm != '\n']
         else:
             print(f'UDRM vector file does not found in path: {self.file_path}')
             raise FileNotFoundError

@@ -53,11 +53,22 @@ class LightImpulse:
 
 
 @dataclass
+class EndingCondition:
+    """
+    Simple ending condition settings.
+    """
+    chunk_size: int
+    equal_values_to_stop: int
+    deviation: float
+
+
+@dataclass
 class RuntimeSettings:
     """
     """
     find_relative_time: bool
     light_impulse: LightImpulse
+    ending_condition: EndingCondition
 
 
 @dataclass
