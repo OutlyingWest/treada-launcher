@@ -7,7 +7,6 @@ from wrapper.launch.result_builder import result_build
 from wrapper.launch.scenarios.scenario_builder import Stage
 
 
-
 class Stages:
     """
     The class that allows to transmit values from stage to stage.
