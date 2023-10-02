@@ -9,18 +9,28 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import pandas as pd
 
+# Add path to "project" directory in environ variable - PYTHONPATH
+project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(project_path)
+
+from wrapper.core.data_management import ResultData, col_names, FileManager, TransientData, MtutManager
+from wrapper.config.config_builder import load_config, Config
+from wrapper.misc import lin_alg as la
+
 
 def main():
     config = load_config('config.json')
+    run_res_plotting(config)
+
+
+def run_res_plotting(config: Config):
     result_path = os.path.split(config.paths.result.main)[0] + os.sep
-    script_path = os.path.dirname((os.path.abspath(__file__)))
-    project_path = script_path.rsplit(sep=os.path.sep, maxsplit=2)[0]
     print(f'{result_path=}')
-    print(f'{project_path=}')
     run_flag = True
+    plot_builder = None
     while run_flag:
-        if len(sys.argv) > 1:
-            res_name = sys.argv[1]
+        if len(sys.argv) > 2:
+            res_name = sys.argv.pop(2)
         else:
             print('Enter file name to load data from data/result/. Example: "res_u(-0.45).txt"')
             res_name = input()
@@ -31,8 +41,9 @@ def main():
         print(f'{full_result_path=}')
         full_mtut_path = os.path.join(project_path, config.paths.treada_core.mtut)
         try:
-            # Creation of plot builder object
-            plot_builder = TreadaPlotBuilder(mtut_path=full_mtut_path, result_path=full_result_path)
+            if not plot_builder:
+                # Creation of plot builder object
+                plot_builder = TreadaPlotBuilder(mtut_path=full_mtut_path, result_path=full_result_path)
             plot_builder.set_loaded_info()
             # Show plot
             plot_builder.plotter.show(block=False)
@@ -387,20 +398,8 @@ class WWDataPlotter(SimplePlotter):
 
     @classmethod
     def interactive_mode_enable(cls):
-        try:
-            plt.ion()
-        except KeyboardInterrupt:
-            pass
+        plt.ion()
 
 
 if __name__ == '__main__':
-    # Add path to "wrapper" directory in environ variable - PYTHONPATH
-    wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    sys.path.append(wrapper_path)
-    from core.data_management import ResultData, col_names, FileManager, TransientData, MtutManager
-    from config.config_builder import load_config
     main()
-else:
-    from wrapper.core.data_management import ResultData, col_names, FileManager, TransientData, MtutManager
-    from wrapper.config.config_builder import load_config
-    from wrapper.misc import lin_alg as la

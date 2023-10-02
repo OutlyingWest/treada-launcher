@@ -16,21 +16,25 @@ from PySide6.QtWidgets import QApplication
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.sep.join([".."] * 4)))
 sys.path.append(project_path)
 
-from wrapper.config.config_builder import load_config
+from wrapper.config.config_builder import load_config, Config
 from wrapper.ui.plotting import WWDataPlotter
 from wrapper.misc.collections.ww_data_collecting.ui.main_window import MainWindow
 
 
 def main():
     config = load_config('config.json')
+    run_ww_collecting(config)
+
+
+def run_ww_collecting(config: Config):
     ww_descriptions_path = os.path.join(config.paths.resources, 'ww_descriptions.csv')
     ww_data_collector = WWDataCollector(ww_descriptions_path, config.paths.result.temporary.distributions)
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         user_interactor = WWDataCmdUserInteractor(ww_data_collector)
     elif '--gui' in sys.argv:
         user_interactor = WWDataInterfaceUserInteractor(ww_data_collector)
     else:
-        print('Wrong command line argument.')
+        print('Wrong distr. collection command line argument.')
         return -1
     user_interactor.run()
 

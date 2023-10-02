@@ -15,8 +15,11 @@ class StateStatuses:
 
 
 class State:
-    def __init__(self, value: dict):
-        self.value = value
+    def __init__(self, value=None):
+        if value is None:
+            self.value = dict()
+        else:
+            self.value = value
         self.status: Union[int, None] = None
         self.statuses = StateStatuses
         self.addition_info: dict
@@ -28,7 +31,7 @@ class State:
         if self.status:
             return self.status
         else:
-            raise ValueError('State status has not set yet.')
+            raise ValueError('State status not set yet.')
 
 
 class StatesMachine:
@@ -37,9 +40,9 @@ class StatesMachine:
     Keep and load current state from current_state.json file.
     """
     def __init__(self):
-        self.config: Union[Config, None] = None
+        self.config = load_config('config.json')
         # Describe State
-        self.state: Union[State, None] = None
+        self.state = State()
         self.statuses = StateStatuses
 
     def update_state(self) -> Union[int, None]:
@@ -53,7 +56,6 @@ class StatesMachine:
         :return state_status code: state status code
         """
         # Check is at least one of modes enabled
-        self.config = load_config('config.json')
         if any(value for value in self.config.modes.__dict__.values() if value):
             self.load_states()
 
@@ -62,7 +64,7 @@ class StatesMachine:
 
             return self.check_state()
         else:
-            print('Full manual mode enabled.')
+            print('UDRM manual mode enabled.')
             return self.statuses.MANUAL
 
     def load_states(self):
@@ -130,4 +132,4 @@ class StatesMachine:
         """
         self.state.value['udrm_vector_index'] = 0
         self.dump_states()
-        self.state = None
+        self.state = State()

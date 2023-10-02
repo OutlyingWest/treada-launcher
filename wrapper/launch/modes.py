@@ -5,8 +5,10 @@ from colorama import Fore, Style
 from wrapper.config.config_builder import Config
 from wrapper.launch.scenarios import launch
 from wrapper.core.data_management import MtutStageConfiger
+from wrapper.misc.collections.fields_integral.fields_integral_calculation import run_fields_integral_finding
+from wrapper.misc.collections.ww_data_collecting.collect_ww_data import run_ww_collecting
 from wrapper.states.states_management import StatesMachine, StateStatuses
-from wrapper.ui.plotting import AdvancedPlotter
+from wrapper.ui.plotting import AdvancedPlotter, run_res_plotting
 
 
 def launcher_mode_selection(config: Config):
@@ -14,11 +16,11 @@ def launcher_mode_selection(config: Config):
         pass
         treada_running_loop(config)
     elif '--plot-res' in sys.argv:
-        pass
+        run_res_plotting(config)
     elif '--plot-fields-integral' in sys.argv:
-        pass
+        run_fields_integral_finding(config)
     elif '--collect-distr' in sys.argv:
-        pass
+        run_ww_collecting(config)
     else:
         print('Wrong command line argument.')
         return -1

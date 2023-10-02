@@ -26,6 +26,17 @@ from wrapper.launch.scenarios.scenario_builder import DarkToLightScenario, load_
 from wrapper.misc.collections.ww_data_collecting.collect_ww_data import WWDataCollector
 
 
+def main():
+    config = load_config('config.json')
+    # Load active scenario data
+    run_fields_integral_finding(config)
+
+
+def run_fields_integral_finding(config: Config):
+    scenario = load_scenario(config.paths.scenarios, config.scenario.active_name, DarkToLightScenario)
+    mtut_vars = load_mtut_vars(config.paths.treada_core.mtut)
+    perform_fields_integral_finding(scenario, config, mtut_vars, is_plot=True)
+
 
 @dataclass
 class MtutVars:
@@ -209,16 +220,6 @@ def perform_fields_integral_finding(scenario, config: Config, mtut_vars: MtutVar
 
     return results
 
-
-def main():
-
-    config = load_config('config.json')
-    # Load active scenario data
-    scenario = load_scenario(config.paths.scenarios, config.scenario.active_name, DarkToLightScenario)
-
-    mtut_vars = load_mtut_vars(config.paths.treada_core.mtut)
-
-    perform_fields_integral_finding(scenario, config, mtut_vars, is_plot=True)
 
 
 if __name__ == '__main__':
