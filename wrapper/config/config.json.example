@@ -3,7 +3,7 @@
         "active_name": "dark_to_light_scenario"
     },
     "modes": {
-        "udrm_vector_mode": true
+        "udrm_vector_mode": false
     },
     "flags": {
         "plotting": {
