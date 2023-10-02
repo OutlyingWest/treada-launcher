@@ -3,7 +3,7 @@
         "active_name": "dark_to_light_scenario"
     },
     "modes": {
-        "udrm_vector_mode": false
+        "udrm_vector_mode": true
     },
     "flags": {
         "plotting": {
@@ -13,22 +13,19 @@
         "auto_ending": true,
         "dark_result_saving": true,
         "preserve_distributions": true,
-        "fields_calculation": true
+        "fields_calculation": false
     },
     "advanced_settings": {
         "runtime": {
             "find_relative_time": true,
             "light_impulse": {
-                "consider_fixed_time": true,
-                "fixed_time_ps": 3758.26152
+                "consider_fixed_time": false,
+                "fixed_time_ps": 2000
             },
             "ending_condition": {
-                "chunk_size": 100,
-                "equal_values_to_stop": 10,
-                "deviation_coef": 1e-5,
-                "precision": 2e-5,
-                "big_step_multiplier": 100,
-                "low_step_border": 100
+                "chunk_size": 500,
+                "equal_values_to_stop": 5,
+                "deviation": 1e-4
             }
         },
 
