@@ -243,7 +243,6 @@ class StdoutCapturer:
         extracted_distributions_dir_path = os.path.join(
             self.distribution_destination_path, self.stage_name, str(self.currents_str_counter), ''
         )
-        print(f'{extracted_distributions_dir_path=}')
         create_dir(extracted_distributions_dir_path)
         for dist_file_name in self.distribution_filenames:
             dist_initial_file_path = os.path.join(self.distribution_initial_path, dist_file_name)
