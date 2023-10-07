@@ -871,5 +871,37 @@ class UdrmVectorManager:
             raise ValueError('max_index not calculated yet')
 
 
+class InputDataFrameManager:
+    """
+    Allow to load input dataframe, which contains iterable MTUT var values.
+    """
+    def __init__(self, input_df_path: str):
+        self.df = self.load_input_df(input_df_path)
+
+    def load_input_df(self, df_path: str):
+        df = pd.read_csv(df_path, header=0, sep='\s+', dtype=str)
+        replaced_df = df.applymap(lambda element: self.replace_comma_float_string(element))
+        return replaced_df
+
+    @staticmethod
+    def replace_comma_float_string(element: str) -> str:
+        """
+        Replace float like values in string, which separated by comma to float strings separated by dots.
+        :param element: input string, which can contains float like substrings are separated by commas.
+        :return: element string with replaced float likes.
+        """
+        match_part = re.search('\d+,\d+', element)
+        if match_part:
+            match_str = match_part.group()
+            replaced_str = match_str.replace(',', '.')
+            replaced_element = element.replace(match_str, replaced_str)
+            return replaced_element
+        else:
+            return element
+
+    def get_df(self):
+        return self.df
+
+
 if __name__ == '__main__':
     pass
