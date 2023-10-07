@@ -13,7 +13,6 @@ from wrapper.ui.plotting import AdvancedPlotter, run_res_plotting
 
 def launcher_mode_selection(config: Config):
     if len(sys.argv) < 2:
-        pass
         treada_running_loop(config)
     elif '--plot-res' in sys.argv:
         run_res_plotting(config)

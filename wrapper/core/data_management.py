@@ -639,7 +639,6 @@ class ResultDataCollector:
 
     def transient_criteria_apply(self, tr_criteria: dict):
         # Calculation of transient ending criteria
-        # self.mean_dataframe['transient_criteria'] = 0
         self.mean_dataframe['compare_plus'] = 0
         self.mean_dataframe['compare_minus'] = 0
         self.mean_dataframe.loc[self.mean_dataframe[col_names.current_density] > tr_criteria['minus'],
@@ -654,10 +653,18 @@ class ResultDataCollector:
         if ending_minus_index < ending_plus_index:
             self.transient.ending_index = ending_plus_index
             self.transient.current_density = tr_criteria['plus']
-
         elif ending_plus_index < ending_minus_index:
             self.transient.ending_index = ending_minus_index
             self.transient.current_density = tr_criteria['minus']
+        elif ending_plus_index == ending_minus_index:
+            # It case means that there are no crossings with criteria lines
+            print(f'{self.mean_dataframe=}')
+            print(f'{ending_minus_index=}')
+            print(f'{ending_plus_index=}')
+            print(f'{Fore.YELLOW}Either too fast transient or direct current. Unable to calculate transient time'
+                  f'correctly.{Style.RESET_ALL}')
+            self.transient.ending_index = 1
+            self.transient.current_density = self.mean_dataframe[col_names.current_density].iloc[1]
         else:
             raise ValueError('transient_ending_index does not found.')
 
