@@ -141,7 +141,6 @@ class BaseStatesMachine:
         except FileNotFoundError:
             self.states[state_index].status = state_status.MTUT_ERROR
 
-
     def flush_states(self):
         self.states = self.State.flush_states()
 

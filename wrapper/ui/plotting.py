@@ -28,6 +28,8 @@ def run_res_plotting(config: Config):
     print(f'{result_path=}')
     run_flag = True
     plot_builder = None
+    full_mtut_path = os.path.join(project_path, config.paths.treada_core.mtut)
+    legends = list()
     while run_flag:
         if len(sys.argv) > 2:
             res_name = sys.argv.pop(2)
@@ -39,16 +41,24 @@ def run_res_plotting(config: Config):
 
         full_result_path = os.path.join(project_path, result_path, res_name)
         print(f'{full_result_path=}')
-        full_mtut_path = os.path.join(project_path, config.paths.treada_core.mtut)
-        try:
-            if not plot_builder:
+
+        if not plot_builder:
+            try:
                 # Creation of plot builder object
                 plot_builder = TreadaPlotBuilder(mtut_path=full_mtut_path, result_path=full_result_path)
+            except FileNotFoundError:
+                print('Wrong file path or name.')
             plot_builder.set_loaded_info()
-            # Show plot
-            plot_builder.plotter.show(block=False)
-        except FileNotFoundError:
-            print('Wrong file path or name.')
+            legends.append(plot_builder.result.udrm)
+        else:
+
+            result = plot_builder.load_result(mtut_path=full_mtut_path, result_path=full_result_path, skip_rows=15)
+            plot_builder.add_plot()
+            title = f'Multiple res plot'
+            plot_builder.change_descriptions(plot_title=title, window_title=title)
+            plot_builder.set_short_info()
+        # Show plot
+        plot_builder.plotter.show(block=False)
 
 
 class TreadaPlotBuilder:
@@ -114,6 +124,13 @@ class TreadaPlotBuilder:
         # Set axes labels
         self.plotter.set_plot_axes_labels(x_label='time (ps)', y_label='I (mA/cm²)')
 
+    def change_descriptions(self, plot_title, window_title, x_label='time (ps)', y_label='I (mA/cm²)'):
+        # Set titles
+        self.plotter.set_plot_title(plot_title)
+        self.plotter.set_window_title(window_title)
+        # Set axes labels
+        self.plotter.set_plot_axes_labels(x_label=x_label, y_label=y_label)
+
     def set_transient_ending_point(self, coords: tuple, annotation: str, xytext=(10, -20)):
         time, current_density = coords
         self.plotter.add_special_point(time, current_density)
@@ -133,6 +150,14 @@ class TreadaPlotBuilder:
             self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
                                                 dist_densities=ww_points_df[col_names.current_density])
 
+    def set_short_info(self, legends: list):
+        self.plotter.set_info(self.result)
+        # Plot accurate transient ending point
+        corrected_time = self.result.transient.corrected_time
+        corrected_density = self.result.transient.corrected_density
+        self.set_transient_ending_point((corrected_time, corrected_density),
+                                        annotation=f'Transient ending point')
+
     def set_advanced_info(self):
         self.plotter.set_advanced_info(self.runtime_result_data)
         # Set distributions info if it exists
@@ -147,7 +172,7 @@ class TreadaPlotBuilder:
         return udrm.group()
 
     @staticmethod
-    def load_result(mtut_path: str, result_path: str, skip_rows: int) -> Any:
+    def load_result(mtut_path: str, result_path: str, skip_rows: int) -> ResultData:
         result_file_manager = FileManager(result_path)
         result_file_manager.load_file_head(num_lines=15)
         mtut_file_manager = MtutManager(mtut_path)
@@ -171,6 +196,9 @@ class TreadaPlotBuilder:
             full_df=pd.read_csv(result_path, skiprows=skip_rows, header=0, sep='\s+'),
         )
         return results
+
+    def add_plot(self):
+        pass
 
     @classmethod
     def save_plot(cls, plot_path: str):
