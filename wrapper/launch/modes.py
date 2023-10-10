@@ -7,13 +7,14 @@ from wrapper.launch.scenarios import launch
 from wrapper.core.data_management import MtutStageConfiger
 from wrapper.misc.collections.fields_integral.fields_integral_calculation import run_fields_integral_finding
 from wrapper.misc.collections.ww_data_collecting.collect_ww_data import run_ww_collecting
+from wrapper.states import states
 from wrapper.states.states_management import StatesMachine, StateStatuses
 from wrapper.ui.plotting import AdvancedPlotter, run_res_plotting
 
 
 def launcher_mode_selection(config: Config):
     if len(sys.argv) < 2:
-        treada_running_loop(config)
+        treada_running_loop_n(config)
     elif '--plot-res' in sys.argv:
         run_res_plotting(config)
     elif '--plot-fields-integral' in sys.argv:
@@ -47,6 +48,17 @@ def treada_running_loop(config: Config):
 
         launch.call_active_scenario(mtut_stage_configer, config)
 
+    # Show plot
+    if config.flags.plotting.enable:
+        AdvancedPlotter.show(block=False)
+
+
+def treada_running_loop_n(config: Config):
+    mtut_stage_configer = MtutStageConfiger(config.paths.treada_core.mtut)
+    states_machine = states.BaseStatesMachine(config, state_dataclass=states.BaseState)
+    states_machine.run(treada_launch_function=launch.call_active_scenario,
+                       mtut_stage_configer=mtut_stage_configer,
+                       config=config)
     # Show plot
     if config.flags.plotting.enable:
         AdvancedPlotter.show(block=False)

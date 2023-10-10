@@ -10,6 +10,7 @@ from dacite import from_dict, Config
 
 from wrapper.misc.global_functions import get_from_nested_dataclass, set_to_nested_dataclass
 
+
 @dataclass
 class Scenario:
     active_name: str
@@ -21,6 +22,7 @@ class Modes:
     Keeps data about runtime modes of treada_launcher program.
     """
     udrm_vector_mode: bool
+    mtut_dataframe: bool
 
 
 @dataclass
@@ -104,6 +106,8 @@ class InputPaths:
     """
     udrm: str
     state: str
+    mtut_dataframe: str
+    states: str
 
 
 @dataclass

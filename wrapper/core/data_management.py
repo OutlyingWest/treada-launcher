@@ -879,7 +879,7 @@ class InputDataFrameManager:
         self.df = self.load_input_df(input_df_path)
 
     def load_input_df(self, df_path: str):
-        df = pd.read_csv(df_path, header=0, sep='\s+', dtype=str)
+        df = pd.read_csv(df_path, header=0, sep='\s\s\s+', dtype=str, engine='python')
         replaced_df = df.applymap(lambda element: self.replace_comma_float_string(element))
         return replaced_df
 

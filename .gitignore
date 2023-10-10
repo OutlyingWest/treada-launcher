@@ -20,7 +20,7 @@ installer_x64/*.log
 wrapper/config/config.json
 
 # Ignore states machine service file
-wrapper/states/current_state.json
+wrapper/states/*.json
 
 # Ignore other txt files
 wrapper/misc/*.txt

@@ -12,7 +12,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser, ResultDataCollector, \
-    col_names, MtutManager
+    col_names, MtutManager, InputDataFrameManager
 from wrapper.config.config_builder import load_config
 from wrapper.ui.plotting import AdvancedPlotter
 
@@ -22,6 +22,7 @@ class UdrmVectorManagerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
         self.udrm_vector = UdrmVectorManager(self.config.paths.input.udrm)
+        print('UdrmVectorManagerTests')
 
     def test_load(self):
         if self.config.modes.udrm_vector_mode:
@@ -44,7 +45,7 @@ class FileManagerTests(unittest.TestCase):
         self.assertEqual('3.E+12', var_value)
 
 
-# @unittest.skip
+@unittest.skip
 class MtutManagerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
@@ -102,6 +103,7 @@ class TreadaOutputParserTests(unittest.TestCase):
         print(f'{np.mean(clean_data_time)=}')
         with open('clean_data_speeds.txt', 'a') as cd_file:
             cd_file.write(str(np.mean(clean_data_time)) + '\n')
+
 
 @unittest.skip
 class ResultDataCollectorTests(unittest.TestCase):
@@ -190,6 +192,22 @@ class ResultDataCollectorTests(unittest.TestCase):
                                 c='green', alpha=1, zorder=2,
                                 label='Mean current densities')
         plt.show()
+
+
+class InputDataFrameManagerTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.config = load_config('config.json')
+        self.manager = InputDataFrameManager(self.config.paths.input.mtut_dataframe)
+
+    def test_load_input_df(self):
+        df = self.manager.get_df()
+        print(df)
+        print(df['CMOB2IL'])
+        vars_seria: pd.Series = df.iloc[0]
+        for var_key, var_value in vars_seria.items():
+            print(f'{var_key=} {var_value=}')
+            print(f'{type(var_key)=}')
+
 
 
 if __name__ == '__main__':
