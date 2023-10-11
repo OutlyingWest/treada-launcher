@@ -25,17 +25,13 @@ class StateStatuses:
 state_status = StateStatuses()
 
 
-# class BaseState:
-#     def __init__(self, index: int, status: int):
-#         self.index: index
-#         self.status = status
-
 class BaseState:
     states_file_path: str
 
-    def __init__(self, index: Union[int, str], status: str):
+    def __init__(self, index: Union[int, str], status: str, mtut_vars: dict = None):
         self.index = int(index)
         self._status = status
+        self.mtut_vars = mtut_vars
 
     def set_status(self, status, is_dump=True):
 
@@ -120,9 +116,13 @@ class BaseStatesMachine:
             print(f'{self.input_df}')
             print(f'To continue and run iterations push the {Fore.GREEN}Enter{Style.RESET_ALL} button.')
             input()
-            self.states = [self.State(ind, state_status.NOT_READY) for ind in self.input_df.index]
+            for ind, input_line in self.input_df.iterrows():
+                mtut_vars = {var_name: var_value for var_name, var_value in input_line.items()}
+                self.states.append(self.State(index=ind,
+                                              status=state_status.NOT_READY,
+                                              mtut_vars=mtut_vars))
         else:
-            self.states = [self.State(0, state_status.READY)]
+            self.states = [self.State(0, state_status.NOT_READY)]
         self.State.dump_states(self.states)
 
     def set_mtut_vars(self, state_index: int):
@@ -134,6 +134,7 @@ class BaseStatesMachine:
             vars_seria = self.input_df.iloc[state_index]
             for var_key, var_value in vars_seria.items():
                 mtut_manager.set_var(var_key, var_value)
+                self.states[state_index].mtut_vars[var_key] = var_value
             mtut_manager.save_file()
             self.states[state_index].status = state_status.READY
         except ValueError:

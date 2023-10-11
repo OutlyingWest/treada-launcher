@@ -56,7 +56,7 @@ def run_res_plotting(config: Config):
             plot_builder.add_plot()
             title = f'Multiple res plot'
             plot_builder.change_descriptions(plot_title=title, window_title=title)
-            plot_builder.set_short_info()
+            plot_builder.set_short_info(legends)
         # Show plot
         plot_builder.plotter.show(block=False)
 

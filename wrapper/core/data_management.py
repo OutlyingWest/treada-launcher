@@ -790,14 +790,6 @@ class ResultBuilder:
         return len(header)
 
     def _header_build(self):
-        # with open(answer_with_path, mode='r', encoding='utf-8') as answr:
-        #     answer_string = answr.read()
-        # answer_string_with_format = answer_string.format(
-        #     first_name=obj.from_user.first_name,
-        #     format_cmd=hcode('/format'),
-        #     error=hcode('Error:')
-        # )
-
         header: list = [
             'Diode biased at:',
             f'UDRM = {self.results.udrm} V',
