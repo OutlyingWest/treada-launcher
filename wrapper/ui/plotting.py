@@ -49,14 +49,20 @@ def run_res_plotting(config: Config):
             except FileNotFoundError:
                 print('Wrong file path or name.')
             plot_builder.set_loaded_info()
-            legends.append(plot_builder.result.udrm)
+            stage_name = plot_builder.extract_stage_name(full_result_path)
+            plot_builder.legends = [f'Udrm={plot_builder.result.udrm}B {stage_name}']
         else:
-
+            plot_builder.change_descriptions(plot_title='', window_title=f'Multiple res plot')
             result = plot_builder.load_result(mtut_path=full_mtut_path, result_path=full_result_path, skip_rows=15)
-            plot_builder.add_plot()
-            title = f'Multiple res plot'
-            plot_builder.change_descriptions(plot_title=title, window_title=title)
-            plot_builder.set_short_info(legends)
+            # Correct time seria if it is from next stage of same result
+            time_seria = plot_builder.correct_time_seria(result.full_df[col_names.time],
+                                                         plot_builder.result.full_df[col_names.time].iloc[-1],
+                                                         full_result_path)
+            plot_builder.result = result
+            plot_builder.add_plot(x=time_seria, y=result.full_df[col_names.current_density])
+            stage_name = plot_builder.extract_stage_name(full_result_path)
+            plot_builder.set_short_info(f'Udrm={result.udrm}B {stage_name}',
+                                        (result.transient.corrected_time, result.transient.corrected_density))
         # Show plot
         plot_builder.plotter.show(block=False)
 
@@ -79,7 +85,7 @@ class TreadaPlotBuilder:
         save_plot(plot_path: str): save plot to file
     """
     def __init__(self,
-                 mtut_path:str,
+                 mtut_path: str,
                  result_path: str,
                  dist_path: Union[str, None] = None,
                  stage_name='none',
@@ -95,6 +101,10 @@ class TreadaPlotBuilder:
         current_density_column = self.result.full_df[col_names.current_density]
         # Create plotter object
         self.plotter = AdvancedPlotter(time_column, current_density_column)
+        self.legends = [self.plotter.ax.get_legend()]
+        self.handles = [self.plotter.handle]
+        self.res_names_set = set()
+        self.res_names_list = list()
         # Construct plot
         self.set_descriptions(stage_name)
         self.runtime_result_data = None
@@ -150,11 +160,11 @@ class TreadaPlotBuilder:
             self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
                                                 dist_densities=ww_points_df[col_names.current_density])
 
-    def set_short_info(self, legends: list):
-        self.plotter.set_info(self.result)
+    def set_short_info(self, legend: str, transient_ending_coords: tuple):
+        self.legends.append(legend)
+        self.plotter.legend(self.handles, self.legends)
         # Plot accurate transient ending point
-        corrected_time = self.result.transient.corrected_time
-        corrected_density = self.result.transient.corrected_density
+        corrected_time, corrected_density = transient_ending_coords
         self.set_transient_ending_point((corrected_time, corrected_density),
                                         annotation=f'Transient ending point')
 
@@ -170,6 +180,17 @@ class TreadaPlotBuilder:
     def _extract_udrm(res_path: str) -> Union[str, None]:
         udrm: re.Match = re.search('(-?\d+\.?\d*)', res_path)
         return udrm.group()
+
+    @staticmethod
+    def extract_stage_name(res_path: str) -> Union[str, None]:
+        stage_name: re.Match = re.search('_(\w+).txt$', res_path)
+        return stage_name.group(1)
+
+    def extract_res_name(self, res_path: str) -> Union[str, None]:
+        stage_name = self.extract_stage_name(res_path)
+        res_name_with_path = re.sub(f'_{stage_name}.txt', '', res_path)
+        res_name: re.Match = re.search('res_.*', res_name_with_path)
+        return res_name.group()
 
     @staticmethod
     def load_result(mtut_path: str, result_path: str, skip_rows: int) -> ResultData:
@@ -197,8 +218,28 @@ class TreadaPlotBuilder:
         )
         return results
 
-    def add_plot(self):
-        pass
+    def is_same_res(self, res_path: str) -> bool:
+        """
+        Checks is the loaded result file has same name but other stage.
+        """
+        res_name = self.extract_res_name(res_path)
+        self.res_names_set.add(res_name)
+        self.res_names_list.append(res_name)
+        if len(self.res_names_set) < len(self.res_names_list):
+            return True
+        else:
+            return False
+
+    def correct_time_seria(self, actual_time_seria: pd.Series, last_time: float, res_path: str) -> pd.Series:
+        if self.is_same_res(res_path):
+            corrected_time_seria = actual_time_seria + last_time
+        else:
+            corrected_time_seria = actual_time_seria
+        return corrected_time_seria
+
+    def add_plot(self, x, y, *args, **kwargs):
+        handle, = self.plotter.add_plot(x, y, *args, **kwargs)
+        self.handles.append(handle)
 
     @classmethod
     def save_plot(cls, plot_path: str):
@@ -224,9 +265,9 @@ class SimplePlotter:
         self.ax: plt.Axes = ax
         self.ax.grid(True)
         if plot_type == 'plot':
-            self.ax.plot(x, y, label=label)
+            self.handle, = self.ax.plot(x, y, label=label)
         elif plot_type == 'scatter':
-            self.ax.scatter(x, y, label=label)
+            self.handle, = self.ax.scatter(x, y, label=label)
         else:
             raise ValueError('Wrong type')
 
@@ -249,10 +290,10 @@ class SimplePlotter:
         self.ax.set_title(title)
 
     def add_plot(self, x, y, *args, **kwargs):
-        self.ax.plot(x, y, *args, **kwargs)
+        return self.ax.plot(x, y, *args, **kwargs)
 
-    def legend(self, legends_list: list):
-        self.ax.legend(legends_list)
+    def legend(self, *args, **kwargs):
+        self.ax.legend(*args, **kwargs)
 
 
 class SpecialPointsMixin:
