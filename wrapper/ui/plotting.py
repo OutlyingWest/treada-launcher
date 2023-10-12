@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+from dataclasses import dataclass
 from typing import Union, Iterable, Dict, Any, List
 
 import matplotlib
@@ -29,7 +30,6 @@ def run_res_plotting(config: Config):
     run_flag = True
     plot_builder = None
     full_mtut_path = os.path.join(project_path, config.paths.treada_core.mtut)
-    legends = list()
     while run_flag:
         if len(sys.argv) > 2:
             res_name = sys.argv.pop(2)
@@ -56,7 +56,6 @@ def run_res_plotting(config: Config):
             result = plot_builder.load_result(mtut_path=full_mtut_path, result_path=full_result_path, skip_rows=15)
             # Correct time seria if it is from next stage of same result
             time_seria = plot_builder.correct_time_seria(result.full_df[col_names.time],
-                                                         plot_builder.result.full_df[col_names.time].iloc[-1],
                                                          full_result_path)
             plot_builder.result = result
             plot_builder.add_plot(x=time_seria, y=result.full_df[col_names.current_density])
@@ -103,8 +102,9 @@ class TreadaPlotBuilder:
         self.plotter = AdvancedPlotter(time_column, current_density_column)
         self.legends = [self.plotter.ax.get_legend()]
         self.handles = [self.plotter.handle]
-        self.res_names_set = set()
-        self.res_names_list = list()
+        res_name = self.extract_res_name(result_path)
+        self.res_params = ResParams(name=res_name, last_time=time_column.iloc[-1])
+        self.res_names_list = [res_name]
         # Construct plot
         self.set_descriptions(stage_name)
         self.runtime_result_data = None
@@ -218,21 +218,30 @@ class TreadaPlotBuilder:
         )
         return results
 
-    def is_same_res(self, res_path: str) -> bool:
-        """
-        Checks is the loaded result file has same name but other stage.
-        """
-        res_name = self.extract_res_name(res_path)
-        self.res_names_set.add(res_name)
-        self.res_names_list.append(res_name)
-        if len(self.res_names_set) < len(self.res_names_list):
-            return True
-        else:
-            return False
+    @staticmethod
+    def find_duplicates(checked_list: list) -> dict:
+        index_dict = {}
+        for ind, item in enumerate(checked_list):
+            if item in index_dict:
+                index_dict[item].append(ind)
+            else:
+                index_dict[item] = [ind]
+        duplicates = {item: indexes for item, indexes in index_dict.items() if len(indexes) > 1}
+        return duplicates
 
-    def correct_time_seria(self, actual_time_seria: pd.Series, last_time: float, res_path: str) -> pd.Series:
-        if self.is_same_res(res_path):
-            corrected_time_seria = actual_time_seria + last_time
+    def correct_time_seria(self, actual_time_seria: pd.Series, res_path: str) -> pd.Series:
+        res_name = self.extract_res_name(res_path)
+        self.res_params.append(res_name, actual_time_seria.iloc[-1])
+        print(f'{self.res_params=}')
+        duplicated_names_dict = self.find_duplicates(self.res_params.names)
+        print(f'{duplicated_names_dict=}')
+        if duplicated_names_dict:
+            _, dupl_indexes = duplicated_names_dict.popitem()
+            first_dupl_index, last_dupl_index = dupl_indexes
+            corrected_time_seria = actual_time_seria + self.res_params.last_times[first_dupl_index]
+            self.res_params.last_times[last_dupl_index] = corrected_time_seria.iloc[-1]
+            self.res_params.pop(first_dupl_index)
+            print(f'After pop {self.res_params=}')
         else:
             corrected_time_seria = actual_time_seria
         return corrected_time_seria
@@ -244,6 +253,23 @@ class TreadaPlotBuilder:
     @classmethod
     def save_plot(cls, plot_path: str):
         plt.savefig(plot_path)
+
+
+class ResParams:
+    def __init__(self, name: str, last_time: float):
+        self.names = [name]
+        self.last_times = [last_time]
+
+    def append(self, name, last_time):
+        self.names.append(name)
+        self.last_times.append(last_time)
+
+    def pop(self, index: int):
+        self.names.pop(index)
+        self.last_times.pop(index)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(names={self.names},last_times={self.last_times})'
 
 
 class SimplePlotter:
