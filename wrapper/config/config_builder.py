@@ -55,6 +55,15 @@ class LightImpulse:
 
 
 @dataclass
+class DarkImpulse:
+    """
+    """
+    for_stages: list
+    consider_fixed_time: bool
+    fixed_time_ps: float
+
+
+@dataclass
 class EndingCondition:
     """
     Simple ending condition settings.
@@ -70,6 +79,7 @@ class RuntimeSettings:
     """
     find_relative_time: bool
     light_impulse: LightImpulse
+    dark_impulse: DarkImpulse
     ending_condition: EndingCondition
 
 
@@ -83,11 +93,39 @@ class TransientSettings:
 
 
 @dataclass
+class CommonDataFrameCols:
+    """
+    """
+    time: bool
+    current_density: bool
+
+
+@dataclass
+class DataFrameCols(CommonDataFrameCols):
+    source_current: bool
+
+
+@dataclass
+class MeanDataFrameCols(CommonDataFrameCols):
+    pass
+
+
+@dataclass
+class ResultSettings:
+    """
+    """
+    select_mean_dataframe: bool
+    dataframe: DataFrameCols
+    mean_dataframe: MeanDataFrameCols
+
+
+@dataclass
 class AdvancedSettings:
     """
     """
     runtime: RuntimeSettings
     transient: TransientSettings
+    result: ResultSettings
 
 # Paths section
 @dataclass

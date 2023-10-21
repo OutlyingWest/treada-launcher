@@ -109,16 +109,27 @@ class StdoutCapturer:
         self.is_find_relative_time = config.advanced_settings.runtime.find_relative_time
         self.relatives_found = False
         self.relative_time: Union[None, float] = None
+        if self.is_find_relative_time:
+            mtut_vars: dict = self.load_current_mtut_vars(config.paths.treada_core.mtut)
+            self.timestep_constant: Union[None, float] = None
+            self.operating_time_step = mtut_vars['TSTEP']
 
         # transient time calculation variables:
         self.is_consider_fixed_light_time = config.advanced_settings.runtime.light_impulse.consider_fixed_time
-        if self.is_consider_fixed_light_time:
-            mtut_vars: dict = self.load_current_mtut_vars(config.paths.treada_core.mtut)
-            self.operating_time_step = mtut_vars['TSTEP']
+        self.is_consider_fixed_dark_time = config.advanced_settings.runtime.dark_impulse.consider_fixed_time
+
+        if self.is_consider_fixed_light_time or self.is_consider_fixed_dark_time and self.is_find_relative_time:
             self.ilumen = mtut_vars['ILUMEN']
-            self.timestep_constant: Union[None, float] = None
+            self.stage_number = mtut_vars['CKLKRS']
+
+        if self.is_consider_fixed_light_time:
             self.light_impulse_time_ps = config.advanced_settings.runtime.light_impulse.fixed_time_ps
-        self.light_impulse_time_condition = False
+
+        if self.is_consider_fixed_dark_time:
+            if self.stage_number not in config.advanced_settings.runtime.dark_impulse.for_stages:
+                self.is_consider_fixed_dark_time = False
+            else:
+                self.dark_impulse_time_ps = config.advanced_settings.runtime.dark_impulse.fixed_time_ps
         self.last_step_string = None
 
     def stream_management(self, path_to_output=None):
@@ -178,11 +189,17 @@ class StdoutCapturer:
                             if not self.relative_time:
                                 self.relative_time = self.runtime_find_relative_time(output_string=clean_decoded_output)
                             if self.relative_time:
+                                if self.is_consider_fixed_light_time or self.is_consider_fixed_dark_time:
+                                    transient_time = self.get_current_transient_time(self.relative_time)
                                 # Check fixed light impulse time condition
                                 if self.is_consider_fixed_light_time:
-                                    transient_time = self.get_current_transient_time(self.relative_time)
                                     if self.check_light_impulse_time_condition(transient_time,
                                                                                self.light_impulse_time_ps,
+                                                                               self.ilumen):
+                                        self.running_flag = False
+                                if self.is_consider_fixed_dark_time:
+                                    if self.check_dark_impulse_time_condition(transient_time,
+                                                                               self.dark_impulse_time_ps,
                                                                                self.ilumen):
                                         self.running_flag = False
                         # Pure current lines' indexes counting
@@ -256,7 +273,6 @@ class StdoutCapturer:
         if self.relatives_found and output_string.startswith('TIME:'):
             relative_time = float((output_string.split(' ')[2]))
             print(f'{relative_time=}')
-            # input()
         if self.str_counter > 500:
             raise ValueError('Error: RELATIVE TIME not found on runtime. Maybe EN language not enabled in MTUT file')
         return relative_time
@@ -269,6 +285,7 @@ class StdoutCapturer:
         mtut_vars = {
             'TSTEP': float(mtut_manager.get_var('TSTEP')),
             'ILUMEN': float(mtut_manager.get_var('ILUMEN')),
+            'CKLKRS': float(mtut_manager.get_var('CKLKRS')),
         }
         return mtut_vars
 
@@ -290,8 +307,19 @@ class StdoutCapturer:
                                            light_impulse_time: float,
                                            ilumen: float):
         if current_transient_time > light_impulse_time and ilumen:
+            print('Stopped by fixed light impulse time condition.')
             return True
         elif not self.running_flag and ilumen:
+            self.running_flag = True
+            return False
+
+    def check_dark_impulse_time_condition(self, current_transient_time: float,
+                                          dark_impulse_time: float,
+                                          ilumen: float):
+        if current_transient_time > dark_impulse_time and not ilumen:
+            print('Stopped by fixed dark impulse time condition.')
+            return True
+        elif not self.running_flag and not ilumen:
             self.running_flag = True
             return False
 

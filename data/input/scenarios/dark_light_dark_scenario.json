@@ -4,22 +4,28 @@
             "name": "dark_first",
             "mtut_vars": {
                 "CKLKRS": "1.",
-                "ILUMEN": "0"
+                "ILUMEN": "0",
+                "TIME": 2000.0
             }
         },
         "light": {
             "name": "light",
             "mtut_vars": {
                 "CKLKRS": "2.",
-                "ILUMEN": "1"
-            }
+                "ILUMEN": "1",
+                "TIME": 20.0
+
+            },
+            "skip_initial_time_step": true
         },
         "dark_second": {
             "name": "dark_second",
             "mtut_vars": {
                 "CKLKRS": "3.",
-                "ILUMEN": "0"
-            }
+                "ILUMEN": "0",
+                "TIME": 2000.0
+            },
+            "skip_initial_time_step": true
         }
     }
 }

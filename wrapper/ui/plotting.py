@@ -58,7 +58,8 @@ def run_res_plotting(config: Config):
             time_seria = plot_builder.correct_time_seria(result.full_df[col_names.time],
                                                          full_result_path)
             plot_builder.result = result
-            plot_builder.add_plot(x=time_seria, y=result.full_df[col_names.current_density])
+            plot_builder.add_plot(x=time_seria*1e-12, y=result.full_df[col_names.current_density])
+            # plot_builder.add_plot(x=time_seria, y=result.full_df[col_names.current_density])
             stage_name = plot_builder.extract_stage_name(full_result_path)
             plot_builder.set_short_info(f'Udrm={result.udrm}B {stage_name}',
                                         (result.transient.corrected_time, result.transient.corrected_density))
@@ -99,7 +100,8 @@ class TreadaPlotBuilder:
         time_column = self.result.full_df[col_names.time]
         current_density_column = self.result.full_df[col_names.current_density]
         # Create plotter object
-        self.plotter = AdvancedPlotter(time_column, current_density_column)
+        self.plotter = AdvancedPlotter(time_column*1e-12, current_density_column)
+        # self.plotter = AdvancedPlotter(time_column, current_density_column)
         self.legends = [self.plotter.ax.get_legend()]
         self.handles = [self.plotter.handle]
         res_name = self.extract_res_name(result_path)
@@ -110,7 +112,8 @@ class TreadaPlotBuilder:
         self.runtime_result_data = None
         if runtime_result_data:
             self.runtime_result_data = runtime_result_data
-            ending_point_coords = (runtime_result_data.transient.corrected_time, runtime_result_data.transient.corrected_density)
+            ending_point_coords = (runtime_result_data.transient.corrected_time,
+                                   runtime_result_data.transient.corrected_density)
             self.set_transient_ending_point(ending_point_coords, f'Transient ending point')
 
     def construct_plot_title(self):
@@ -367,7 +370,9 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
     Class that extends the abilities of SimplePlotter.
     """
     def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
-        super().__init__(x, y, plot_type)
+        super().__init__(x, y, 'transient')
+        self.ax.set_yscale('log', base=10)
+        self.ax.set_xscale('log', base=10)
 
     def set_info(self, loaded_result):
         self.ax.scatter([], [], label=f'EMINI = {loaded_result.emini}', s=0)

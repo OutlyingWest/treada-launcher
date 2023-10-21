@@ -97,7 +97,8 @@ class BaseStatesMachine:
 
     def run(self, treada_launch_function: Callable[[MtutStageConfiger, Config], None], mtut_stage_configer, config):
         for state in self.states:
-            self.set_mtut_vars(state.index)
+            if self.config.modes.mtut_dataframe:
+                self.set_mtut_vars(state.index)
             if state.status == state_status.READY:
                 self.states[state.index].status = state_status.RUN
                 try:
@@ -107,6 +108,7 @@ class BaseStatesMachine:
                     self.states[state.index].status = state_status.ERROR
                     print(f'State with index={state.index} raise an Exception: {e}')
                     input()
+                    raise e
 
     def init_machine(self):
         if self.config.modes.mtut_dataframe:
@@ -122,7 +124,7 @@ class BaseStatesMachine:
                                               status=state_status.NOT_READY,
                                               mtut_vars=mtut_vars))
         else:
-            self.states = [self.State(0, state_status.NOT_READY)]
+            self.states = [self.State(0, state_status.READY)]
         self.State.dump_states(self.states)
 
     def set_mtut_vars(self, state_index: int):

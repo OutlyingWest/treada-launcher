@@ -11,7 +11,7 @@ import pandas as pd
 from wrapper.launch.scenarios.scenario_builder import Stage
 
 try:
-    from wrapper.config.config_builder import Paths, ResultPaths
+    from wrapper.config.config_builder import Paths, ResultPaths, ResultSettings
     from wrapper.misc.global_functions import create_dir
     from wrapper.misc import lin_alg as alg
 except ModuleNotFoundError:
@@ -556,8 +556,18 @@ class ResultDataCollector:
             self.dataframe.index.values < incremented_initial_steps_number,
             col_names.time
         ] = self.dataframe.index.values[:incremented_initial_steps_number] * initial_time_step_const
-
-        last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number]
+        # TODO: solve kind of approach with IndexError
+        # try:
+        #     last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number]
+        # except IndexError:
+        #     last_initial_time = 0
+        try:
+            last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number]
+        except IndexError as e:
+            print(f'{e.__class__.__name__}: {e} Maybe number of initial time steps: {initial_steps_number=}'
+                  f' more then steps in current stage.\n'
+                  f'Try to decrease number of initial time steps or time step.')
+            raise e
 
         self.dataframe.loc[
             self.dataframe.index.values >= incremented_initial_steps_number,
@@ -630,7 +640,11 @@ class ResultDataCollector:
         ending_difference = 0.01 * (max_density - min_density)
         # Get last value in current col and calculate criteria of transient ending
         tr_criteria = dict()
-        last_density_value = dropped_mean_dataframe[col_names.current_density].iloc[-1]
+        try:
+            last_density_value = dropped_mean_dataframe[col_names.current_density].iloc[-1]
+        except IndexError as e:
+            print(f'{e.__class__.__name__}: {e} Maybe too small transient.window_size={self.transient.window_size}.')
+            raise e
         tr_criteria['plus'] = last_density_value + ending_difference
         tr_criteria['minus'] = last_density_value - ending_difference
         # print(f'{last_density_value=}')
@@ -759,10 +773,12 @@ class ResultData:
 
 
 class ResultBuilder:
-    def __init__(self, result_collector: ResultDataCollector, result_paths: ResultPaths, stage_name='light'):
+    def __init__(self, result_collector: ResultDataCollector, result_paths: ResultPaths,
+                 result_settings: ResultSettings, stage_name='light'):
         self.result_collector = result_collector
         self.results = self._extract_results()
         self.result_path = self.file_name_build(result_paths.main, stage_name=stage_name)
+        self.result_settings = result_settings
         header = self._header_build()
         self.header_length = len(header)
         self.save_data(header)
@@ -822,9 +838,33 @@ class ResultBuilder:
             res_file.writelines(header)
 
     def _dump_dataframe_to_file(self):
+        self.results.full_df[col_names.current_density] = self.results.full_df[col_names.current_density] * -1
+        self.results.mean_df[col_names.current_density] = self.results.mean_df[col_names.current_density] * -1
+        if self.result_settings.select_mean_dataframe:
+            settings = self.result_settings.mean_dataframe
+        else:
+            settings = self.result_settings.dataframe
+        save_col_names = list()
+        for col_key, col_name in col_names.__dict__.items():
+            if settings.__dict__.get(col_key):
+                save_col_names.append(col_name)
+
+        print('RESULTS:')
+        print(f'{settings=}')
+        print('full_df:')
+        print(self.results.full_df)
+        print('mean_df:')
+        print(self.results.mean_df)
+        print(f'{save_col_names=}')
+
         with open(self.result_path, 'a') as res_file:
             # Save dataframe without indexes to file
-            res_file.write(self.results.full_df.to_string(index=False))
+            if self.result_settings.select_mean_dataframe:
+                df = self.results.mean_df[save_col_names]#.reset_index(drop=True)
+                print(f'{df}')
+                res_file.write(df.to_string(index=False))
+            else:
+                res_file.write(self.results.full_df[save_col_names].to_string(index=False))
 
 
 class UdrmVectorManager:

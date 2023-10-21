@@ -25,6 +25,7 @@ def result_build(config: Config, stage: Stage, prev_stage_last_current: Union[fl
     # Save data in result file and output in console
     result_builder = ResultBuilder(result_collector,
                                    result_paths=config.paths.result,
+                                   result_settings=config.advanced_settings.result,
                                    stage_name=stage.name)
 
     # Creation of plot builder object
