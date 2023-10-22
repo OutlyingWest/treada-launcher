@@ -1,9 +1,10 @@
 {
     "scenario": {
-        "active_name": "dark_to_light_scenario"
+        "active_name": "dark_light_dark_scenario"
     },
     "modes": {
-        "udrm_vector_mode": false
+        "udrm_vector_mode": false,
+        "mtut_dataframe": false
     },
     "flags": {
         "plotting": {
@@ -12,27 +13,44 @@
         },
         "auto_ending": true,
         "dark_result_saving": true,
-        "preserve_distributions": true,
+        "preserve_distributions": false,
         "fields_calculation": false
     },
     "advanced_settings": {
         "runtime": {
             "find_relative_time": true,
             "light_impulse": {
-                "consider_fixed_time": false,
-                "fixed_time_ps": 2000
+                "consider_fixed_time": true,
+                "fixed_time_ps": 5000
+            },
+            "dark_impulse": {
+                "for_stages": [3],
+                "consider_fixed_time": true,
+                "fixed_time_ps": 55e6
             },
             "ending_condition": {
-                "chunk_size": 500,
+                "chunk_size": 1000,
                 "equal_values_to_stop": 5,
                 "deviation": 1e-4
             }
         },
 
         "transient": {
-            "window_size": 100,
+            "window_size": 10,
             "window_size_denominator": null,
             "criteria_calculating_df_slice": {"start": null, "stop": null, "step": null}
+        },
+        "result": {
+            "select_mean_dataframe": true,
+            "dataframe": {
+                "time": true,
+                "source_current": true,
+                "current_density": true
+            },
+            "mean_dataframe": {
+                "time": true,
+                "current_density": true
+            }
         }
     },
     "paths": {
@@ -42,7 +60,9 @@
         },
         "input": {
             "udrm": "data\\input\\UDRM.txt",
-            "state": "wrapper\\states\\current_state.json"
+            "state": "wrapper\\states\\current_state.json",
+            "mtut_dataframe": "data\\input\\mtut_dataframe.csv",
+            "states": "wrapper\\states\\current_states.json"
         },
         "result": {
             "main": "data\\result\\res_.txt",
