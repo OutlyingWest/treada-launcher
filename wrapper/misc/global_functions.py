@@ -67,5 +67,21 @@ def set_to_nested_dataclass(dclass, items_dict: dict):
                 dclass.__dict__[key] = items_dict.get(key, value)
 
 
+def read_line_from_file_end(filename, num_line=1):
+    """Returns the num_line before last line of a file (num_line=1 gives last line)"""
+    num_newlines = 0
+    with open(filename, 'rb') as f:
+        try:
+            f.seek(-2, os.SEEK_END)
+            while num_newlines < num_line:
+                f.seek(-2, os.SEEK_CUR)
+                if f.read(1) == b'\n':
+                    num_newlines += 1
+        except OSError:
+            f.seek(0)
+        last_line = f.readline().decode()
+    return last_line
+
+
 if __name__ == '__main__':
     pass

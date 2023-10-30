@@ -203,10 +203,10 @@ class StdoutCapturer:
                                                                                self.ilumen):
                                         self.running_flag = False
                         # Pure current lines' indexes counting
-                        if self.is_preserve_temp_distributions or self.is_find_relative_time:
-                            if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
-                                self.currents_str_counter += 1  # increment must be after all additional loop conditions
-
+                        if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
+                            self.currents_str_counter += 1  # increment must be after all additional loop conditions
+                            # Preserve last step string
+                            self.last_step_string = clean_decoded_output
                         # Write *.exe output to file
                         if output_file:
                             output_file.write(clean_decoded_output)
@@ -222,8 +222,6 @@ class StdoutCapturer:
         execution_time = end_time - start_time
         print('Number of strings:', self.str_counter)
         print(f'Execution time in I/O loop:{execution_time:.2f}s')
-        # Preserve last step string
-        self.last_step_string = clean_decoded_output
 
     async def keyboard_catch(self):
         pass
@@ -323,6 +321,9 @@ class StdoutCapturer:
             self.running_flag = True
             return False
 
+    def get_last_current(self):
+        read_line_from_file_end()
+
 
 class EndingCondition:
     """
@@ -415,6 +416,4 @@ if __name__ == '__main__':
 
     main()
 else:
-    from wrapper.misc.global_functions import create_dir
-
-
+    from wrapper.misc.global_functions import create_dir, read_line_from_file_end
