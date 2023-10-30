@@ -547,9 +547,6 @@ class ResultDataCollector:
         relative_time = self.treada_parser.get_relative_time()
         # Calculate timestep constants
         if skip_initial_time_step:
-            print('time_col_calculate')
-            print(self.dataframe)
-            input()
             operating_time_step_const = operating_time_step * relative_time
             self.dataframe[
                 col_names.time
