@@ -547,35 +547,39 @@ class ResultDataCollector:
         relative_time = self.treada_parser.get_relative_time()
         # Calculate timestep constants
         if skip_initial_time_step:
-            initial_time_step_const = operating_time_step * relative_time
+            print('time_col_calculate')
+            print(self.dataframe)
+            input()
+            operating_time_step_const = operating_time_step * relative_time
+            self.dataframe[
+                col_names.time
+            ] = (
+                    self.dataframe.index.values * operating_time_step_const
+            )
         else:
             initial_time_step_const = initial_time_step * relative_time
-        operating_time_step_const = operating_time_step * relative_time
-        incremented_initial_steps_number = initial_steps_number + 1
-        self.dataframe.loc[
-            self.dataframe.index.values < incremented_initial_steps_number,
-            col_names.time
-        ] = self.dataframe.index.values[:incremented_initial_steps_number] * initial_time_step_const
-        # TODO: solve kind of approach with IndexError
-        # try:
-        #     last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number]
-        # except IndexError:
-        #     last_initial_time = 0
-        try:
-            last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number]
-        except IndexError as e:
-            print(f'{e.__class__.__name__}: {e} Maybe number of initial time steps: {initial_steps_number=}'
-                  f' more then steps in current stage.\n'
-                  f'Try to decrease number of initial time steps or time step.')
-            raise e
+            operating_time_step_const = operating_time_step * relative_time
+            incremented_initial_steps_number = initial_steps_number + 1
+            self.dataframe.loc[
+                self.dataframe.index.values < incremented_initial_steps_number,
+                col_names.time
+            ] = self.dataframe.index.values[:incremented_initial_steps_number] * initial_time_step_const
 
-        self.dataframe.loc[
-            self.dataframe.index.values >= incremented_initial_steps_number,
-            col_names.time
-        ] = (
-                (self.dataframe.index.values[incremented_initial_steps_number:] - initial_steps_number) *
-                operating_time_step_const + last_initial_time
-        )
+            try:
+                last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number]
+            except IndexError as e:
+                print(f'{e.__class__.__name__}: {e} Maybe number of initial time steps: {initial_steps_number=}'
+                      f' more then steps in current stage.\n'
+                      f'Try to decrease number of initial time steps or time step.')
+                raise e
+
+            self.dataframe.loc[
+                self.dataframe.index.values >= incremented_initial_steps_number,
+                col_names.time
+            ] = (
+                    (self.dataframe.index.values[incremented_initial_steps_number:] - initial_steps_number) *
+                    operating_time_step_const + last_initial_time
+            )
 
         # pd.set_option('display.max_rows', None)
         # print(self.dataframe)
@@ -838,8 +842,10 @@ class ResultBuilder:
             res_file.writelines(header)
 
     def _dump_dataframe_to_file(self):
-        self.results.full_df[col_names.current_density] = self.results.full_df[col_names.current_density] * -1
-        self.results.mean_df[col_names.current_density] = self.results.mean_df[col_names.current_density] * -1
+        # self.results.full_df[col_names.current_density] = self.results.full_df[col_names.current_density] * -1
+        self.results.full_df[col_names.current_density] = self.results.full_df[col_names.current_density]
+        # self.results.mean_df[col_names.current_density] = self.results.mean_df[col_names.current_density] * -1
+        self.results.mean_df[col_names.current_density] = self.results.mean_df[col_names.current_density]
         if self.result_settings.select_mean_dataframe:
             settings = self.result_settings.mean_dataframe
         else:
@@ -849,19 +855,10 @@ class ResultBuilder:
             if settings.__dict__.get(col_key):
                 save_col_names.append(col_name)
 
-        print('RESULTS:')
-        print(f'{settings=}')
-        print('full_df:')
-        print(self.results.full_df)
-        print('mean_df:')
-        print(self.results.mean_df)
-        print(f'{save_col_names=}')
-
         with open(self.result_path, 'a') as res_file:
             # Save dataframe without indexes to file
             if self.result_settings.select_mean_dataframe:
-                df = self.results.mean_df[save_col_names]#.reset_index(drop=True)
-                print(f'{df}')
+                df = self.results.mean_df[save_col_names]
                 res_file.write(df.to_string(index=False))
             else:
                 res_file.write(self.results.full_df[save_col_names].to_string(index=False))
