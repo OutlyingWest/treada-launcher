@@ -676,8 +676,8 @@ class ResultDataCollector:
             print(f'{self.mean_dataframe=}')
             print(f'{ending_minus_index=}')
             print(f'{ending_plus_index=}')
-            print(f'{Fore.YELLOW}Either too fast transient or direct current. Unable to calculate transient time'
-                  f'correctly.{Style.RESET_ALL}')
+            print(f'{Fore.YELLOW}Unable to calculate transient time. Either too fast transient or direct current.'
+                  f'{Style.RESET_ALL}')
             self.transient.ending_index = 1
             self.transient.current_density = self.mean_dataframe[col_names.current_density].iloc[1]
         else:
