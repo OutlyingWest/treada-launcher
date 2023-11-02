@@ -73,10 +73,6 @@ class StdoutCapturer:
     def __init__(self, process: subprocess.Popen, config: Config,):
         # Running of the executable file
         self.process = process
-        # io_loop variables:
-        self.running_flag = True
-        self.str_counter = 0
-        self.currents_str_counter = 0
         # Init auto ending prerequisites
         self.auto_ending = config.flags.auto_ending
         condition_params = config.advanced_settings.runtime.ending_condition
@@ -109,10 +105,9 @@ class StdoutCapturer:
         self.is_find_relative_time = config.advanced_settings.runtime.find_relative_time
         self.relatives_found = False
         self.relative_time: Union[None, float] = None
-        if self.is_find_relative_time:
-            mtut_vars: dict = self.load_current_mtut_vars(config.paths.treada_core.mtut)
-            self.timestep_constant: Union[None, float] = None
-            self.operating_time_step = mtut_vars['TSTEP']
+        mtut_vars: dict = self.load_current_mtut_vars(config.paths.treada_core.mtut)
+        self.timestep_constant: Union[None, float] = None
+        self.operating_time_step = mtut_vars['TSTEP']
 
         # transient time calculation variables:
         self.is_consider_fixed_light_time = config.advanced_settings.runtime.light_impulse.consider_fixed_time
@@ -130,6 +125,14 @@ class StdoutCapturer:
                 self.is_consider_fixed_dark_time = False
             else:
                 self.dark_impulse_time_ps = config.advanced_settings.runtime.dark_impulse.fixed_time_ps
+        # io_loop variables:
+        self.running_flag = True
+        self.str_counter = 0
+        if self.stage_number < 2:
+            self.currents_str_counter = 0
+        else:
+            # In case if stage is not first (Because the last value from previous stage preserves on such stages' dfs)
+            self.currents_str_counter = 1
         self.last_step_string = None
 
     def stream_management(self, path_to_output=None):
@@ -177,9 +180,7 @@ class StdoutCapturer:
                         clean_decoded_output = decoded_output.strip('\n ')
                         # Check ending condition
                         if self.auto_ending:
-                            current_value = (
-                                current_value_prepare(currents_string=clean_decoded_output)
-                            )
+                            current_value = current_value_prepare(currents_string=clean_decoded_output)
                             # if current_value and self.ending_condition.check(self.str_counter, current_value):
                             if current_value and self.ending_condition.check(current_value):
                                 self.running_flag = False
@@ -193,15 +194,13 @@ class StdoutCapturer:
                                     transient_time = self.get_current_transient_time(self.relative_time)
                                 # Check fixed light impulse time condition
                                 if self.is_consider_fixed_light_time:
-                                    if self.check_light_impulse_time_condition(transient_time,
-                                                                               self.light_impulse_time_ps,
-                                                                               self.ilumen):
-                                        self.running_flag = False
+                                    self.check_light_impulse_time_condition(transient_time,
+                                                                            self.light_impulse_time_ps,
+                                                                            self.ilumen)
                                 if self.is_consider_fixed_dark_time:
-                                    if self.check_dark_impulse_time_condition(transient_time,
-                                                                               self.dark_impulse_time_ps,
-                                                                               self.ilumen):
-                                        self.running_flag = False
+                                    self.check_dark_impulse_time_condition(transient_time,
+                                                                           self.dark_impulse_time_ps,
+                                                                           self.ilumen)
                         # Pure current lines' indexes counting
                         if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
                             self.currents_str_counter += 1  # increment must be after all additional loop conditions
@@ -294,6 +293,7 @@ class StdoutCapturer:
         return time_step_const
 
     def get_current_transient_time(self, relative_time: float) -> Union[float, None]:
+        # TODO: Fix the wrong calc. of current transient time for the first stage cause the initial timestep is on that
         current_transient_time = None
         if not self.timestep_constant:
             self.timestep_constant = self.find_timestep_constant(self.operating_time_step, relative_time)
@@ -306,20 +306,18 @@ class StdoutCapturer:
                                            ilumen: float):
         if current_transient_time > light_impulse_time and ilumen:
             print('Stopped by fixed light impulse time condition.')
-            return True
+            self.running_flag = False
         elif not self.running_flag and ilumen:
             self.running_flag = True
-            return False
 
     def check_dark_impulse_time_condition(self, current_transient_time: float,
                                           dark_impulse_time: float,
                                           ilumen: float):
         if current_transient_time > dark_impulse_time and not ilumen:
             print('Stopped by fixed dark impulse time condition.')
-            return True
+            self.running_flag = False
         elif not self.running_flag and not ilumen:
             self.running_flag = True
-            return False
 
     def get_last_current(self):
         read_line_from_file_end()
