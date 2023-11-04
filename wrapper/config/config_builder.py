@@ -74,6 +74,21 @@ class EndingCondition:
 
 
 @dataclass
+class PreservingLinspace:
+    """
+    """
+    enable: bool
+    time_ps_linspace: dict
+
+
+@dataclass
+class DistributionsRuntimeSettings:
+    """
+    """
+    preserving_linspace: PreservingLinspace
+
+
+@dataclass
 class RuntimeSettings:
     """
     """
@@ -81,6 +96,7 @@ class RuntimeSettings:
     light_impulse: LightImpulse
     dark_impulse: DarkImpulse
     ending_condition: EndingCondition
+    distributions: DistributionsRuntimeSettings
 
 
 @dataclass

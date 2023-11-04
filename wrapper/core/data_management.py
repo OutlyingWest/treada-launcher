@@ -7,17 +7,38 @@ from typing import Union, List, Tuple, Dict
 from colorama import Fore, Style
 
 import pandas as pd
+import numpy as np
 
 from wrapper.launch.scenarios.scenario_builder import Stage
 
 try:
-    from wrapper.config.config_builder import Paths, ResultPaths, ResultSettings
+    from wrapper.config.config_builder import Paths, ResultPaths, ResultSettings, Config
     from wrapper.misc.global_functions import create_dir
     from wrapper.misc import lin_alg as alg
 except ModuleNotFoundError:
-    from config.config_builder import Paths, ResultPaths
+    from config.config_builder import Paths, ResultPaths, Config
     from misc.global_functions import create_dir
     from misc import lin_alg as alg
+
+
+def calculate_relative_time(relative_temperature: float,
+                            relative_concentration: float,
+                            relative_permittivity: float,
+                            relative_mobility: float) -> float:
+    """
+    :param relative_temperature: Kelvins (RTEMP in MTUT file)
+    :param relative_concentration: cm^-3 (RIMPUR in MTUT file)
+    :param relative_permittivity: (REPSI in MTUT file)
+    :param relative_mobility: cm^2/(V*s) (RMOB in MTUT file)
+    :return relative_time: ps
+    """
+    rp = -1.380662e-4 * relative_temperature / 1.6021892
+    rl = np.sqrt(relative_permittivity * relative_temperature * (1.380662e12 /
+                 (4 * np.pi * 4.803242**2)) / relative_concentration)
+    re_ = -rp / rl * 10
+    rv = re_ * relative_mobility * 1e3
+    relative_time = 1e8 * rl / rv
+    return relative_time
 
 
 class MtutStageConfiger:
