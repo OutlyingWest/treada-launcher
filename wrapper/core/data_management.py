@@ -21,26 +21,6 @@ except ModuleNotFoundError:
     from misc import lin_alg as alg
 
 
-def calculate_relative_time(relative_temperature: float,
-                            relative_concentration: float,
-                            relative_permittivity: float,
-                            relative_mobility: float) -> float:
-    """
-    :param relative_temperature: Kelvins (RTEMP in MTUT file)
-    :param relative_concentration: cm^-3 (RIMPUR in MTUT file)
-    :param relative_permittivity: (REPSI in MTUT file)
-    :param relative_mobility: cm^2/(V*s) (RMOB in MTUT file)
-    :return relative_time: ps
-    """
-    rp = -1.380662e-4 * relative_temperature / 1.6021892
-    rl = np.sqrt(relative_permittivity * relative_temperature * (1.380662e12 /
-                 (4 * np.pi * 4.803242**2)) / relative_concentration)
-    re_ = -rp / rl * 10
-    rv = re_ * relative_mobility * 1e3
-    relative_time = 1e8 * rl / rv
-    return relative_time
-
-
 class MtutStageConfiger:
     def __init__(self, mtut_path: str):
         self.mtut_manager = MtutManager(mtut_path)
@@ -224,6 +204,37 @@ class MtutManager(FileManager):
             return cast_var_list
         else:
             return var_list
+
+
+def calculate_relative_time(relative_temperature: float,
+                            relative_concentration: float,
+                            relative_permittivity: float,
+                            relative_mobility: float) -> float:
+    """
+    :param relative_temperature: Kelvins (RTEMP in MTUT file)
+    :param relative_concentration: cm^-3 (RIMPUR in MTUT file)
+    :param relative_permittivity: (REPSI in MTUT file)
+    :param relative_mobility: cm^2/(V*s) (RMOB in MTUT file)
+    :return relative_time: ps
+    """
+    rp = -1.380662e-4 * relative_temperature / 1.6021892
+    relative_l = np.sqrt(relative_permittivity * relative_temperature * 1.380662e12 /
+                         (4 * np.pi * 4.803242**2 * relative_concentration))
+    relative_e = -rp / relative_l * 10
+    relative_v = relative_e * relative_mobility * 1e3
+    relative_time = 1e8 * relative_l / relative_v
+    return relative_time
+
+
+def find_relative_time(mtut_manager: MtutManager) -> float:
+    """
+    :param mtut_manager: MtutManager() class instance with loaded MTUT file data
+    :return relative_time: ps
+    """
+    parameter_names = ('RTEMP', 'RIMPUR', 'REPSI', 'RMOB')
+    parameter_values = tuple(float(mtut_manager.get_var(parameter_name)) for parameter_name in parameter_names)
+    relative_time = calculate_relative_time(*parameter_values)
+    return relative_time
 
 
 @dataclass
