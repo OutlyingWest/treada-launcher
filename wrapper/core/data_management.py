@@ -269,18 +269,15 @@ class TreadaOutputParser:
 
     def __init__(self, raw_output_path: str):
         self.raw_output_path = raw_output_path
-        rel_time, prepared_dataframe = self.prepare_data()
-        self.relative_time: float = rel_time
+        prepared_dataframe = self.prepare_data()
         self.dataframe: pd.DataFrame = prepared_dataframe
 
     def prepare_data(self):
         # Load raw treada output file
         data_list = self.load_raw_file(self.raw_output_path)
-        # Set relative time
-        rel_time = self.find_relative_time(data_list)
         # Create prepared dataframe with source currents
         prepared_dataframe = self.clean_data(data_list)
-        return rel_time, prepared_dataframe
+        return prepared_dataframe
 
     @staticmethod
     def load_raw_file(raw_file_path: str) -> list:
@@ -343,9 +340,6 @@ class TreadaOutputParser:
 
     def get_prepared_dataframe(self):
         return self.dataframe
-
-    def get_relative_time(self):
-        return self.relative_time
 
 
 class TransientData:
@@ -481,9 +475,10 @@ class TransientData:
 
 
 class ResultDataCollector:
-    def __init__(self, mtut_file_path, result_paths: ResultPaths):
+    def __init__(self, mtut_file_path, result_paths: ResultPaths, relative_time: float):
         self.mtut_manager = MtutManager(mtut_file_path)
         self.mtut_manager.load_file()
+        self.relative_time = relative_time
         self.treada_parser = TreadaOutputParser(result_paths.temporary.raw)
         # Set dataframe col names
         self.dataframe = self.treada_parser.get_prepared_dataframe()
@@ -575,19 +570,17 @@ class ResultDataCollector:
         initial_steps_number = int(self.mtut_manager.get_var('NMBPZ0'))
         # Get operating time step from MTUT file
         operating_time_step = float(self.mtut_manager.get_var('TSTEP'))
-        # Get relative time from treada raw output file
-        relative_time = self.treada_parser.get_relative_time()
         # Calculate timestep constants
         if skip_initial_time_step:
-            operating_time_step_const = operating_time_step * relative_time
+            operating_time_step_const = operating_time_step * self.relative_time
             self.dataframe[
                 col_names.time
             ] = (
                     self.dataframe.index.values * operating_time_step_const
             )
         else:
-            initial_time_step_const = initial_time_step * relative_time
-            operating_time_step_const = operating_time_step * relative_time
+            initial_time_step_const = initial_time_step * self.relative_time
+            operating_time_step_const = operating_time_step * self.relative_time
             incremented_initial_steps_number = initial_steps_number + 1
             self.dataframe.loc[
                 self.dataframe.index.values < incremented_initial_steps_number,

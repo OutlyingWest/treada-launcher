@@ -6,8 +6,8 @@ from wrapper.launch.scenarios import scenario_builder as sb
 
 
 @scenario_function(data_class=sb.DarkToLightScenario)
-def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger):
-    stages = Stages()
+def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
+    stages = Stages(kwargs.get('relative_time'))
     # Stage 1 - without light
     stages.without_light(mtut_stage_configer, config, scenario.stages.dark)
 
@@ -20,8 +20,8 @@ def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutSt
 
 
 @scenario_function(data_class=sb.DarkLightDarkScenario)
-def dark_light_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger):
-    stages = Stages()
+def dark_light_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
+    stages = Stages(kwargs.get('relative_time'))
     # Stage 1 - without light
     stages.without_light(mtut_stage_configer, config, scenario.stages.dark_first)
 
@@ -33,8 +33,8 @@ def dark_light_dark_scenario(scenario, config: Config, mtut_stage_configer: Mtut
 
 
 @scenario_function(data_class=sb.TurnOnImpulseDarkScenario)
-def turn_on_impulse_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger):
-    stages = Stages()
+def turn_on_impulse_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
+    stages = Stages(kwargs.get('relative_time'))
     # Stage 1 - turned-off diode, without light
     stages.without_light(mtut_stage_configer, config, scenario.stages.turn_off_impulse)
 

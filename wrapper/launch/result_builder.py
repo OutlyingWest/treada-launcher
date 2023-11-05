@@ -6,10 +6,11 @@ from wrapper.launch.scenarios.scenario_builder import Stage
 from wrapper.ui.plotting import TreadaPlotBuilder
 
 
-def result_build(config: Config, stage: Stage, prev_stage_last_current: Union[float, None]):
+def result_build(config: Config, stage: Stage, prev_stage_last_current: Union[float, None], relative_time: float):
     # Collect result
     result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
-                                           result_paths=config.paths.result)
+                                           result_paths=config.paths.result,
+                                           relative_time=relative_time)
     # Set transient parameters
     result_collector.transient.set_window_size_denominator(
         config.advanced_settings.transient.window_size_denominator

@@ -26,10 +26,11 @@ class TreadaRunner:
     """
     Responsible for launch of "Treada" program.
     """
-    def __init__(self, config):
+    def __init__(self, config, relative_time: float):
         self.exec_process = self._exe_runner(exe_path=config.paths.treada_core.exe)
         self.capturer = StdoutCapturer(process=self.exec_process,
-                                       config=config,)
+                                       config=config,
+                                       relative_time=relative_time,)
 
     def run(self, output_file_path='', stage_name='None Stage'):
         """
@@ -70,7 +71,7 @@ class TreadaRunner:
 
 
 class StdoutCapturer:
-    def __init__(self, process: subprocess.Popen, config: Config,):
+    def __init__(self, process: subprocess.Popen, config: Config, relative_time: float):
         # Running of the executable file
         self.process = process
         # Init auto ending prerequisites
@@ -101,10 +102,11 @@ class StdoutCapturer:
         # Can be defined by setter
         self.runtime_console_info = ''
 
-        # Relative time variables:
-        self.is_find_relative_time = config.advanced_settings.runtime.find_relative_time
+        # Time variables:
         self.relatives_found = False
-        self.relative_time: Union[None, float] = None
+        self.relative_time = relative_time
+        print(f'{relative_time=}')
+        input()
         mtut_vars: dict = self.load_current_mtut_vars(config.paths.treada_core.mtut)
         self.timestep_constant: Union[None, float] = None
         self.operating_time_step = mtut_vars['TSTEP']
@@ -113,7 +115,7 @@ class StdoutCapturer:
         self.is_consider_fixed_light_time = config.advanced_settings.runtime.light_impulse.consider_fixed_time
         self.is_consider_fixed_dark_time = config.advanced_settings.runtime.dark_impulse.consider_fixed_time
 
-        if self.is_consider_fixed_light_time or self.is_consider_fixed_dark_time and self.is_find_relative_time:
+        if self.is_consider_fixed_light_time or self.is_consider_fixed_dark_time:
             self.ilumen = mtut_vars['ILUMEN']
             self.stage_number = mtut_vars['CKLKRS']
 
@@ -186,21 +188,16 @@ class StdoutCapturer:
                                 self.running_flag = False
                         if self.is_preserve_temp_distributions:
                             self.preserve_distributions(output_string=clean_decoded_output)
-                        if self.is_find_relative_time:
-                            if not self.relative_time:
-                                self.relative_time = self.runtime_find_relative_time(output_string=clean_decoded_output)
-                            if self.relative_time:
-                                if self.is_consider_fixed_light_time or self.is_consider_fixed_dark_time:
-                                    transient_time = self.get_current_transient_time(self.relative_time)
-                                # Check fixed light impulse time condition
-                                if self.is_consider_fixed_light_time:
-                                    self.check_light_impulse_time_condition(transient_time,
-                                                                            self.light_impulse_time_ps,
-                                                                            self.ilumen)
-                                if self.is_consider_fixed_dark_time:
-                                    self.check_dark_impulse_time_condition(transient_time,
-                                                                           self.dark_impulse_time_ps,
-                                                                           self.ilumen)
+                        if self.is_consider_fixed_light_time or self.is_consider_fixed_dark_time:
+                            transient_time = self.get_current_transient_time(self.relative_time)
+                        if self.is_consider_fixed_light_time:
+                            self.check_light_impulse_time_condition(transient_time,
+                                                                    self.light_impulse_time_ps,
+                                                                    self.ilumen)
+                        if self.is_consider_fixed_dark_time:
+                            self.check_dark_impulse_time_condition(transient_time,
+                                                                   self.dark_impulse_time_ps,
+                                                                   self.ilumen)
                         # Pure current lines' indexes counting
                         if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
                             self.currents_str_counter += 1  # increment must be after all additional loop conditions
@@ -276,7 +273,6 @@ class StdoutCapturer:
 
     @staticmethod
     def load_current_mtut_vars(mtut_file_path: str) -> dict:
-        # Get operating time step from MTUT file
         mtut_manager = MtutManager(mtut_file_path)
         mtut_manager.load_file()
         mtut_vars = {

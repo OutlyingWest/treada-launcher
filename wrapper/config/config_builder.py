@@ -74,18 +74,18 @@ class EndingCondition:
 
 
 @dataclass
-class PreservingLinspace:
+class PreservingRange:
     """
     """
     enable: bool
-    time_ps_linspace: dict
+    time_ps_range: dict
 
 
 @dataclass
 class DistributionsRuntimeSettings:
     """
     """
-    preserving_linspace: PreservingLinspace
+    preserving_range: PreservingRange
 
 
 @dataclass
