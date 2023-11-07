@@ -122,7 +122,7 @@ class FileManager:
         Set a new value for a variable in configuration file.
 
         :param var_name:
-        :param new_value:
+        :param new_value: must be a string
         """
         var_index = self.find_var_string(var_name)
         if var_index == -1:
@@ -780,7 +780,8 @@ class ResultDataCollector:
         except FileNotFoundError:
             return None
         ww_data_indexes: list = sorted(ww_data_indexes_iter)
-        actual_ww_data_indexes = [index for index in ww_data_indexes if index < self.dataframe.index[-1]]
+        # Select only indexes within size of current df in case if old results remain
+        actual_ww_data_indexes = [index for index in ww_data_indexes if index <= self.dataframe.index[-1]]
         return actual_ww_data_indexes
 
 

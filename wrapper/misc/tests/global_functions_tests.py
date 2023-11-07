@@ -1,7 +1,7 @@
 import unittest
 from dataclasses import dataclass
 
-from wrapper.misc.global_functions import set_to_nested_dataclass
+from wrapper.misc.global_functions import dict_to_nested_dataclass
 
 
 @dataclass
@@ -27,5 +27,5 @@ class DataClassesTests(unittest.TestCase):
             name='Her',
             one=2
         )
-        set_to_nested_dataclass(self.dataclass, items_dict)
+        dict_to_nested_dataclass(self.dataclass, items_dict)
         print(self.dataclass)

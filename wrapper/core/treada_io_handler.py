@@ -26,7 +26,17 @@ class TreadaRunner:
     """
     Responsible for launch of "Treada" program.
     """
-    def __init__(self, config, relative_time: float):
+    old_mtut_time = None
+
+    def __init__(self, config: Config, relative_time: float):
+        self.config = config
+        self.relative_time = relative_time
+        temp_range = None
+        if self.config.advanced_settings.runtime.distributions.enable_preserving_ranges:
+            ranges = self.config.advanced_settings.runtime.distributions.preserving_ranges
+            temp_range = self.apply_ranged_temporaries_dumping(self.relative_time, ranges,
+                                                               self.config.paths.treada_core.mtut)
+        self.temp_range = temp_range
         self.exec_process = self._exe_runner(exe_path=config.paths.treada_core.exe)
         self.capturer = StdoutCapturer(process=self.exec_process,
                                        config=config,
@@ -41,9 +51,9 @@ class TreadaRunner:
         self.capturer.set_stage_name(stage_name)
         self.capturer.set_runtime_console_info(f'   {stage_name}')
         if output_file_path:
-            self.capturer.stream_management(path_to_output=output_file_path)
+            self.capturer.stream_management(self.temp_range, path_to_output=output_file_path)
         else:
-            self.capturer.stream_management()
+            self.capturer.stream_management(self.temp_range)
 
     @staticmethod
     def _exe_runner(exe_path: str) -> subprocess.Popen:
@@ -68,6 +78,45 @@ class TreadaRunner:
             return TreadaOutputParser.get_single_current_from_line(self.capturer.last_step_string)
         else:
             return None
+
+    @classmethod
+    def apply_ranged_temporaries_dumping(cls, rel_time: float, ranges: dict,
+                                         mtut_file_path: str) -> Union[dict, None]:
+        """
+        Calculates and sets variable TIME in MTUT file, which responsible for period of dumping temporary results to
+        hard disk. That performs in accordance with set time range from config.json
+        :param rel_time: previously calculated relative time
+        :param ranges: time ranges from config.json
+        :param mtut_file_path: path to MTUT
+        :returns: corrected temp_range, old TIME variable value
+        """
+        mtut_manager = MtutManager(mtut_file_path)
+        mtut_manager.load_file()
+        stage_number = mtut_manager.get_var('CKLKRS').rstrip('.')
+        temp_range = None
+        if stage_number in ranges.keys():
+            temp_range = ranges[stage_number]
+            if temp_range['start'] >= temp_range['stop']:
+                raise ValueError('"stop" must be higher than "start" in "time_ps_range"')
+            if temp_range['step'] > temp_range['stop']:
+                temp_range['step'] = temp_range['stop']
+            cls.old_mtut_time = mtut_manager.get_var('TIME')
+            operating_timestep = float(mtut_manager.get_var('TSTEP'))
+            timestep_constant = calculate_timestep_constant(operating_timestep, rel_time)
+            mtut_time = str(int(temp_range['step'] / timestep_constant))
+            mtut_manager.set_var('TIME', mtut_time)
+        elif cls.old_mtut_time:
+            mtut_manager.set_var('TIME', cls.old_mtut_time)
+        else:
+            cls.old_mtut_time = mtut_manager.get_var('TIME')
+        mtut_manager.save_file()
+        return temp_range
+
+
+def calculate_timestep_constant(operating_time_step: float, relative_time: float) -> float:
+    """Calculate timestep constant"""
+    time_step_const = operating_time_step * relative_time
+    return time_step_const
 
 
 class StdoutCapturer:
@@ -98,6 +147,8 @@ class StdoutCapturer:
             self.distribution_filenames = config.distribution_filenames
             self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
             self.distribution_destination_path = config.paths.result.temporary.distributions
+            self.is_distribution_range_enabled = config.advanced_settings.runtime.distributions.enable_preserving_ranges
+            self.distribution_range = None
 
         # Can be defined by setter
         self.runtime_console_info = ''
@@ -105,11 +156,9 @@ class StdoutCapturer:
         # Time variables:
         self.relatives_found = False
         self.relative_time = relative_time
-        print(f'{relative_time=}')
-        input()
         mtut_vars: dict = self.load_current_mtut_vars(config.paths.treada_core.mtut)
-        self.timestep_constant: Union[None, float] = None
-        self.operating_time_step = mtut_vars['TSTEP']
+        operating_time_step = mtut_vars['TSTEP']
+        self.timestep_constant = calculate_timestep_constant(operating_time_step, relative_time)
 
         # transient time calculation variables:
         self.is_consider_fixed_light_time = config.advanced_settings.runtime.light_impulse.consider_fixed_time
@@ -137,11 +186,14 @@ class StdoutCapturer:
             self.currents_str_counter = 1
         self.last_step_string = None
 
-    def stream_management(self, path_to_output=None):
+    def stream_management(self, temp_range: Union[dict, None], path_to_output=None):
         """
         Divides data from *.exe stdout to its own stdout and file with name *_output.txt.
         Ends by KeyboardInterrupt or ending condition satisfaction
         """
+        if self.is_distribution_range_enabled and temp_range:
+            temp_range['stop'] = temp_range['stop'] + self.timestep_constant
+            self.distribution_range = temp_range
         # Strip slashes if only file name was used as a path (for solving of powershell issues)
         if path_to_output:
             if path_to_output.count(os.path.sep) <= 2:
@@ -186,10 +238,9 @@ class StdoutCapturer:
                             # if current_value and self.ending_condition.check(self.str_counter, current_value):
                             if current_value and self.ending_condition.check(current_value):
                                 self.running_flag = False
+                        transient_time = self.calculate_current_transient_time()
                         if self.is_preserve_temp_distributions:
-                            self.preserve_distributions(output_string=clean_decoded_output)
-                        if self.is_consider_fixed_light_time or self.is_consider_fixed_dark_time:
-                            transient_time = self.get_current_transient_time(self.relative_time)
+                            self.preserve_distributions(transient_time, output_string=clean_decoded_output)
                         if self.is_consider_fixed_light_time:
                             self.check_light_impulse_time_condition(transient_time,
                                                                     self.light_impulse_time_ps,
@@ -228,15 +279,17 @@ class StdoutCapturer:
     def set_stage_name(self, stage_name: str):
         self.stage_name = stage_name
 
-    def preserve_distributions(self, output_string: str):
+    def preserve_distributions(self, transient_time: float, output_string: str):
         """
         Preserve distributions of several values that contain in Treada's temporary files.
         :return:
         """
+        if self.is_distribution_range_enabled and self.distribution_range:
+            if not self.distribution_range['start'] <= transient_time <= self.distribution_range['stop']:
+                return
         # Find the beginning line of temporary results dumping info
         if (TreadaOutputParser.temporary_results_line_found(output_string) and
            not self.temporary_dumping_begins):
-            print(f'{output_string=}')
             self.temporary_dumping_begins = True
         if self.temporary_dumping_begins:
             # Check is dumping has ended
@@ -282,25 +335,15 @@ class StdoutCapturer:
         }
         return mtut_vars
 
-    @staticmethod
-    def find_timestep_constant(operating_time_step: float, relative_time: float) -> float:
-        # Calculate timestep constant
-        time_step_const = operating_time_step * relative_time
-        return time_step_const
-
-    def get_current_transient_time(self, relative_time: float) -> Union[float, None]:
+    def calculate_current_transient_time(self) -> Union[float, None]:
         # TODO: Fix the wrong calc. of current transient time for the first stage cause the initial timestep is on that
-        current_transient_time = None
-        if not self.timestep_constant:
-            self.timestep_constant = self.find_timestep_constant(self.operating_time_step, relative_time)
-        if self.timestep_constant:
-            current_transient_time = self.currents_str_counter * self.timestep_constant
+        current_transient_time = self.currents_str_counter * self.timestep_constant
         return current_transient_time
 
     def check_light_impulse_time_condition(self, current_transient_time: float,
                                            light_impulse_time: float,
                                            ilumen: float):
-        if current_transient_time > light_impulse_time and ilumen:
+        if current_transient_time > light_impulse_time and ilumen and not self.temporary_dumping_begins:
             print('Stopped by fixed light impulse time condition.')
             self.running_flag = False
         elif not self.running_flag and ilumen:
@@ -309,7 +352,7 @@ class StdoutCapturer:
     def check_dark_impulse_time_condition(self, current_transient_time: float,
                                           dark_impulse_time: float,
                                           ilumen: float):
-        if current_transient_time > dark_impulse_time and not ilumen:
+        if current_transient_time > dark_impulse_time and not ilumen and not self.temporary_dumping_begins:
             print('Stopped by fixed dark impulse time condition.')
             self.running_flag = False
         elif not self.running_flag and not ilumen:

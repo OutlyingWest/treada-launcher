@@ -8,7 +8,7 @@ from typing import Union, Dict
 
 from dacite import from_dict, Config
 
-from wrapper.misc.global_functions import get_from_nested_dataclass, set_to_nested_dataclass
+from wrapper.misc.global_functions import dict_from_nested_dataclass, dict_to_nested_dataclass
 
 
 @dataclass
@@ -43,6 +43,7 @@ class Flags:
     auto_ending: bool
     dark_result_saving: bool
     preserve_distributions: bool
+    remove_old_distributions: bool
     fields_calculation: bool
 
 
@@ -74,18 +75,11 @@ class EndingCondition:
 
 
 @dataclass
-class PreservingRange:
-    """
-    """
-    enable: bool
-    time_ps_range: dict
-
-
-@dataclass
 class DistributionsRuntimeSettings:
     """
     """
-    preserving_range: PreservingRange
+    enable_preserving_ranges: bool
+    preserving_ranges: dict
 
 
 @dataclass
@@ -218,8 +212,8 @@ def load_config(config_name: str = None) -> Config:
     # load configuration from file
     config = from_dict(data_class=Config, data=config_dict)
     # Construct absolute paths
-    paths_dict = get_from_nested_dataclass(config.paths)
+    paths_dict = dict_from_nested_dataclass(config.paths)
     for key, path in paths_dict.items():
         paths_dict[key] = os.path.join(project_path, path)
-    set_to_nested_dataclass(config.paths, paths_dict)
+    dict_to_nested_dataclass(config.paths, paths_dict)
     return config
