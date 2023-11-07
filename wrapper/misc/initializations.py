@@ -1,17 +1,16 @@
-from wrapper.misc.global_functions import create_dir, get_from_nested_dataclass
+import os
+
+from wrapper.misc.global_functions import create_dirs, remove_dirs
 from wrapper.config.config_builder import Paths
 
 
-def init_dirs(paths: Paths):
-    create_with_file = (
-        'udrm',
-    )
-    paths_dict = get_from_nested_dataclass(paths)
-    for key, file_path in paths_dict.items():
-        if key in create_with_file:
-            create_dir(file_path, with_file=True)
-        else:
-            create_dir(file_path, with_file=False)
+def init_dirs(paths: Paths, is_remove_distributions: bool):
+    create_dirs(paths, with_file=('udrm',))
+    if is_remove_distributions:
+        to_remove_dirs_iter = os.scandir(paths.result.temporary.distributions)
+        remove_dirs([to_remove_dir.path for to_remove_dir in to_remove_dirs_iter])
+
+
 
 
 

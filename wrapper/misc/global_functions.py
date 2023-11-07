@@ -1,6 +1,6 @@
 import os
+import shutil
 from dataclasses import is_dataclass
-from typing import List
 
 
 def create_dir(file_path: str, with_file=False):
@@ -18,23 +18,7 @@ def create_dir(file_path: str, with_file=False):
             open(file_path, 'w').close()
 
 
-def create_dirs(dirs: List[list]):
-    """
-    Creates directories.
-    dirs format:
-        dirs = [
-            [file_path: str, with_file: bool],
-            [file_path: str, with_file: bool],
-            ...
-        ]
-    :param dirs: dictionary that contains file paths with file names to create
-    :return:
-    """
-    for directory, with_file in dirs:
-        create_dir(directory, with_file)
-
-
-def get_from_nested_dataclass(dclass) -> dict:
+def dict_from_nested_dataclass(dclass) -> dict:
     """
     Goes through nested dataclass recursively.
     Returns items from the deepest layers of nested branches.
@@ -45,14 +29,14 @@ def get_from_nested_dataclass(dclass) -> dict:
     if is_dataclass(dclass):
         for key, value in dclass.__dict__.items():
             if is_dataclass(value):
-                nested_items = get_from_nested_dataclass(value)
+                nested_items = dict_from_nested_dataclass(value)
                 items_dict.update(nested_items)
             else:
                 items_dict[key] = value
     return items_dict
 
 
-def set_to_nested_dataclass(dclass, items_dict: dict):
+def dict_to_nested_dataclass(dclass, items_dict: dict):
     """
     Goes through nested dataclass recursively.
     Returns items from the deepest layers of nested branches.
@@ -62,7 +46,7 @@ def set_to_nested_dataclass(dclass, items_dict: dict):
     if is_dataclass(dclass):
         for key, value in dclass.__dict__.items():
             if is_dataclass(value):
-                set_to_nested_dataclass(value, items_dict)
+                dict_to_nested_dataclass(value, items_dict)
             else:
                 dclass.__dict__[key] = items_dict.get(key, value)
 
@@ -81,6 +65,28 @@ def read_line_from_file_end(filename, num_line=1):
             f.seek(0)
         last_line = f.readline().decode()
     return last_line
+
+
+def create_dirs(paths, with_file=tuple()):
+    paths_dict = dict_from_nested_dataclass(paths)
+    for key, file_path in paths_dict.items():
+        if key in with_file:
+            create_dir(file_path, with_file=True)
+        else:
+            create_dir(file_path, with_file=False)
+
+
+def remove_dirs(paths):
+    """
+    Remove multiple directories recursively
+    :param paths: list of str or dataclass
+    :return:
+    """
+    if not isinstance(paths, list):
+        paths_dict = dict_from_nested_dataclass(paths)
+        paths_list = [path for path in paths_dict.values()]
+        paths = paths_list
+    [shutil.rmtree(path) for path in paths]
 
 
 if __name__ == '__main__':
