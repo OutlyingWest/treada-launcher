@@ -4,7 +4,7 @@
     },
     "modes": {
         "udrm_vector_mode": false,
-        "mtut_dataframe": false
+        "mtut_dataframe": true
     },
     "flags": {
         "plotting": {
@@ -13,7 +13,8 @@
         },
         "auto_ending": true,
         "dark_result_saving": true,
-        "preserve_distributions": false,
+        "preserve_distributions": true,
+        "remove_old_distributions": true,
         "fields_calculation": false
     },
     "advanced_settings": {
@@ -25,13 +26,19 @@
             },
             "dark_impulse": {
                 "for_stages": [3],
-                "consider_fixed_time": true,
-                "fixed_time_ps": 55e6
+                "consider_fixed_time": false,
+                "fixed_time_ps": 120e6
             },
             "ending_condition": {
                 "chunk_size": 1000,
                 "equal_values_to_stop": 5,
                 "deviation": 1e-4
+            },
+            "distributions": {
+                "enable_preserving_ranges": false,
+                "preserving_ranges": {
+                    "2": {"start": 0, "stop": 5000, "step": 5000}
+                }
             }
         },
 
@@ -41,16 +48,9 @@
             "criteria_calculating_df_slice": {"start": null, "stop": null, "step": null}
         },
         "result": {
-            "select_mean_dataframe": true,
-            "dataframe": {
-                "time": true,
-                "source_current": true,
-                "current_density": true
-            },
-            "mean_dataframe": {
-                "time": true,
-                "current_density": true
-            }
+            "select_mean_dataframe": false,
+            "dataframe": {"time": true, "source_current": true, "current_density": true},
+            "mean_dataframe": {"time": true, "current_density": true}
         }
     },
     "paths": {
