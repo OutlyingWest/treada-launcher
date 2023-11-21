@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Union, Iterable, Dict, Any, List
 
 import matplotlib
+from colorama import Fore, Style
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -159,9 +160,16 @@ class TreadaPlotBuilder:
         # Temporary
         # Set distributions info if it exists
         if self.runtime_result_data and self.runtime_result_data.ww_data_indexes:
-            ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
-            self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
-                                                dist_densities=ww_points_df[col_names.current_density])
+            try:
+                ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
+                self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
+                                                    dist_densities=ww_points_df[col_names.current_density])
+            except KeyError as e:
+                print(f'{Fore.YELLOW}Using "preserve_distributions": true option with'
+                      f'"select_mean_dataframe": true option.\n'
+                      f'Distributions preserving points can not be showed on plots due to an'
+                      f'Exception: {e}{Style.RESET_ALL}\n'
+                      f'Disable one of these options to avoid this warning.')
 
     def set_short_info(self, legend: str, transient_ending_coords: tuple):
         self.legends.append(legend)

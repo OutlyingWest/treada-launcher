@@ -385,7 +385,7 @@ class TransientData:
             self._window_size = self.default_window_size
             print(f'{Fore.YELLOW}Push the Enter button if you want to continue anyway.{Style.RESET_ALL}')
             input()
-        elif self._window_size < 10:
+        elif self._window_size < 3:
             print(f'{Fore.YELLOW}Too little {self._window_size=},'
                   f' window size set to {self.default_window_size=}{Style.RESET_ALL}')
             self._window_size = self.default_window_size
@@ -613,9 +613,9 @@ class ResultDataCollector:
         # print(f'{relative_time=}')
 
     def get_mean_current_density_seria(self, window_size_denominator: Union[None, int]) -> pd.Series:
-        dataframe_length = self.dataframe.shape[0]
         # Set window_size if denominator exists or use its own window_size value if not
         if window_size_denominator is not None:
+            dataframe_length = self.dataframe.shape[0]
             self.transient.window_size = int(dataframe_length / window_size_denominator)
         # Calculating
         mean_densities = (
