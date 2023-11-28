@@ -1,6 +1,6 @@
 {
     "stages": {
-        "1": {
+        "first_transient": {
             "name": "first",
             "mtut_vars": {
                 "CKLKRS": 1,
@@ -8,13 +8,20 @@
                 "JPUSH": 0
             }
         },
-        "2": {
+        "second_transient": {
             "name": "second",
             "mtut_vars": {
                 "CKLKRS": 2,
                 "JPUSH": 0
             },
             "skip_initial_time_step": true
+        },
+        "third_transient": {
+            "name": "third",
+            "skip_initial_time_step": true
+        },
+        "info_collecting": {
+            "name": ""
         }
     }
 }

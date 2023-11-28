@@ -212,7 +212,6 @@ class StdoutCapturer:
         self.process.terminate()
 
     def __io_loop(self, output_file=None):
-
         if len(sys.argv) > 2:
             num_of_str = int(sys.argv[2])
         else:
@@ -359,7 +358,7 @@ class StdoutCapturer:
             self.running_flag = True
 
     def get_last_current(self):
-        read_line_from_file_end()
+        pass
 
 
 class EndingCondition:

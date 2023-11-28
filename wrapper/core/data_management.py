@@ -801,7 +801,7 @@ class ResultData:
 
 class ResultBuilder:
     def __init__(self, result_collector: ResultDataCollector, result_paths: ResultPaths,
-                 result_settings: ResultSettings, stage_name='light'):
+                 result_settings: ResultSettings, stage_name='none_stage'):
         self.result_collector = result_collector
         self.results = self._extract_results()
         self.result_path = self.file_name_build(result_paths.main, stage_name=stage_name)

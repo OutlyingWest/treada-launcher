@@ -6,7 +6,7 @@ from wrapper.launch.scenarios.scenario_builder import Stage
 from wrapper.ui.plotting import TreadaPlotBuilder
 
 
-def result_build(config: Config, stage: Stage, prev_stage_last_current: Union[float, None], relative_time: float):
+def transient_result_build(config: Config, stage: Stage, prev_stage_last_current: Union[float, None], relative_time: float):
     # Collect result
     result_collector = ResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
                                            result_paths=config.paths.result,

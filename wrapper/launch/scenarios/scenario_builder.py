@@ -23,15 +23,15 @@ class Stage:
 #############################################
 @dataclass
 class DarkToLightStages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
     dark: Stage
     light: Stage
 
 
 @dataclass
 class DarkToLightScenario:
-    """
-    Info about switching rules for "Treada" work stages.
-    """
     stages: DarkToLightStages
 
 
@@ -40,6 +40,9 @@ class DarkToLightScenario:
 #####################################################
 @dataclass
 class DarkLightDarkStages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
     dark_first: Stage
     light: Stage
     dark_second: Stage
@@ -47,9 +50,6 @@ class DarkLightDarkStages:
 
 @dataclass
 class DarkLightDarkScenario:
-    """
-    Info about switching rules for "Treada" work stages.
-    """
     stages: DarkLightDarkStages
 
 
@@ -58,16 +58,35 @@ class DarkLightDarkScenario:
 ########################################################
 @dataclass
 class TurnOnImpulseDarkStages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
     turn_off_impulse: Stage
     turn_on_impulse: Stage
 
 
 @dataclass
 class TurnOnImpulseDarkScenario:
+    stages: TurnOnImpulseDarkStages
+
+
+########################################################
+# Capacity
+########################################################
+@dataclass
+class CapacityStages:
     """
     Info about switching rules for "Treada" work stages.
     """
-    stages: TurnOnImpulseDarkStages
+    first_transient: Stage
+    second_transient: Stage
+    third_transient: Stage
+    info_collecting: Stage
+
+
+@dataclass
+class CapacityScenario:
+    stages: CapacityStages
 
 
 def load_scenario(scenarios_path: str,
