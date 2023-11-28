@@ -1,0 +1,20 @@
+{
+    "stages": {
+        "1": {
+            "name": "first",
+            "mtut_vars": {
+                "CKLKRS": 1,
+                "KEY": 1,
+                "JPUSH": 0
+            }
+        },
+        "2": {
+            "name": "second",
+            "mtut_vars": {
+                "CKLKRS": 2,
+                "JPUSH": 0
+            },
+            "skip_initial_time_step": true
+        }
+    }
+}

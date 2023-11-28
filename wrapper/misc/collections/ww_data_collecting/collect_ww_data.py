@@ -155,7 +155,6 @@ class WWDataUserInteractor:
                 self.ww_data_plotter.interactive_mode_enable()
                 legends_list = self.ww_data_plotter.add_bulk_plots(ww_dict, stage_name)
                 self.ww_data_plotter.legend(legends_list)
-                # self.ww_data_plotter.show(block=False)
             else:
                 print('Plot object not exists. Adding unavailable.')
         else:

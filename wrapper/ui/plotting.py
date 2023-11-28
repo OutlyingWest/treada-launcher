@@ -165,11 +165,11 @@ class TreadaPlotBuilder:
                 self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
                                                     dist_densities=ww_points_df[col_names.current_density])
             except KeyError as e:
-                print(f'{Fore.YELLOW}Using "preserve_distributions": true option with'
+                print(f'{Fore.YELLOW}Using "preserve_distributions": true option with '
                       f'"select_mean_dataframe": true option.\n'
-                      f'Distributions preserving points can not be showed on plots due to an'
-                      f'Exception: {e}{Style.RESET_ALL}\n'
-                      f'Disable one of these options to avoid this warning.')
+                      f'Distributions preserving points can not be showed on plots due to an\n'
+                      f'Exception: {e}\n'
+                      f'Disable one of these options to avoid this warning.{Style.RESET_ALL}')
 
     def set_short_info(self, legend: str, transient_ending_coords: tuple):
         self.legends.append(legend)
