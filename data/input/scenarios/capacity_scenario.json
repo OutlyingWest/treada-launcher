@@ -1,27 +1,27 @@
 {
     "stages": {
-        "first_transient": {
-            "name": "first",
+        "capacity_first": {
+            "name": "capacity_first",
             "mtut_vars": {
                 "CKLKRS": 1,
                 "KEY": 1,
                 "JPUSH": 0
             }
         },
-        "second_transient": {
-            "name": "second",
+        "capacity_second": {
+            "name": "capacity_second",
             "mtut_vars": {
                 "CKLKRS": 2,
-                "JPUSH": 0
+                "JPUSH": 1
             },
             "skip_initial_time_step": true
         },
-        "third_transient": {
-            "name": "third",
+        "capacity_third": {
+            "name": "capacity_third",
             "skip_initial_time_step": true
         },
-        "info_collecting": {
-            "name": ""
+        "capacity_info": {
+            "name": "capacity_info"
         }
     }
 }

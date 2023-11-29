@@ -25,16 +25,11 @@ class MtutStageConfiger:
     def __init__(self, mtut_path: str):
         self.mtut_manager = MtutManager(mtut_path)
 
-    def light_off(self, light_off_setup: dict):
+    def set_stage_mtut_vars(self, mtut_vars_setup: dict):
+        if not mtut_vars_setup:
+            mtut_vars_setup = dict()
         self.mtut_manager.load_file()
-        for key, value in light_off_setup.items():
-            if key != 'name':
-                self.mtut_manager.set_var(key, str(value))
-        self.mtut_manager.save_file()
-
-    def light_on(self, light_on_setup: dict):
-        self.mtut_manager.load_file()
-        for key, value in light_on_setup.items():
+        for key, value in mtut_vars_setup.items():
             if key != 'name':
                 self.mtut_manager.set_var(key, str(value))
         self.mtut_manager.save_file()

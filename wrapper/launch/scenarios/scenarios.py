@@ -9,10 +9,10 @@ from wrapper.launch.scenarios import scenario_builder as sb
 def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
     stages = Stages(kwargs.get('relative_time'))
     # Stage 1 - without light
-    stages.without_light(mtut_stage_configer, config, scenario.stages.dark)
+    stages.transient(mtut_stage_configer, config, scenario.stages.dark, stage_type='dark')
 
     # Stage 2 - with light
-    stages.with_light(mtut_stage_configer, config, scenario.stages.light)
+    stages.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
 
     # Stage 3 (additional) - fields integral calculation
     if config.flags.fields_calculation:
@@ -23,21 +23,37 @@ def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutSt
 def dark_light_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
     stages = Stages(kwargs.get('relative_time'))
     # Stage 1 - without light
-    stages.without_light(mtut_stage_configer, config, scenario.stages.dark_first)
+    stages.transient(mtut_stage_configer, config, scenario.stages.dark_first, stage_type='dark')
 
     # Stage 2 - with light
-    stages.with_light(mtut_stage_configer, config, scenario.stages.light)
+    stages.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
 
     # Stage 3 - without light
-    stages.without_light(mtut_stage_configer, config, scenario.stages.dark_second)
+    stages.transient(mtut_stage_configer, config, scenario.stages.dark_second, stage_type='dark')
 
 
 @scenario_function(data_class=sb.TurnOnImpulseDarkScenario)
 def turn_on_impulse_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
     stages = Stages(kwargs.get('relative_time'))
     # Stage 1 - turned-off diode, without light
-    stages.without_light(mtut_stage_configer, config, scenario.stages.turn_off_impulse)
+    stages.transient(mtut_stage_configer, config, scenario.stages.turn_off_impulse, stage_type='dark')
 
     # Stage 2 - turned-on diode, without light
-    stages.without_light(mtut_stage_configer, config, scenario.stages.turn_on_impulse)
+    stages.transient(mtut_stage_configer, config, scenario.stages.turn_on_impulse, stage_type='dark')
+
+
+@scenario_function(data_class=sb.CapacityScenario)
+def capacity_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
+    stages = Stages(kwargs.get('relative_time'))
+    # Stage 1 - transient
+    stages.transient(mtut_stage_configer, config, scenario.stages.capacity_first, save_result=True)
+
+    # Stage 2 - transient
+    stages.transient(mtut_stage_configer, config, scenario.stages.capacity_second, save_result=True)
+
+    # Stage 3 - transient
+    stages.transient(mtut_stage_configer, config, scenario.stages.capacity_third, save_result=True)
+
+    stages.capacity_info_collecting(config, scenario.stages.capacity_info)
+
 

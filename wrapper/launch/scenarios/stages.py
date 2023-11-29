@@ -11,28 +11,20 @@ class Stages:
     """
     The class that allows to transmit values from stage to stage.
     """
-    def __init__(self, relative_time: float):
+    def __init__(self, relative_time: Union[float, None] = None):
         self.previous_stage_last_current: Union[float, None] = None
         self.relative_time = relative_time
 
-    def without_light(self, mtut_stage_configer: MtutStageConfiger, config: Config,
-                      scenario_stage: Stage):
-        mtut_stage_configer.light_off(scenario_stage.mtut_vars)
+    def transient(self, mtut_stage_configer: MtutStageConfiger, config: Config,
+                  scenario_stage: Stage, stage_type='light', save_result=False):
+        mtut_stage_configer.set_stage_mtut_vars(scenario_stage.mtut_vars)
         treada = TreadaRunner(config, self.relative_time)
-        if config.flags.dark_result_saving:
+        if config.flags.dark_result_saving and stage_type == 'dark' or save_result:
             treada.run(config.paths.result.temporary.raw, stage_name=scenario_stage.name)
             # Collect data and build result
             transient_result_build(config, scenario_stage, self.previous_stage_last_current, self.relative_time)
         else:
             treada.run(stage_name=scenario_stage.name)
-        self.previous_stage_last_current = treada.get_last_step_current()
-
-    def with_light(self, mtut_stage_configer: MtutStageConfiger, config: Config, scenario_stage: Stage):
-        mtut_stage_configer.light_on(scenario_stage.mtut_vars)
-        treada = TreadaRunner(config, self.relative_time)
-        treada.run(config.paths.result.temporary.raw, stage_name=scenario_stage.name)
-        # Collect data and build result
-        transient_result_build(config, scenario_stage, self.previous_stage_last_current, self.relative_time)
         self.previous_stage_last_current = treada.get_last_step_current()
 
     @staticmethod

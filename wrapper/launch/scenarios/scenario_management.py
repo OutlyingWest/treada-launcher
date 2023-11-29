@@ -11,6 +11,8 @@ def scenario_function(data_class):
             scenario = load_scenario(config.paths.scenarios, config.scenario.active_name, data_class)
             # Preserve mtut vars
             mtut_scenario_vars = dict_from_nested_dataclass(scenario.stages)['mtut_vars']
+            if not mtut_scenario_vars:
+                mtut_scenario_vars = dict()
             mtut_initial_manager = MtutManager(config.paths.treada_core.mtut)
             mtut_initial_manager.load_file()
             # Define relative time

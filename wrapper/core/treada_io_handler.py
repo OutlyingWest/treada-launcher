@@ -166,18 +166,20 @@ class StdoutCapturer:
 
         if self.is_consider_fixed_light_time or self.is_consider_fixed_dark_time:
             self.ilumen = mtut_vars['ILUMEN']
-            self.stage_number = mtut_vars['CKLKRS']
 
         if self.is_consider_fixed_light_time:
             self.light_impulse_time_ps = config.advanced_settings.runtime.light_impulse.fixed_time_ps
 
+        self.stage_number = mtut_vars['CKLKRS']
         if self.is_consider_fixed_dark_time:
             if self.stage_number not in config.advanced_settings.runtime.dark_impulse.for_stages:
                 self.is_consider_fixed_dark_time = False
             else:
                 self.dark_impulse_time_ps = config.advanced_settings.runtime.dark_impulse.fixed_time_ps
+
         # io_loop variables:
         self.running_flag = True
+        self.is_currents_line = False
         self.str_counter = 0
         if self.stage_number < 2:
             self.currents_str_counter = 0
@@ -231,35 +233,16 @@ class StdoutCapturer:
                     try:
                         decoded_output = treada_output.decode('utf-8')
                         clean_decoded_output = decoded_output.strip('\n ')
-                        # Check ending condition
-                        if self.auto_ending:
-                            current_value = current_value_prepare(currents_string=clean_decoded_output)
-                            # if current_value and self.ending_condition.check(self.str_counter, current_value):
-                            if current_value and self.ending_condition.check(current_value):
-                                self.running_flag = False
-                        transient_time = self.calculate_current_transient_time()
-                        if self.is_preserve_temp_distributions:
-                            self.preserve_distributions(transient_time, output_string=clean_decoded_output)
-                        if self.is_consider_fixed_light_time:
-                            self.check_light_impulse_time_condition(transient_time,
-                                                                    self.light_impulse_time_ps,
-                                                                    self.ilumen)
-                        if self.is_consider_fixed_dark_time:
-                            self.check_dark_impulse_time_condition(transient_time,
-                                                                   self.dark_impulse_time_ps,
-                                                                   self.ilumen)
-                        # Pure current lines' indexes counting
-                        if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
-                            self.currents_str_counter += 1  # increment must be after all additional loop conditions
-                            # Preserve last step string
-                            self.last_step_string = clean_decoded_output
-                        # Write *.exe output to file
-                        if output_file:
-                            output_file.write(clean_decoded_output)
-                    except UnicodeDecodeError:
-                        decoded_output = treada_output
-                    # Copy *.exe output to its own stdout
-                    print(decoded_output.rstrip() + self.runtime_console_info)
+                        self.conditional_io_loop_features(clean_decoded_output)
+                        # Copy *.exe output to its own stdout
+                        print(decoded_output.rstrip() + self.runtime_console_info)
+                    except UnicodeDecodeError as e:
+                        clean_decoded_output = ''
+                        print(e)
+
+                    # Write *.exe output to file
+                    if output_file:
+                        output_file.write(clean_decoded_output)
                     self.str_counter += 1
             except KeyboardInterrupt:
                 self.running_flag = False
@@ -278,6 +261,35 @@ class StdoutCapturer:
     def set_stage_name(self, stage_name: str):
         self.stage_name = stage_name
 
+    def conditional_io_loop_features(self, clean_decoded_output):
+        # Check ending condition
+        if self.auto_ending:
+            current_value = current_value_prepare(currents_string=clean_decoded_output)
+            # if current_value and self.ending_condition.check(self.str_counter, current_value):
+            if current_value and self.ending_condition.check(current_value):
+                self.running_flag = False
+        # Check does line on present step contain current values
+        if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
+            self.is_currents_line = True
+        #
+        current_transient_time = self.calculate_current_transient_time()
+        if self.is_preserve_temp_distributions:
+            self.preserve_distributions(current_transient_time, output_string=clean_decoded_output)
+        if self.is_consider_fixed_light_time:
+            self.check_light_impulse_time_condition(current_transient_time,
+                                                    self.light_impulse_time_ps,
+                                                    self.ilumen)
+        if self.is_consider_fixed_dark_time:
+            self.check_dark_impulse_time_condition(current_transient_time,
+                                                   self.dark_impulse_time_ps,
+                                                   self.ilumen)
+        # Pure current lines' indexes counting
+        if self.is_currents_line:
+            self.is_currents_line = False
+            self.currents_str_counter += 1  # increment must be after all additional loop conditions
+            # Preserve last step string
+            self.last_step_string = clean_decoded_output
+
     def preserve_distributions(self, transient_time: float, output_string: str):
         """
         Preserve distributions of several values that contain in Treada's temporary files.
@@ -291,8 +303,8 @@ class StdoutCapturer:
            not self.temporary_dumping_begins):
             self.temporary_dumping_begins = True
         if self.temporary_dumping_begins:
-            # Check is dumping has ended
-            if TreadaOutputParser.keep_currents_line_regex(output_string):
+            # Check has dumping already ended
+            if self.is_currents_line:
                 self.temporary_dumping_begins = False
                 print(f'{self.currents_str_counter=}')
                 self.copy_distribution_files()

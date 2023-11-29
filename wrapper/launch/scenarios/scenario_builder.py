@@ -14,7 +14,7 @@ from wrapper.config.config_builder import Config
 @dataclass
 class Stage:
     name: str
-    mtut_vars: dict
+    mtut_vars: dict = field(default=None)
     skip_initial_time_step: bool = field(default=False)
 
 
@@ -78,10 +78,10 @@ class CapacityStages:
     """
     Info about switching rules for "Treada" work stages.
     """
-    first_transient: Stage
-    second_transient: Stage
-    third_transient: Stage
-    info_collecting: Stage
+    capacity_first: Stage
+    capacity_second: Stage
+    capacity_third: Stage
+    capacity_info: Stage
 
 
 @dataclass
@@ -93,7 +93,8 @@ def load_scenario(scenarios_path: str,
                   scenario_file_name: str,
                   scenario_dataclass: dataclass) -> Union[DarkToLightScenario,
                                                           DarkLightDarkScenario,
-                                                          TurnOnImpulseDarkScenario]:
+                                                          TurnOnImpulseDarkScenario,
+                                                          CapacityScenario]:
     """
     Returns scenario dataclass
     :param scenarios_path: path to scenarios folder
