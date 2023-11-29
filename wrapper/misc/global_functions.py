@@ -1,6 +1,7 @@
 import os
 import shutil
 from dataclasses import is_dataclass
+from typing import Union
 
 
 def create_dir(file_path: str, with_file=False):
@@ -11,11 +12,11 @@ def create_dir(file_path: str, with_file=False):
     :param with_file: If True - creates the file that is included in file_path
     :return:
     """
-    dir_path = file_path.rsplit(f'{os.path.sep}', maxsplit=1)[0]
+    dir_path = os.path.dirname(file_path)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
-        if with_file:
-            open(file_path, 'w').close()
+    if with_file:
+        open(file_path, 'w').close()
 
 
 def dict_from_nested_dataclass(dclass) -> dict:
@@ -67,7 +68,16 @@ def read_line_from_file_end(filename, num_line=1):
     return last_line
 
 
-def create_dirs(paths, with_file=tuple()):
+def create_dirs(paths, with_file: Union[tuple, None] = None):
+    """
+    Creates multiple dirs from Paths and creates files in these if necessary.
+    :param paths: Paths dataclass
+    :param with_file: tuple of keys inside paths json object.
+                      If specified - creates a file by filename defined in path string
+    :return:
+    """
+    if not with_file:
+        with_file = tuple()
     paths_dict = dict_from_nested_dataclass(paths)
     for key, file_path in paths_dict.items():
         if key in with_file:
