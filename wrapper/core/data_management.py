@@ -931,7 +931,13 @@ class InputDataFrameManager:
         self.df = self.load_input_df(input_df_path)
 
     def load_input_df(self, df_path: str):
-        df = pd.read_csv(df_path, header=0, sep='\s\s\s+', dtype=str, engine='python')
+        try:
+            df = pd.read_csv(df_path, header=0, sep='\s\s\s+', dtype=str, engine='python')
+        except pd.errors.EmptyDataError:
+            print(f'{Fore.RED}Error:{Style.RESET_ALL} Empty mtut_dataframe.csv.')
+            print(f'Define MTUT vars in mtut_dataframe.csv file if necessary or set "mtut_dataframe" option to "false" '
+                  f'in config.json.')
+            raise SystemExit
         replaced_df = df.applymap(lambda element: self.replace_comma_float_string(element))
         return replaced_df
 
