@@ -19,12 +19,12 @@ class Stages:
                   scenario_stage: Stage, stage_type='light', save_result=False):
         mtut_stage_configer.set_stage_mtut_vars(scenario_stage.mtut_vars)
         treada = TreadaRunner(config, self.relative_time)
-        if config.flags.dark_result_saving and stage_type == 'dark' or save_result:
-            treada.run(config.paths.result.temporary.raw, stage_name=scenario_stage.name)
+        if stage_type == 'light' or config.flags.dark_result_saving and stage_type == 'dark' or save_result:
+            treada.run(scenario_stage, config.paths.result.temporary.raw)
             # Collect data and build result
             transient_result_build(config, scenario_stage, self.previous_stage_last_current, self.relative_time)
         else:
-            treada.run(stage_name=scenario_stage.name)
+            treada.run(scenario_stage)
         self.previous_stage_last_current = treada.get_last_step_current()
 
     @staticmethod
@@ -39,11 +39,12 @@ class Stages:
 
     def capacity_third(self, config: Config, scenario_stage: Stage):
         treada = TreadaRunner(config, self.relative_time)
-        treada.run(config.paths.result.temporary.raw, stage_name=scenario_stage.name)
+        treada.run(scenario_stage, config.paths.result.temporary.raw)
 
     def capacity_info_collecting(self, config: Config, scenario_stage: Stage):
         treada = TreadaRunner(config, self.relative_time)
-        treada.run(config.paths.result.temporary.raw, stage_name=scenario_stage.name)
+        scenario_stage.name = ''
+        treada.run(scenario_stage, config.paths.result.temporary.raw)
 
 
 
