@@ -6,7 +6,7 @@ from wrapper.core.data_management import MtutManager
 from wrapper.misc.lin_alg import line_coefficients
 
 
-def current_value_prepare(currents_string: str) -> Union[float, None]:
+def retrieve_current_value(currents_string: str) -> Union[float, None]:
     """
     Prepare raw "Treada's" output string to following operations.
 
