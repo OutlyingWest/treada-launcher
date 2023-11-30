@@ -8,7 +8,7 @@ from typing import Union
 import numpy as np
 
 from wrapper.config.config_builder import Config
-from wrapper.core.ending_conditions import current_value_prepare
+from wrapper.core.ending_conditions import retrieve_current_value
 from wrapper.core import ending_conditions as ec
 from wrapper.core.data_management import TreadaOutputParser, MtutManager
 from wrapper.launch.scenarios.scenario_builder import Stage
@@ -66,8 +66,8 @@ class TreadaRunner:
         """
         try:
             working_directory_path = os.path.split(exe_path)[0]
-            return subprocess.Popen(exe_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    cwd=working_directory_path)
+            return subprocess.Popen(exe_path, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    cwd=working_directory_path, encoding='utf-8')
         except FileNotFoundError:
             print('Executable file not found, Path:', exe_path)
 
@@ -125,7 +125,7 @@ class StdoutCapturer:
         # Running of the executable file
         self.process = process
         # Init auto ending prerequisites
-        self.auto_ending = config.flags.auto_ending
+        self.is_auto_ending = config.flags.auto_ending
         condition_params = config.advanced_settings.runtime.ending_condition
         self.ending_condition = ec.EndingCondition(chunk_size=condition_params.chunk_size,
                                                    equal_values_to_stop=condition_params.equal_values_to_stop,
@@ -203,7 +203,7 @@ class StdoutCapturer:
             if path_to_output.count(os.path.sep) <= 2:
                 path_to_output = path_to_output.strip(os.path.sep)
                 path_to_output = f'{path_to_output.split(".")[0]}_raw_output.txt'
-
+        self.capacity_info_stage_automatic_input()
         if not path_to_output:
             self.__io_loop()
         else:
@@ -221,30 +221,28 @@ class StdoutCapturer:
         else:
             num_of_str = None
 
-        clean_decoded_output = None
         start_time = time.time()
         while self.running_flag:
             try:
                 if num_of_str and num_of_str <= self.str_counter:
                     break
-                # Get line from process object
-                treada_output: bytes = self.process.stdout.readline()
-                if treada_output == b'' and self.process.poll() is not None:
+                try:
+                    # Get line from process object
+                    treada_output: str = self.process.stdout.readline()
+                except UnicodeDecodeError as e:
+                    treada_output = ''
+                    print(e)
+                if treada_output == '' and self.process.poll() is not None:
                     break
                 if treada_output:
-                    try:
-                        decoded_output = treada_output.decode('utf-8')
-                        clean_decoded_output = decoded_output.strip('\n ')
-                        self.conditional_io_loop_features(clean_decoded_output)
-                        # Copy *.exe output to its own stdout
-                        print(decoded_output.rstrip() + self.runtime_console_info)
-                    except UnicodeDecodeError as e:
-                        clean_decoded_output = ''
-                        print(e)
-
+                    printable_output = treada_output.strip('\n')
+                    clean_output = treada_output.lstrip(' ')
+                    self.conditional_io_loop_features(clean_output)
+                    # Copy *.exe output to its own stdout
+                    print(printable_output + self.runtime_console_info)
                     # Write *.exe output to file
                     if output_file:
-                        output_file.write(clean_decoded_output)
+                        output_file.write(clean_output)
                     self.str_counter += 1
             except KeyboardInterrupt:
                 self.running_flag = False
@@ -257,6 +255,20 @@ class StdoutCapturer:
     async def keyboard_catch(self):
         pass
 
+    def capacity_info_stage_automatic_input(self):
+        """
+        For capacity_scenario on "capacity_info" stage only.
+        If auto_ending option: true, inputs Enter button commands to Treada's stdin automatically.
+        :return:
+        """
+        if self.is_capacity_info_collecting and self.is_auto_ending:
+            for _ in range(10):
+                try:
+                    self.process.stdin.write('\n')
+                    self.process.stdin.flush()
+                except OSError:
+                    break
+
     def set_stage_data(self, stage: Stage):
         self.set_runtime_console_info(f'   {stage.name}')
         self.is_capacity_info_collecting = stage.is_capacity_info_collecting
@@ -266,21 +278,20 @@ class StdoutCapturer:
 
     def conditional_io_loop_features(self, clean_decoded_output):
         if self.is_capacity_info_collecting:
-            self.capacity_io_loop_features(clean_decoded_output)
+            pass
         else:
             self.transient_io_loop_features(clean_decoded_output)
 
     def transient_io_loop_features(self, clean_decoded_output):
-        # Check ending condition
-        if self.auto_ending:
-            current_value = current_value_prepare(currents_string=clean_decoded_output)
-            # if current_value and self.ending_condition.check(self.str_counter, current_value):
-            if current_value and self.ending_condition.check(current_value):
-                self.running_flag = False
-        # Check does line on present step contain current values
-        if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
+        current_value = retrieve_current_value(currents_string=clean_decoded_output)
+        if current_value:
             self.is_currents_line = True
-        #
+        else:
+            self.is_currents_line = False
+        # Check ending condition of transient process
+        if self.is_auto_ending:
+            if self.is_currents_line and self.ending_condition.check(current_value):
+                self.running_flag = False
         current_transient_time = self.calculate_current_transient_time()
         if self.is_preserve_temp_distributions:
             self.preserve_distributions(current_transient_time, output_string=clean_decoded_output)
@@ -294,9 +305,8 @@ class StdoutCapturer:
                                                    self.ilumen)
         # Pure current lines' indexes counting
         if self.is_currents_line:
-            self.is_currents_line = False
             self.currents_str_counter += 1  # increment must be after all additional loop conditions
-            # Preserve last step string
+            # Preserve last step's string
             self.last_step_string = clean_decoded_output
 
     def capacity_io_loop_features(self, clean_decoded_output):
@@ -311,9 +321,10 @@ class StdoutCapturer:
             if not self.distribution_range['start'] <= transient_time <= self.distribution_range['stop']:
                 return
         # Find the beginning line of temporary results dumping info
-        if (TreadaOutputParser.temporary_results_line_found(output_string) and
-           not self.distribution_dumping_begins):
-            self.distribution_dumping_begins = True
+        if not self.is_currents_line:
+            if (TreadaOutputParser.temporary_results_line_found(output_string) and
+               not self.distribution_dumping_begins):
+                self.distribution_dumping_begins = True
         if self.distribution_dumping_begins:
             # Check has dumping already ended
             if self.is_currents_line:
