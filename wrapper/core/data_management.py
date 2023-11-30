@@ -281,16 +281,9 @@ class TreadaOutputParser:
         return data
 
     def clean_data(self, data_list: list):
-        start_time = time.time()
-        # Get pure source current list
-        keep_line_regex_func = self.keep_currents_line_regex
-        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if keep_line_regex_func(line)]
-
-        end_time = time.time()
-        execution_time = end_time - start_time
-        # print(f'Time of file cleaning:{execution_time:.2f}s')
-
-        # Creation of dataframe with current in numeric format
+        # Get pure source currents list
+        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if self.keep_currents_line_regex(line)]
+        # Creation of dataframe of float currents
         pure_df = pd.DataFrame({col_names.source_current: pure_data_lines})
         pure_df[col_names.source_current] = pure_df[col_names.source_current].astype(float)
 
@@ -318,7 +311,7 @@ class TreadaOutputParser:
 
     @staticmethod
     def keep_currents_line_regex(string: str) -> bool:
-        numeric_data_pattern = r"[-+]?\d+\.\d+[eE][-+]?\d+\s+\d+\."
+        numeric_data_pattern = r'\s*[-+]?\d+\.\d+[eE][-+]?\d+\s+\d+\.'
         match = re.match(numeric_data_pattern, string)
         if match:
             return True
