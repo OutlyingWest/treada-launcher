@@ -16,6 +16,8 @@ class Stage:
     name: str
     mtut_vars: dict = field(default=None)
     skip_initial_time_step: bool = field(default=False)
+    is_capacity_info_collecting: bool = field(default=False)
+
 
 
 #############################################

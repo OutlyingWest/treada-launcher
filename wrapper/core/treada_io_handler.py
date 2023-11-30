@@ -11,6 +11,7 @@ from wrapper.config.config_builder import Config
 from wrapper.core.ending_conditions import current_value_prepare
 from wrapper.core import ending_conditions as ec
 from wrapper.core.data_management import TreadaOutputParser, MtutManager
+from wrapper.launch.scenarios.scenario_builder import Stage
 
 
 def main():
@@ -42,14 +43,14 @@ class TreadaRunner:
                                        config=config,
                                        relative_time=relative_time,)
 
-    def run(self, output_file_path='', stage_name='None Stage'):
+    def run(self, stage: Stage, output_file_path=''):
         """
         Runs Treada's program working stage.
         :param output_file_path: path to raw Treada's program output file
         :param stage_name: Treada's working stage name
         """
-        self.capturer.set_stage_name(stage_name)
-        self.capturer.set_runtime_console_info(f'   {stage_name}')
+        self.capturer.set_stage_data(stage)
+        self.capturer.set_runtime_console_info(f'   {stage.name}')
         if output_file_path:
             self.capturer.stream_management(self.temp_range, path_to_output=output_file_path)
         else:
@@ -137,13 +138,14 @@ class StdoutCapturer:
         #                                              chunk_size=100,
         #                                              big_step_multiplier=100,
         #                                              low_step_border=100)
-
+        # Flag for enable capacity info collecting mode
+        self.is_capacity_info_collecting = False
         # Distributions variables:
         # Preserve temporary Treada's files flag
         self.is_preserve_temp_distributions = config.flags.preserve_distributions
         if self.is_preserve_temp_distributions:
             self.stage_name = ''
-            self.temporary_dumping_begins = False
+            self.distribution_dumping_begins = False
             self.distribution_filenames = config.distribution_filenames
             self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
             self.distribution_destination_path = config.paths.result.temporary.distributions
@@ -255,13 +257,20 @@ class StdoutCapturer:
     async def keyboard_catch(self):
         pass
 
+    def set_stage_data(self, stage: Stage):
+        self.set_runtime_console_info(f'   {stage.name}')
+        self.is_capacity_info_collecting = stage.is_capacity_info_collecting
+
     def set_runtime_console_info(self, info: str):
         self.runtime_console_info = info.title()
 
-    def set_stage_name(self, stage_name: str):
-        self.stage_name = stage_name
-
     def conditional_io_loop_features(self, clean_decoded_output):
+        if self.is_capacity_info_collecting:
+            self.capacity_io_loop_features(clean_decoded_output)
+        else:
+            self.transient_io_loop_features(clean_decoded_output)
+
+    def transient_io_loop_features(self, clean_decoded_output):
         # Check ending condition
         if self.auto_ending:
             current_value = current_value_prepare(currents_string=clean_decoded_output)
@@ -290,6 +299,9 @@ class StdoutCapturer:
             # Preserve last step string
             self.last_step_string = clean_decoded_output
 
+    def capacity_io_loop_features(self, clean_decoded_output):
+        pass
+
     def preserve_distributions(self, transient_time: float, output_string: str):
         """
         Preserve distributions of several values that contain in Treada's temporary files.
@@ -300,12 +312,12 @@ class StdoutCapturer:
                 return
         # Find the beginning line of temporary results dumping info
         if (TreadaOutputParser.temporary_results_line_found(output_string) and
-           not self.temporary_dumping_begins):
-            self.temporary_dumping_begins = True
-        if self.temporary_dumping_begins:
+           not self.distribution_dumping_begins):
+            self.distribution_dumping_begins = True
+        if self.distribution_dumping_begins:
             # Check has dumping already ended
             if self.is_currents_line:
-                self.temporary_dumping_begins = False
+                self.distribution_dumping_begins = False
                 print(f'{self.currents_str_counter=}')
                 self.copy_distribution_files()
 
@@ -354,7 +366,7 @@ class StdoutCapturer:
     def check_light_impulse_time_condition(self, current_transient_time: float,
                                            light_impulse_time: float,
                                            ilumen: float):
-        if current_transient_time > light_impulse_time and ilumen and not self.temporary_dumping_begins:
+        if current_transient_time > light_impulse_time and ilumen and not self.distribution_dumping_begins:
             print('Stopped by fixed light impulse time condition.')
             self.running_flag = False
         elif not self.running_flag and ilumen:
@@ -363,7 +375,7 @@ class StdoutCapturer:
     def check_dark_impulse_time_condition(self, current_transient_time: float,
                                           dark_impulse_time: float,
                                           ilumen: float):
-        if current_transient_time > dark_impulse_time and not ilumen and not self.temporary_dumping_begins:
+        if current_transient_time > dark_impulse_time and not ilumen and not self.distribution_dumping_begins:
             print('Stopped by fixed dark impulse time condition.')
             self.running_flag = False
         elif not self.running_flag and not ilumen:
