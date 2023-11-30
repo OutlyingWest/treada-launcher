@@ -21,7 +21,8 @@
             "skip_initial_time_step": true
         },
         "capacity_info": {
-            "name": "capacity_info"
+            "name": "capacity_info",
+            "is_capacity_info_collecting": true
         }
     }
 }
