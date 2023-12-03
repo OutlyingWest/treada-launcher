@@ -15,7 +15,7 @@ import pandas as pd
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(project_path)
 
-from wrapper.core.data_management import ResultData, col_names, FileManager, TransientParameters, MtutManager
+from wrapper.core.data_management import ResultData, transient_cols, FileManager, TransientParameters, MtutManager
 from wrapper.config.config_build import load_config, Config
 from wrapper.misc import lin_alg as la
 
@@ -56,11 +56,11 @@ def run_res_plotting(config: Config):
             plot_builder.change_descriptions(plot_title='', window_title=f'Multiple res plot')
             result = plot_builder.load_result(mtut_path=full_mtut_path, result_path=full_result_path, skip_rows=15)
             # Correct time seria if it is from next stage of same result
-            time_seria = plot_builder.correct_time_seria(result.full_df[col_names.time],
+            time_seria = plot_builder.correct_time_seria(result.full_df[transient_cols.time],
                                                          full_result_path)
             plot_builder.result = result
-            # plot_builder.add_plot(x=time_seria*1e-12, y=result.full_df[col_names.current_density]*0.0022)
-            plot_builder.add_plot(x=time_seria, y=result.full_df[col_names.current_density])
+            # plot_builder.add_plot(x=time_seria*1e-12, y=result.full_df[transient_cols.current_density]*0.0022)
+            plot_builder.add_plot(x=time_seria, y=result.full_df[transient_cols.current_density])
             stage_name = plot_builder.extract_stage_name(full_result_path)
             plot_builder.set_short_info(f'Udrm={result.udrm}B {stage_name}',
                                         (result.transient.corrected_time, result.transient.corrected_density))
@@ -98,8 +98,8 @@ class TreadaPlotBuilder:
         # Load result data from file
         self.result = self.load_result(mtut_path, result_path, skip_rows)
         # Extract result data
-        time_column = self.result.full_df[col_names.time]
-        current_density_column = self.result.full_df[col_names.current_density]
+        time_column = self.result.full_df[transient_cols.time]
+        current_density_column = self.result.full_df[transient_cols.current_density]
         # Create plotter object
         # self.plotter = AdvancedPlotter(time_column*1e-12, current_density_column)
         self.plotter = AdvancedPlotter(time_column, current_density_column)
@@ -162,8 +162,8 @@ class TreadaPlotBuilder:
         if self.runtime_result_data and self.runtime_result_data.ww_data_indexes:
             try:
                 ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
-                self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
-                                                    dist_densities=ww_points_df[col_names.current_density])
+                self.plotter.set_distributions_info(dist_times=ww_points_df[transient_cols.time],
+                                                    dist_densities=ww_points_df[transient_cols.current_density])
             except KeyError as e:
                 print(f'{Fore.YELLOW}Using "preserve_distributions": true option with '
                       f'"select_mean_dataframe": true option.\n'
@@ -184,8 +184,8 @@ class TreadaPlotBuilder:
         # Set distributions info if it exists
         if self.runtime_result_data.ww_data_indexes:
             ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
-            self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
-                                                dist_densities=ww_points_df[col_names.current_density])
+            self.plotter.set_distributions_info(dist_times=ww_points_df[transient_cols.time],
+                                                dist_densities=ww_points_df[transient_cols.current_density])
 
     @staticmethod
     def _extract_udrm(res_path: str) -> Union[str, None]:
@@ -397,11 +397,11 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
             corrected_density = results.transient.corrected_density
             mean_df = results.mean_df
 
-            ending_time_low = mean_df[col_names.time].loc[ending_index_low]
-            ending_time_high = mean_df[col_names.time].loc[ending_index_high]
+            ending_time_low = mean_df[transient_cols.time].loc[ending_index_low]
+            ending_time_high = mean_df[transient_cols.time].loc[ending_index_high]
 
-            ending_density_low = mean_df[col_names.current_density].loc[ending_index_low]
-            ending_density_high = mean_df[col_names.current_density].loc[ending_index_high]
+            ending_density_low = mean_df[transient_cols.current_density].loc[ending_index_low]
+            ending_density_high = mean_df[transient_cols.current_density].loc[ending_index_high]
 
             # Plot rough transient ending point
             # self.add_special_point(results.transient.time, results.transient.current_density,
@@ -410,7 +410,7 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
             self.ax.scatter([], [], c='red', label='Rough transient ending point')
 
             # Plot transient ending condition line
-            last_time = mean_df[col_names.time].iloc[-1]
+            last_time = mean_df[transient_cols.time].iloc[-1]
             lines_length = last_time / 2
             nearest_ending_times, nearest_ending_densities = la.extend_line(x_coords=[results.transient.time,
                                                                                       ending_time_high],
@@ -420,8 +420,8 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
             self.ax.plot(nearest_ending_times, nearest_ending_densities, c='red',
                          label='Ending condition line',)
             # Plot mean current densities
-            self.ax.scatter(mean_df[col_names.time],
-                            mean_df[col_names.current_density],
+            self.ax.scatter(mean_df[transient_cols.time],
+                            mean_df[transient_cols.current_density],
                             c='green', alpha=1, zorder=2,
                             label='Mean current densities')
             # Highlight low nearest ending point
