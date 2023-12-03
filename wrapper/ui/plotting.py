@@ -15,7 +15,7 @@ import pandas as pd
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(project_path)
 
-from wrapper.core.data_management import ResultData, col_names, FileManager, TransientData, MtutManager
+from wrapper.core.data_management import ResultData, col_names, FileManager, TransientParameters, MtutManager
 from wrapper.config.config_build import load_config, Config
 from wrapper.misc import lin_alg as la
 
@@ -213,7 +213,7 @@ class TreadaPlotBuilder:
         transient_time = float(transient_time_str.strip(' ps'))
         transient_density_str = result_file_manager.get_var('TRANSIENT_CURRENT_DENSITY')
         transient_density = float(transient_density_str.rstrip(' mA/cm^2'))
-        transient_data = TransientData(
+        transient_data = TransientParameters(
             corrected_time=transient_time,
             corrected_density=transient_density,
         )

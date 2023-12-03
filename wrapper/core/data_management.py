@@ -237,7 +237,7 @@ class DataFrameColNames:
     """
     Treada's result datafame col names.
     """
-    time:  str
+    time: str
     source_current: str
     current_density: str
     mean_density: str
@@ -253,13 +253,14 @@ col_names = DataFrameColNames(
 
 class TreadaOutputParser:
     """
-    Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
-    Extract data. That includes:
-        1) Source current vector and saving it to the dataframe
-        2) RELATIVE TIME
+    Base class that parses and cleans "Treada's" output, which is dumped to treada_raw_output.txt file.
     Attributes:
-
+        raw_output_path: path to Treada's raw output file
     Methods:
+        prepare_data() -> pd.DataFrame
+        load_raw_file(raw_file_path: str) -> list
+        clean_data(data_list: list) -> pd.DataFrame
+        get_prepared_dataframe() -> pd.DataFrame
     """
 
     def __init__(self, raw_output_path: str):
@@ -267,7 +268,7 @@ class TreadaOutputParser:
         prepared_dataframe = self.prepare_data()
         self.dataframe: pd.DataFrame = prepared_dataframe
 
-    def prepare_data(self):
+    def prepare_data(self) -> pd.DataFrame:
         # Load raw treada output file
         data_list = self.load_raw_file(self.raw_output_path)
         # Create prepared dataframe with source currents
@@ -280,13 +281,38 @@ class TreadaOutputParser:
             data = file.readlines()
         return data
 
-    def clean_data(self, data_list: list):
+    def clean_data(self, data_list: list) -> pd.DataFrame:
+        """
+        Abstract method, which cleans raw data from list
+        :param data_list: list of raw data lines
+        :return: pandas dataframe of cleaned data
+        """
+        pass
+
+    def get_prepared_dataframe(self) -> pd.DataFrame:
+        return self.dataframe
+
+
+class TreadaTransientOutputParser(TreadaOutputParser):
+    """
+    Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
+    Extracts data. That includes:
+        1) Source current vector and saving it to the dataframe
+        2) RELATIVE TIME
+    Attributes:
+
+    Methods:
+    """
+
+    def __init__(self, raw_output_path: str):
+        super().__init__(raw_output_path)
+
+    def clean_data(self, data_list: list) -> pd.DataFrame:
         # Get pure source currents list
         pure_data_lines = [line.split(' ', 1)[0] for line in data_list if self.keep_currents_line_regex(line)]
         # Creation of dataframe of float currents
         pure_df = pd.DataFrame({col_names.source_current: pure_data_lines})
         pure_df[col_names.source_current] = pure_df[col_names.source_current].astype(float)
-
         return pure_df
 
     @staticmethod
@@ -326,11 +352,26 @@ class TreadaOutputParser:
         else:
             return False
 
-    def get_prepared_dataframe(self):
-        return self.dataframe
+
+class TreadaCapacityInfoOutputParser(TreadaOutputParser):
+    """
+    Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
+    Extracts parameters of capacity info stage
+    """
+
+    def __init__(self, raw_output_path: str):
+        super().__init__(raw_output_path)
+
+    def clean_data(self, data_list: list) -> pd.DataFrame:
+        # Get pure source currents list
+        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if self.keep_currents_line_regex(line)]
+        # Creation of dataframe of float currents
+        pure_df = pd.DataFrame({col_names.source_current: pure_data_lines})
+        pure_df[col_names.source_current] = pure_df[col_names.source_current].astype(float)
+        return pure_df
 
 
-class TransientData:
+class TransientParameters:
     """
     Class that contains data about transient process results.
     Provides the safe access to its own attributes.
@@ -467,13 +508,13 @@ class ResultDataCollector:
         self.mtut_manager = MtutManager(mtut_file_path)
         self.mtut_manager.load_file()
         self.relative_time = relative_time
-        self.treada_parser = TreadaOutputParser(result_paths.temporary.raw)
+        self.treada_parser = TreadaTransientOutputParser(result_paths.temporary.raw)
         # Set dataframe col names
         self.dataframe = self.treada_parser.get_prepared_dataframe()
         # Create dataframe which contains mean current densities and its dependencies
         self.mean_dataframe = pd.DataFrame()
         # Result data
-        self.transient = TransientData()
+        self.transient = TransientParameters()
         self.result_dataframe = None
         # Additional result
         self.last_mean_time = None
@@ -775,7 +816,7 @@ class ResultDataCollector:
 
 @dataclass
 class ResultData:
-    transient: TransientData
+    transient: TransientParameters
     udrm: str
     emini: str
     emaxi: str

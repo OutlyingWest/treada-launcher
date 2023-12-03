@@ -11,7 +11,7 @@ import pandas as pd
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser, ResultDataCollector, \
+from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaTransientOutputParser, ResultDataCollector, \
     col_names, MtutManager, MtutDataFrameManager
 from wrapper.config.config_build import load_config
 from wrapper.ui.plotting import AdvancedPlotter
@@ -71,20 +71,20 @@ class TreadaOutputParserTests(unittest.TestCase):
         self.config = load_config('config.json')
         self.mtut = FileManager(self.config.paths.treada_core.mtut)
         self.mtut.load_file()
-        self.parser = TreadaOutputParser(self.config.paths.result.temporary.raw)
+        self.parser = TreadaTransientOutputParser(self.config.paths.result.temporary.raw)
 
     # def test_prepare_data_speed(self):
     #     prepare_data_time = timeit.repeat('parser.prepare_data()',
-    #                                       setup=f"from wrapper.core.data_management import TreadaOutputParser;"
-    #                                             f"parser = TreadaOutputParser(fr'{self.config.paths.output.raw}');",
+    #                                       setup=f"from wrapper.core.data_management import TreadaTransientOutputParser;"
+    #                                             f"parser = TreadaTransientOutputParser(fr'{self.config.paths.output.raw}');",
     #                                       repeat=10,
     #                                       number=50)
     #     print(f'{np.mean(prepare_data_time)=}')
     #
     # def test_load_raw_file_speed(self):
     #     load_raw_file_time = timeit.repeat('parser.load_raw_file(raw_output_path)',
-    #                                       setup=f"from wrapper.core.data_management import TreadaOutputParser;"
-    #                                             f"parser = TreadaOutputParser(fr'{self.config.paths.output.raw}');"
+    #                                       setup=f"from wrapper.core.data_management import TreadaTransientOutputParser;"
+    #                                             f"parser = TreadaTransientOutputParser(fr'{self.config.paths.output.raw}');"
     #                                             f"raw_output_path = parser.raw_output_path"
     #                                             f"",
     #                                       repeat=10,

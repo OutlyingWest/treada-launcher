@@ -12,7 +12,7 @@ from wrapper.ui.plotting import AdvancedPlotter
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser
+from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaTransientOutputParser
 from wrapper.config.config_build import load_config
 from wrapper.core.ending_conditions import StepBasedEndingCondition, LineEndingCondition, MeansEndingCondition
 
