@@ -48,3 +48,8 @@ def transient_result_build(config: Config, stage: Stage, prev_stage_last_current
                                                     stage_name=stage.name,
                                                     file_extension='png')
     plot_builder.save_plot(full_plot_path)
+
+
+def capacity_result_build():
+    pass
+

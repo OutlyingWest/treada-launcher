@@ -3,7 +3,7 @@ from typing import Union
 from wrapper.config.config_builder import Config
 from wrapper.core.data_management import MtutStageConfiger
 from wrapper.core.treada_io_handler import TreadaRunner
-from wrapper.launch.result_builder import transient_result_build
+from wrapper.launch.result_builder import transient_result_build, capacity_result_build
 from wrapper.launch.scenarios.scenario_builder import Stage
 
 
@@ -45,6 +45,7 @@ class Stages:
         treada = TreadaRunner(config, self.relative_time)
         scenario_stage.name = ''
         treada.run(scenario_stage, config.paths.result.temporary.raw)
+        capacity_result_build()
 
 
 

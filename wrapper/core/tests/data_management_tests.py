@@ -12,7 +12,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser, ResultDataCollector, \
-    col_names, MtutManager, InputDataFrameManager
+    col_names, MtutManager, MtutDataFrameManager
 from wrapper.config.config_builder import load_config
 from wrapper.ui.plotting import AdvancedPlotter
 
@@ -197,7 +197,7 @@ class ResultDataCollectorTests(unittest.TestCase):
 class InputDataFrameManagerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
-        self.manager = InputDataFrameManager(self.config.paths.input.mtut_dataframe)
+        self.manager = MtutDataFrameManager(self.config.paths.input.mtut_dataframe)
 
     def test_load_input_df(self):
         df = self.manager.get_df()

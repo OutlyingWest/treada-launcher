@@ -7,7 +7,7 @@ import pandas as pd
 from colorama import Fore, Style
 
 from wrapper.config.config_builder import Config
-from wrapper.core.data_management import MtutStageConfiger, InputDataFrameManager, MtutManager
+from wrapper.core.data_management import MtutStageConfiger, MtutDataFrameManager, MtutManager
 
 
 @dataclass(frozen=True)
@@ -112,7 +112,7 @@ class BaseStatesMachine:
 
     def init_machine(self):
         if self.config.modes.mtut_dataframe:
-            input_df_manager = InputDataFrameManager(self.config.paths.input.mtut_dataframe)
+            input_df_manager = MtutDataFrameManager(self.config.paths.input.mtut_dataframe)
             self.input_df = input_df_manager.get_df()
             print(f'You run "treada_launcher" in mtut_dataframe mode. MTUT vars to iterate below:')
             print(f'{self.input_df}')

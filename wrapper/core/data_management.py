@@ -911,7 +911,7 @@ class UdrmVectorManager:
             raise ValueError('max_index not calculated yet')
 
 
-class InputDataFrameManager:
+class MtutDataFrameManager:
     """
     Allow to load input dataframe, which contains iterable MTUT var values.
     """
