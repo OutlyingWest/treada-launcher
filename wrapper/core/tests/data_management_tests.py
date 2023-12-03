@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser, ResultDataCollector, \
     col_names, MtutManager, MtutDataFrameManager
-from wrapper.config.config_builder import load_config
+from wrapper.config.config_build import load_config
 from wrapper.ui.plotting import AdvancedPlotter
 
 

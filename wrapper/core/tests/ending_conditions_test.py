@@ -13,7 +13,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser
-from wrapper.config.config_builder import load_config
+from wrapper.config.config_build import load_config
 from wrapper.core.ending_conditions import StepBasedEndingCondition, LineEndingCondition, MeansEndingCondition
 
 

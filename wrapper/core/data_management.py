@@ -9,10 +9,10 @@ from colorama import Fore, Style
 import pandas as pd
 import numpy as np
 
-from wrapper.launch.scenarios.scenario_builder import Stage
+from wrapper.launch.scenarios.scenario_build import Stage
 
 try:
-    from wrapper.config.config_builder import Paths, ResultPaths, ResultSettings, Config
+    from wrapper.config.config_build import Paths, ResultPaths, ResultSettings, Config
     from wrapper.misc.global_functions import create_dir
     from wrapper.misc import lin_alg as alg
 except ModuleNotFoundError:

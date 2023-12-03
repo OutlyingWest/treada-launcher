@@ -6,7 +6,7 @@ import dacite
 import pandas as pd
 from colorama import Fore, Style
 
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutStageConfiger, MtutDataFrameManager, MtutManager
 
 

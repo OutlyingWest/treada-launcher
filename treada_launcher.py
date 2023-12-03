@@ -1,6 +1,6 @@
 import colorama
 
-from wrapper.config.config_builder import load_config
+from wrapper.config.config_build import load_config
 from wrapper.launch.modes import launcher_mode_selection
 from wrapper.misc.initializations import init_dirs
 

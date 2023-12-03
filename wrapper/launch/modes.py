@@ -2,7 +2,7 @@ import sys
 
 from colorama import Fore, Style
 
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.launch.scenarios import launch
 from wrapper.core.data_management import MtutStageConfiger
 from wrapper.misc.collections.fields_integral.fields_integral_calculation import run_fields_integral_finding

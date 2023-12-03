@@ -7,7 +7,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from wrapper.config.config_builder import load_config
+from wrapper.config.config_build import load_config
 from wrapper.ui.plotting import SimplePlotter
 
 

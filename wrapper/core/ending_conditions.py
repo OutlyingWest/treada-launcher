@@ -1,7 +1,7 @@
 from typing import Union, Tuple, List, Any
 import numpy as np
 
-from wrapper.config.config_builder import load_config
+from wrapper.config.config_build import load_config
 from wrapper.core.data_management import MtutManager
 from wrapper.misc.lin_alg import line_coefficients
 

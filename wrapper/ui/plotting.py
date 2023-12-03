@@ -16,7 +16,7 @@ project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 sys.path.append(project_path)
 
 from wrapper.core.data_management import ResultData, col_names, FileManager, TransientData, MtutManager
-from wrapper.config.config_builder import load_config, Config
+from wrapper.config.config_build import load_config, Config
 from wrapper.misc import lin_alg as la
 
 

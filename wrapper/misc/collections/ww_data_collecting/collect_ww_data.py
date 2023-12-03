@@ -16,7 +16,7 @@ from PySide6.QtWidgets import QApplication
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.sep.join([".."] * 4)))
 sys.path.append(project_path)
 
-from wrapper.config.config_builder import load_config, Config
+from wrapper.config.config_build import load_config, Config
 from wrapper.ui.plotting import WWDataPlotter
 from wrapper.misc.collections.ww_data_collecting.ui.main_window import MainWindow
 

@@ -1,8 +1,8 @@
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutStageConfiger
 from wrapper.launch.scenarios.scenario_management import scenario_function
 from wrapper.launch.scenarios.stages import Stages
-from wrapper.launch.scenarios import scenario_builder as sb
+from wrapper.launch.scenarios import scenario_build as sb
 
 
 @scenario_function(data_class=sb.DarkToLightScenario)

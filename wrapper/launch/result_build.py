@@ -1,8 +1,8 @@
 from typing import Union
 
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.core.data_management import ResultDataCollector, ResultBuilder
-from wrapper.launch.scenarios.scenario_builder import Stage
+from wrapper.launch.scenarios.scenario_build import Stage
 from wrapper.ui.plotting import TreadaPlotBuilder
 
 

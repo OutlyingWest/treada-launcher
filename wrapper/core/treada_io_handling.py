@@ -7,11 +7,11 @@ from typing import Union
 
 import numpy as np
 
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.core.ending_conditions import retrieve_current_value
 from wrapper.core import ending_conditions as ec
 from wrapper.core.data_management import TreadaOutputParser, MtutManager
-from wrapper.launch.scenarios.scenario_builder import Stage
+from wrapper.launch.scenarios.scenario_build import Stage
 
 
 def main():

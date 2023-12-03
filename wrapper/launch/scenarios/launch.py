@@ -1,5 +1,5 @@
 from wrapper.launch.scenarios import scenarios
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutStageConfiger
 
 

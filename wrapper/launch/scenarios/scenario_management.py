@@ -1,6 +1,6 @@
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutManager, find_relative_time
-from wrapper.launch.scenarios.scenario_builder import load_scenario
+from wrapper.launch.scenarios.scenario_build import load_scenario
 from wrapper.misc.global_functions import dict_from_nested_dataclass
 
 

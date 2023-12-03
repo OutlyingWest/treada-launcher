@@ -1,7 +1,7 @@
 import os
 
 from wrapper.misc.global_functions import create_dirs, remove_dirs
-from wrapper.config.config_builder import Paths
+from wrapper.config.config_build import Paths
 
 
 def init_dirs(paths: Paths, is_remove_distributions: bool):
