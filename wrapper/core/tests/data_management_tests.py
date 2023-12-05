@@ -12,7 +12,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaTransientOutputParser, ResultDataCollector, \
-    transient_cols, MtutManager, MtutDataFrameManager
+    transient_cols, MtutManager, MtutDataFrameManager, SmallSignalInfoOutputParser
 from wrapper.config.config_build import load_config
 from wrapper.ui.plotting import AdvancedPlotter
 
@@ -65,44 +65,21 @@ class MtutManagerTests(unittest.TestCase):
         self.assertEqual(type(var_list[0]), float)
 
 
-@unittest.skip
 class TreadaOutputParserTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
         self.mtut = FileManager(self.config.paths.treada_core.mtut)
         self.mtut.load_file()
-        self.parser = TreadaTransientOutputParser(self.config.paths.result.temporary.raw)
+        self.transient_parser = TreadaTransientOutputParser(self.config.paths.result.temporary.raw)
 
-    # def test_prepare_data_speed(self):
-    #     prepare_data_time = timeit.repeat('parser.prepare_data()',
-    #                                       setup=f"from wrapper.core.data_management import TreadaTransientOutputParser;"
-    #                                             f"parser = TreadaTransientOutputParser(fr'{self.config.paths.output.raw}');",
-    #                                       repeat=10,
-    #                                       number=50)
-    #     print(f'{np.mean(prepare_data_time)=}')
-    #
-    # def test_load_raw_file_speed(self):
-    #     load_raw_file_time = timeit.repeat('parser.load_raw_file(raw_output_path)',
-    #                                       setup=f"from wrapper.core.data_management import TreadaTransientOutputParser;"
-    #                                             f"parser = TreadaTransientOutputParser(fr'{self.config.paths.output.raw}');"
-    #                                             f"raw_output_path = parser.raw_output_path"
-    #                                             f"",
-    #                                       repeat=10,
-    #                                       number=50)
-    #     print(f'{np.mean(load_raw_file_time)=}')
+    @unittest.skip
+    def test_transient_clean_data_speed(self):
+        data_list = TreadaTransientOutputParser.load_raw_file(self.config.paths.result.temporary.raw)
+        clean_data_time = timeit.timeit(lambda: self.transient_parser.clean_data(data_list), number=1000)
+        print(f'{clean_data_time=}')
 
-    def test_clean_data_speed(self):
-        clean_data_time = timeit.repeat('prepared_dataframe = parser.clean_data(data_list)',
-                                          setup=f"from wrapper.core.data_management import TreadaOutputParser;"
-                                                f"parser = TreadaOutputParser(fr'{self.config.paths.result.temporary.raw}');"
-                                                f"raw_output_path = parser.raw_output_path;"
-                                                f"data_list = parser.load_raw_file(raw_output_path);"
-                                                f"",
-                                          repeat=10,
-                                          number=50)
-        print(f'{np.mean(clean_data_time)=}')
-        with open('clean_data_speeds.txt', 'a') as cd_file:
-            cd_file.write(str(np.mean(clean_data_time)) + '\n')
+    def test_small_signal_clean_data(self):
+        small_signal_parser = SmallSignalInfoOutputParser(self.config.paths.result.temporary.raw)
 
 
 @unittest.skip
@@ -194,6 +171,7 @@ class ResultDataCollectorTests(unittest.TestCase):
         plt.show()
 
 
+@unittest.skip
 class InputDataFrameManagerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')

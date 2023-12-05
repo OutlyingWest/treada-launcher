@@ -1,8 +1,13 @@
+import json
 import os
 import re
 import time
+from collections import defaultdict
+from io import StringIO
+from itertools import islice
 from dataclasses import dataclass, field
-from typing import Union, List, Tuple, Dict
+from pprint import pprint
+from typing import Union, List, Tuple, Dict, Iterable
 
 from colorama import Fore, Style
 
@@ -252,17 +257,26 @@ transient_cols = TransientDataFrameColNames(
 
 
 @dataclass
-class CapacityInfoDataFrameColNames:
-    """
-    Treada's result datafame col names.
-    """
-    frequency: str
-    y21: str
-    y22: str
+class ComplexParamNameParts:
+    name: str
+    real: str
+    img: str
 
 
-capacity_cols = CapacityInfoDataFrameColNames(
-    frequency='frequency',
+class SmallSignalAnalysisDataFrameColNames:
+    """
+    Treada's small signal mode dataframe col names.
+    """
+    __slots__ = ('frequency', 'y21', 'y22')
+
+    def __init__(self, frequency: str, **kwargs):
+        self.frequency = frequency
+        for param, name in kwargs.items():
+            setattr(self, param, ComplexParamNameParts(name=name, real=f'{name}.real', img=f'{name}.img'))
+
+
+small_signal_cols = SmallSignalAnalysisDataFrameColNames(
+    frequency='Frequency GHz',
     y21='Y21',
     y22='Y22',
 )
@@ -300,7 +314,7 @@ class TreadaOutputParser:
 
     def clean_data(self, data_list: list) -> pd.DataFrame:
         """
-        Abstract method, which cleans raw data from list
+        Cleans raw data loaded as list
         :param data_list: list of raw data lines
         :return: pandas dataframe of cleaned data
         """
@@ -326,11 +340,16 @@ class TreadaTransientOutputParser(TreadaOutputParser):
 
     def clean_data(self, data_list: list) -> pd.DataFrame:
         # Get pure source currents list
-        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if self.keep_currents_line_regex(line)]
+        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if self.find_currents_line(line)]
         # Creation of dataframe of float currents
-        pure_df = pd.DataFrame({transient_cols.source_current: pure_data_lines})
-        pure_df[transient_cols.source_current] = pure_df[transient_cols.source_current].astype(float)
+        pure_df = pd.DataFrame({transient_cols.source_current: pure_data_lines}).astype(np.float64)
         return pure_df
+
+    def extract_current_value(self, line):
+        if self.find_currents_line(line):
+            return line.split(' ', 1)[0]
+        else:
+            return None
 
     @staticmethod
     def get_single_current_from_line(current_line: str):
@@ -353,7 +372,7 @@ class TreadaTransientOutputParser(TreadaOutputParser):
         return relative_time
 
     @staticmethod
-    def keep_currents_line_regex(string: str) -> bool:
+    def find_currents_line(string: str) -> bool:
         numeric_data_pattern = r'\s*[-+]?\d+\.\d+[eE][-+]?\d+\s+\d+\.'
         match = re.match(numeric_data_pattern, string)
         if match:
@@ -370,7 +389,7 @@ class TreadaTransientOutputParser(TreadaOutputParser):
             return False
 
 
-class TreadaCapacityInfoOutputParser(TreadaOutputParser):
+class SmallSignalInfoOutputParser(TreadaOutputParser):
     """
     Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
     Extracts parameters of capacity info stage
@@ -380,12 +399,140 @@ class TreadaCapacityInfoOutputParser(TreadaOutputParser):
         super().__init__(raw_output_path)
 
     def clean_data(self, data_list: list) -> pd.DataFrame:
-        # Get pure source currents list
-        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if self.keep_currents_line_regex(line)]
-        # Creation of dataframe of float currents
-        pure_df = pd.DataFrame({transient_cols.source_current: pure_data_lines})
-        pure_df[transient_cols.source_current] = pure_df[transient_cols.source_current].astype(float)
+        # Filter data
+        params_filter = SmallSignalParamsFilter(param_names=['S22', 'Y22', 'S12', 'Y21'])
+        for line_index, line in enumerate(data_list):
+            params_filter.apply(line, line_index)
+        param_indexes = params_filter.get_param_indexes()
+        # Prepare raw data list to build df
+        split_data_list = [line.rstrip('\n').split('  ') for line in data_list]
+        pure_df = self.build_dataframe(split_data_list, param_indexes)
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', None)
+        print(pure_df)
         return pure_df
+
+    def build_dataframe(self, data: list, param_rows_indexes: dict) -> pd.DataFrame:
+        params_data = self.init_params_data(data, param_rows_indexes)
+        for params, rows_indexes in param_rows_indexes.items():
+            self.update_params_data(data, params_data, params, rows_indexes)
+        df = pd.DataFrame(params_data).astype(np.float64)
+        return df
+
+    @staticmethod
+    def init_params_data(data: list, param_rows_indexes: dict):
+        """Creates params data dict and fills essential FREQUENCY parameter"""
+        first_key = next(iter(param_rows_indexes.keys()))
+        rows_range = param_rows_indexes[first_key]
+        actual_data = data[rows_range['start']:rows_range['end']]
+        params_data = {small_signal_cols.frequency: [row[0] for row in actual_data]}
+        return params_data
+
+    def update_params_data(self, data: list, params_data: dict, params: tuple, rows_range: dict):
+        """
+        Updates the params_data dictionary from "data" list with strings that split to numbers.
+        That performs according to the current params contains as tuple of param names and
+        rows_range - as a dict of indexes
+        """
+        for param in params:
+            col = self.define_param_col_index(param)
+            actual_data = data[rows_range['start']:rows_range['end']]
+            params_data.update({f'{param}.real': [row[col] for row in actual_data]})
+            params_data.update({f'{param}.img': [row[col+1] for row in actual_data]})
+
+    @staticmethod
+    def define_param_col_index(param: str):
+        positions = {
+            ('11', '21'): 1,
+            ('12', '22'): 3,
+        }
+        param = param[1:]
+        for params_key, index in positions.items():
+            if param in params_key:
+                return index
+        raise ValueError(f'Unable to find position for {param=}')
+
+
+class SmallSignalParamsFilter:
+    """Allows to filter parameters' values in the small signal mode raw info file."""
+    def __init__(self, param_names: Iterable):
+        self.param_names = sorted(param_names)
+        self._param_indexes = defaultdict(dict)
+        self.is_title_found = False
+        self.is_numeric_found = False
+        self.last_in_title_params = None
+        self.case = self.ParseCases.find_title
+
+    @dataclass
+    class ParseCases:
+        """Cases of small signal mode raw info file parsing, which use in apply() method"""
+        find_title = 0
+        find_numeric = 1
+        find_end = 2
+
+    def apply(self, line: str, line_index: int):
+        """
+        Applies the filtering rules. Must be called in loop.
+        :param line: line of mall signal mode raw info file.
+        :param line_index: index of line in info file loaded as list.
+        """
+        if self.case == self.ParseCases.find_title:
+            is_title_found, params_in_title = self.find_params_title(line)
+            if is_title_found:
+                self.case = self.ParseCases.find_numeric
+                self.last_in_title_params = tuple(params_in_title)
+        if self.case == self.ParseCases.find_numeric:
+            is_numeric_found = self.find_numeric_line(line)
+            if is_numeric_found:
+                self.case = self.ParseCases.find_end
+                self._param_indexes[self.last_in_title_params].update(start=line_index)
+        if self.case == self.ParseCases.find_end:
+            is_ending_found = self.find_params_ending(line)
+            if is_ending_found:
+                self.case = self.ParseCases.find_title
+                self._param_indexes[self.last_in_title_params].update(end=line_index)
+                self.last_in_title_params = None
+
+    def find_params_title(self, line: str):
+        is_found = False
+        params_in_title = list()
+        for param_name in self.param_names:
+            within_line_index = line.find(param_name)
+            if within_line_index >= 0:
+                params_in_title.append(param_name)
+                is_found = True
+        return is_found, params_in_title
+
+    @staticmethod
+    def find_params_ending(line: str):
+        if line == '\n':
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def find_numeric_line(string: str) -> bool:
+        numeric_data_pattern = r'[-+]?\d+\.\d+[eE][-+]?\d+'
+        match = re.match(numeric_data_pattern, string)
+        if match:
+            return True
+        else:
+            return False
+
+    def get_param_indexes(self) -> Dict[tuple, dict]:
+        """
+        Returns the dictionary where keys: tuples of param_names and values: dicts(start=int, end=int)
+        Here start, end - are the starting index and the ending index of ranges that contain parameters' values
+        in the raw file loaded as list.
+        """
+        for params, indexes in self._param_indexes.items():
+            if not indexes.get('end'):
+                self._param_indexes[params].update(end=None)
+        if self._param_indexes:
+            return self._param_indexes
+        else:
+            raise ValueError('param_indexes not exists')
 
 
 class TransientParameters:
