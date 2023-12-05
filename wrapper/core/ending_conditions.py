@@ -25,7 +25,7 @@ def current_value_prepare(currents_string: str) -> Union[float, None]:
 
 class EndingCondition:
     """
-    Describe the logic of ending condition to stop "Treada's" transient work stage.
+    Describes the logic of ending condition to stop "Treada's" transient work stage.
     """
     def __init__(self, chunk_size: int, equal_values_to_stop: int, deviation_coef: float):
         # Chunk vector init
@@ -39,16 +39,16 @@ class EndingCondition:
         self.deviation_coef = deviation_coef
 
     @staticmethod
-    def is_equal(vector: np.ndarray, deviation: float) -> bool:
+    def is_satisfied(vector: np.ndarray, deviation: float) -> bool:
         """
-        Check is all elements of vector lie in range of deviation.
-
-        :param vector:
-        :param deviation:
+        Check is all elements of the vector lie within the deviation range. If yes, returns True.
+        Also returns True in case the max value of vector < 10e-11. That considers as a reaching of null constant value.
+        :param vector: an array consists of chunks' mean values
+        :param deviation: current deviation
         :return:
         """
         difference = np.ptp(vector)
-        if difference < 2*deviation:
+        if difference < 2 * deviation:
             print(f'{difference=}')
             print(f'{2*deviation=}')
             return True
@@ -58,14 +58,14 @@ class EndingCondition:
         else:
             return False
 
-    def deviation(self):
+    def find_current_deviation(self):
         max_abs_mean = np.amax(np.abs(self.chunks_means_vector))
         deviation = max_abs_mean * self.deviation_coef
         return deviation
 
-    def check(self, source_current: float, **kwargs) -> bool:
+    def check(self, source_current: float) -> bool:
         """
-        Checks ending condition.
+        Checks ending condition to automatic completion of Treada transient steps.
 
         :param source_current: source current value (from first column of "Treada's" output)
         :return: True if condition is satisfied, False if it is not.
@@ -78,8 +78,8 @@ class EndingCondition:
             self.chunks_means_vector[self.means_vector_index] = np.mean(self.chunk)
 
             if self.means_vector_index >= self.chunks_means_vector.size - 1:
-                deviation_value = self.deviation()
-                if self.is_equal(self.chunks_means_vector, deviation_value):
+                deviation_value = self.find_current_deviation()
+                if self.is_satisfied(self.chunks_means_vector, deviation_value):
                     return True
                 else:
                     self.chunks_means_vector = np.roll(self.chunks_means_vector, shift=-1)

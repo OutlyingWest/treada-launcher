@@ -20,11 +20,11 @@ class EndingConditionTests(unittest.TestCase):
 
     def test_is_equal(self):
         arr = np.array([50, 21, 33, -10, 20])
-        equal = self.ending_condition.is_equal(arr, deviation=61)
+        equal = self.ending_condition.is_satisfied(arr, deviation=61)
         self.assertEqual(equal, True)
 
         arr = np.array([50, 21, 33, -10, 20])
-        equal = self.ending_condition.is_equal(arr, deviation=30)
+        equal = self.ending_condition.is_satisfied(arr, deviation=30)
         self.assertEqual(equal, False)
 
     def test_check(self):

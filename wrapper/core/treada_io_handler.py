@@ -164,9 +164,8 @@ class StdoutCapturer:
         self.is_consider_fixed_light_time = config.advanced_settings.runtime.light_impulse.consider_fixed_time
         self.is_consider_fixed_dark_time = config.advanced_settings.runtime.dark_impulse.consider_fixed_time
 
-        if self.is_consider_fixed_light_time or self.is_consider_fixed_dark_time:
-            self.ilumen = mtut_vars['ILUMEN']
-            self.stage_number = mtut_vars['CKLKRS']
+        self.ilumen = mtut_vars['ILUMEN']
+        self.stage_number = mtut_vars['CKLKRS']
 
         if self.is_consider_fixed_light_time:
             self.light_impulse_time_ps = config.advanced_settings.runtime.light_impulse.fixed_time_ps
