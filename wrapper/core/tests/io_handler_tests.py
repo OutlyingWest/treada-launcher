@@ -2,12 +2,7 @@ import os
 import unittest
 import numpy as np
 import pandas as pd
-<<<<<<< Updated upstream
-from wrapper.core.treada_io_handler import EndingCondition
-=======
 from wrapper.core.ending_conditions import EndingCondition
->>>>>>> Stashed changes
-from wrapper.ui.plotting import plot_builder
 from wrapper.config.config_builder import load_config
 
 
