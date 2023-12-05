@@ -25,7 +25,7 @@ def current_value_prepare(currents_string: str) -> Union[float, None]:
 
 class EndingCondition:
     """
-    Describe the logic of ending condition to stop "Treada's" work stage.
+    Describe the logic of ending condition to stop "Treada's" transient work stage.
     """
     def __init__(self, chunk_size: int, equal_values_to_stop: int, deviation_coef: float):
         # Chunk vector init
