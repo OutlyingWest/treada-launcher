@@ -11,7 +11,7 @@ import pandas as pd
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaTransientOutputParser, ResultDataCollector, \
+from wrapper.core.data_management import UdrmVectorManager, FileManager, TransientOutputParser, TransientResultDataCollector, \
     transient_cols, MtutManager, MtutDataFrameManager, SmallSignalInfoOutputParser
 from wrapper.config.config_build import load_config
 from wrapper.ui.plotting import AdvancedPlotter
@@ -70,11 +70,11 @@ class TreadaOutputParserTests(unittest.TestCase):
         self.config = load_config('config.json')
         self.mtut = FileManager(self.config.paths.treada_core.mtut)
         self.mtut.load_file()
-        self.transient_parser = TreadaTransientOutputParser(self.config.paths.result.temporary.raw)
+        self.transient_parser = TransientOutputParser(self.config.paths.result.temporary.raw)
 
     @unittest.skip
     def test_transient_clean_data_speed(self):
-        data_list = TreadaTransientOutputParser.load_raw_file(self.config.paths.result.temporary.raw)
+        data_list = TransientOutputParser.load_raw_file(self.config.paths.result.temporary.raw)
         clean_data_time = timeit.timeit(lambda: self.transient_parser.clean_data(data_list), number=1000)
         print(f'{clean_data_time=}')
 
@@ -86,9 +86,9 @@ class TreadaOutputParserTests(unittest.TestCase):
 class ResultDataCollectorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
-        self.rdc = ResultDataCollector(self.config.paths.treada_core.mtut, self.config.paths.result.temporary.raw)
+        self.rdc = TransientResultDataCollector(self.config.paths.treada_core.mtut, self.config.paths.result.temporary.raw)
         self.rdc.prepare_result_data()
-        # self.df = self.rdc.get_result_dataframe()
+        # self._df = self.rdc.get_result_dataframe()
 
     # @unittest.skip
     def test_ending_lines_intersection_algorythm(self):
@@ -178,7 +178,7 @@ class InputDataFrameManagerTests(unittest.TestCase):
         self.manager = MtutDataFrameManager(self.config.paths.input.mtut_dataframe)
 
     def test_load_input_df(self):
-        df = self.manager.get_df()
+        df = self.manager.get()
         print(df)
         print(df['CMOB2IL'])
         vars_seria: pd.Series = df.iloc[0]

@@ -48,7 +48,7 @@ class WWDataCollector:
     def load_descriptions(descriptions_path: str) -> pd.DataFrame:
         df = pd.read_csv(descriptions_path, header=0, sep='\s\s\s+', encoding='windows-1251', engine='python',
                          usecols=['description', 'df_col_name'], dtype={'df_col_name': str})
-        # df.replace(to_replace='NaN', value=None, inplace=True)
+        # _df.replace(to_replace='NaN', value=None, inplace=True)
         df.index += 1
         return df
 

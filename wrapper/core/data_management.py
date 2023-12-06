@@ -277,7 +277,6 @@ class SmallSignalAnalysisDataFrameColNames:
 
 small_signal_cols = SmallSignalAnalysisDataFrameColNames(
     frequency='Frequency GHz',
-    y21='Y21',
     y22='Y22',
 )
 
@@ -285,6 +284,9 @@ small_signal_cols = SmallSignalAnalysisDataFrameColNames(
 class TreadaOutputParser:
     """
     Base class that parses and cleans "Treada's" output, which is dumped to treada_raw_output.txt file.
+    How to use:
+        1) Create an instance (performs parsing of raw "Treada's" output file)
+        2) Get a prepared data by get_prepared_dataframe() method
     Attributes:
         raw_output_path: path to Treada's raw output file
     Methods:
@@ -324,7 +326,7 @@ class TreadaOutputParser:
         return self.dataframe
 
 
-class TreadaTransientOutputParser(TreadaOutputParser):
+class TransientOutputParser(TreadaOutputParser):
     """
     Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
     Extracts data. That includes:
@@ -404,7 +406,7 @@ class SmallSignalInfoOutputParser(TreadaOutputParser):
         for line_index, line in enumerate(data_list):
             params_filter.apply(line, line_index)
         param_indexes = params_filter.get_param_indexes()
-        # Prepare raw data list to build df
+        # Prepare raw data list to build _df
         split_data_list = [line.rstrip('\n').split('  ') for line in data_list]
         pure_df = self.build_dataframe(split_data_list, param_indexes)
         pd.set_option('display.max_rows', None)
@@ -667,14 +669,14 @@ class TransientParameters:
     window_size_denominator = property(fset=set_window_size_denominator, fget=get_window_size_denominator)
 
 
-class ResultDataCollector:
+class TransientResultDataCollector:
     def __init__(self, mtut_file_path, result_paths: ResultPaths, relative_time: float):
         self.mtut_manager = MtutManager(mtut_file_path)
         self.mtut_manager.load_file()
         self.relative_time = relative_time
-        self.treada_parser = TreadaTransientOutputParser(result_paths.temporary.raw)
+        self.transient_parser = TransientOutputParser(result_paths.temporary.raw)
         # Set dataframe col names
-        self.dataframe = self.treada_parser.get_prepared_dataframe()
+        self.dataframe = self.transient_parser.get_prepared_dataframe()
         # Create dataframe which contains mean current densities and its dependencies
         self.mean_dataframe = pd.DataFrame()
         # Result data
@@ -975,13 +977,13 @@ class ResultDataCollector:
         except FileNotFoundError:
             return None
         ww_data_indexes: list = sorted(ww_data_indexes_iter)
-        # Select only indexes within size of current df in case if old results remain
+        # Select only indexes within size of current _df in case if old results remain
         actual_ww_data_indexes = [index for index in ww_data_indexes if index <= self.dataframe.index[-1]]
         return actual_ww_data_indexes
 
 
 @dataclass
-class ResultData:
+class TransientResultData:
     transient: TransientParameters
     udrm: str
     emini: str
@@ -995,18 +997,37 @@ class ResultData:
 
 
 class ResultBuilder:
-    def __init__(self, result_collector: ResultDataCollector, result_paths: ResultPaths,
+    def __init__(self):
+        pass
+
+    def save_data(self):
+        """Adds related information and saves dataframe to file"""
+        pass
+
+    @staticmethod
+    def file_path_with_name_build(result_path: str, stage_name: str, file_extension='txt', extra_info=''):
+        return f'{result_path.split(".")[0]}_{extra_info}_{stage_name}.{file_extension}'
+
+    def _dump_dataframe_to_file(self, file_path: str):
+        """Dumps prepared dataframe to file"""
+        pass
+
+
+class TransientResultBuilder(ResultBuilder):
+    def __init__(self, result_collector: TransientResultDataCollector, result_paths: ResultPaths,
                  result_settings: ResultSettings, stage_name='none_stage'):
+        super(TransientResultBuilder, self).__init__()
         self.result_collector = result_collector
         self.results = self._extract_results()
-        self.result_path = self.file_name_build(result_paths.main, stage_name=stage_name)
+        self.result_path = self.file_path_with_name_build(result_paths.main, stage_name=stage_name,
+                                                          extra_info=f'u({self.results.udrm})')
         self.result_settings = result_settings
-        header = self._header_build()
-        self.header_length = len(header)
-        self.save_data(header)
+        self.header = self._header_build()
+        self.header_length = len(self.header)
+        self.save_data()
 
-    def _extract_results(self) -> ResultData:
-        results = ResultData(
+    def _extract_results(self) -> TransientResultData:
+        results = TransientResultData(
             transient=self.result_collector.transient,
             udrm=self.result_collector.mtut_manager.get_var('UDRM'),
             emini=self.result_collector.mtut_manager.get_var('EMINI'),
@@ -1017,18 +1038,14 @@ class ResultBuilder:
         )
         return results
 
-    def file_name_build(self, result_path: str, stage_name: str, file_extension='txt'):
-        return f'{result_path.split(".")[0]}u({self.results.udrm})_{stage_name}.{file_extension}'
-
-    def save_data(self, header) -> int:
+    def save_data(self):
         # Create output dir if it does not exist
         create_dir(self.result_path)
-        self._header_dump_to_file(header)
-        self._dump_dataframe_to_file()
-        return len(header)
+        self._header_dump_to_file(self.result_path, self.header)
+        self._dump_dataframe_to_file(self.result_path)
 
     def _header_build(self):
-        header: list = [
+        header = [
             'Diode biased at:',
             f'UDRM = {self.results.udrm} V',
             '',
@@ -1055,29 +1072,49 @@ class ResultBuilder:
         for line in header:
             print(line.rstrip())
 
-    def _header_dump_to_file(self, header: list):
-        with open(self.result_path, 'w') as res_file:
+    @staticmethod
+    def _header_dump_to_file(file_path: str, header: list):
+        with open(file_path, 'w') as res_file:
             res_file.writelines(header)
 
-    def _dump_dataframe_to_file(self):
+    def _dump_dataframe_to_file(self, file_path: str):
         self.results.full_df[transient_cols.current_density] = self.results.full_df[transient_cols.current_density]
         self.results.mean_df[transient_cols.current_density] = self.results.mean_df[transient_cols.current_density]
         if self.result_settings.select_mean_dataframe:
-            settings = self.result_settings.mean_dataframe
+            selected_settings = self.result_settings.mean_dataframe
         else:
-            settings = self.result_settings.dataframe
-        save_col_names = list()
+            selected_settings = self.result_settings.dataframe
+        col_names_for_output = list()
         for col_key, col_name in transient_cols.__dict__.items():
-            if settings.__dict__.get(col_key):
-                save_col_names.append(col_name)
+            if selected_settings.__dict__.get(col_key):
+                col_names_for_output.append(col_name)
 
-        with open(self.result_path, 'a') as res_file:
+        with open(file_path, 'a') as res_file:
             # Save dataframe without indexes to file
             if self.result_settings.select_mean_dataframe:
-                df = self.results.mean_df[save_col_names]
+                df = self.results.mean_df[col_names_for_output]
                 res_file.write(df.to_string(index=False))
             else:
-                res_file.write(self.results.full_df[save_col_names].to_string(index=False))
+                res_file.write(self.results.full_df[col_names_for_output].to_string(index=False))
+
+
+class SmallSignalResultBuilder(ResultBuilder):
+    def __init__(self, result_paths: ResultPaths, stage_name='none_stage'):
+        super(SmallSignalResultBuilder, self).__init__()
+        small_signal_parser = SmallSignalInfoOutputParser(result_paths.temporary.raw)
+        self.dataframe = small_signal_parser.get_prepared_dataframe()
+        self.result_path = self.file_path_with_name_build(result_path=result_paths.main, stage_name=stage_name)
+        self.save_data()
+
+    def save_data(self):
+        # Create output dir if it does not exist
+        create_dir(self.result_path)
+        self._dump_dataframe_to_file(self.result_path)
+
+    def _dump_dataframe_to_file(self, file_path: str):
+        with open(file_path, 'a') as res_file:
+            # Save dataframe without indexes to file
+            res_file.write(self.dataframe.to_string(index=False))
 
 
 class UdrmVectorManager:
@@ -1121,7 +1158,7 @@ class MtutDataFrameManager:
     Allow to load input dataframe, which contains iterable MTUT var values.
     """
     def __init__(self, input_df_path: str):
-        self.df = self.load_input_df(input_df_path)
+        self._df = self.load_input_df(input_df_path)
 
     def load_input_df(self, df_path: str):
         try:
@@ -1150,8 +1187,9 @@ class MtutDataFrameManager:
         else:
             return element
 
-    def get_df(self):
-        return self.df
+    def get(self):
+        """Returns self dataframe"""
+        return self._df
 
 
 if __name__ == '__main__':

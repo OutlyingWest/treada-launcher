@@ -113,7 +113,7 @@ class BaseStatesMachine:
     def init_machine(self):
         if self.config.modes.mtut_dataframe:
             input_df_manager = MtutDataFrameManager(self.config.paths.input.mtut_dataframe)
-            self.input_df = input_df_manager.get_df()
+            self.input_df = input_df_manager.get()
             print(f'You run "treada_launcher" in mtut_dataframe mode. MTUT vars to iterate below:')
             print(f'{self.input_df}')
             print(f'To continue and run iterations push the {Fore.GREEN}Enter{Style.RESET_ALL} button.')

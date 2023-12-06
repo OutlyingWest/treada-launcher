@@ -10,7 +10,7 @@ import numpy as np
 from wrapper.config.config_build import Config
 from wrapper.core.ending_conditions import retrieve_current_value
 from wrapper.core import ending_conditions as ec
-from wrapper.core.data_management import TreadaTransientOutputParser, MtutManager
+from wrapper.core.data_management import TransientOutputParser, MtutManager
 from wrapper.launch.scenarios.scenario_build import Stage
 
 
@@ -76,7 +76,7 @@ class TreadaRunner:
         Can be used only after run() function.
         """
         if self.capturer.last_step_string:
-            return TreadaTransientOutputParser.get_single_current_from_line(self.capturer.last_step_string)
+            return TransientOutputParser.get_single_current_from_line(self.capturer.last_step_string)
         else:
             return None
 
@@ -322,7 +322,7 @@ class StdoutCapturer:
                 return
         # Find the beginning line of temporary results dumping info
         if not self.is_currents_line:
-            if (TreadaTransientOutputParser.temporary_results_line_found(output_string) and
+            if (TransientOutputParser.temporary_results_line_found(output_string) and
                not self.distribution_dumping_begins):
                 self.distribution_dumping_begins = True
         if self.distribution_dumping_begins:

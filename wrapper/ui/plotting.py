@@ -15,7 +15,7 @@ import pandas as pd
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(project_path)
 
-from wrapper.core.data_management import ResultData, transient_cols, FileManager, TransientParameters, MtutManager
+from wrapper.core.data_management import TransientResultData, transient_cols, FileManager, TransientParameters, MtutManager
 from wrapper.config.config_build import load_config, Config
 from wrapper.misc import lin_alg as la
 
@@ -204,7 +204,7 @@ class TreadaPlotBuilder:
         return res_name.group()
 
     @staticmethod
-    def load_result(mtut_path: str, result_path: str, skip_rows: int) -> ResultData:
+    def load_result(mtut_path: str, result_path: str, skip_rows: int) -> TransientResultData:
         result_file_manager = FileManager(result_path)
         result_file_manager.load_file_head(num_lines=15)
         mtut_file_manager = MtutManager(mtut_path)
@@ -217,7 +217,7 @@ class TreadaPlotBuilder:
             corrected_time=transient_time,
             corrected_density=transient_density,
         )
-        results = ResultData(
+        results = TransientResultData(
             transient=transient_data,
             udrm=result_file_manager.get_var('UDRM').strip(' V'),
             drstp=mtut_file_manager.get_var('DRSTP'),
