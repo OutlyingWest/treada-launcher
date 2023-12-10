@@ -43,14 +43,15 @@ class TreadaRunner:
                                        config=config,
                                        relative_time=relative_time,)
 
-    def run(self, stage: Stage, output_file_path=''):
+    def run(self, stage: Stage, output_file_path='', is_show_stage_name=True):
         """
         Runs Treada's program working stage.
         :param output_file_path: path to raw Treada's program output file
         :param stage_name: Treada's working stage name
         """
         self.capturer.set_stage_data(stage)
-        self.capturer.set_runtime_console_info(f'   {stage.name}')
+        if is_show_stage_name:
+            self.capturer.set_runtime_console_info(f'   {stage.name}')
         if output_file_path:
             self.capturer.stream_management(self.temp_range, path_to_output=output_file_path)
         else:

@@ -9,7 +9,7 @@ from wrapper.misc.collections.fields_integral.fields_integral_calculation import
 from wrapper.misc.collections.ww_data_collecting.collect_ww_data import run_ww_collecting
 from wrapper.states import states
 from wrapper.states.states_management import StatesMachine, StateStatuses
-from wrapper.ui.plotting import AdvancedPlotter, run_res_plotting
+from wrapper.ui.plotting import TransientAdvancedPlotter, run_res_plotting
 
 
 def launcher_mode_selection(config: Config):
@@ -50,7 +50,7 @@ def treada_running_loop(config: Config):
 
     # Show plot
     if config.flags.plotting.enable:
-        AdvancedPlotter.show(block=False)
+        TransientAdvancedPlotter.show(block=False)
 
 
 def treada_running_loop_n(config: Config):
@@ -61,4 +61,4 @@ def treada_running_loop_n(config: Config):
                        config=config)
     # Show plot
     if config.flags.plotting.enable:
-        AdvancedPlotter.show(block=False)
+        TransientAdvancedPlotter.show(block=False)

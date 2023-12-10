@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib
 import pandas as pd
 
-from wrapper.ui.plotting import AdvancedPlotter
+from wrapper.ui.plotting import TransientAdvancedPlotter
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -48,7 +48,7 @@ from wrapper.core.ending_conditions import StepBasedEndingCondition, LineEndingC
 #         self.Y = self.result_full_df[self.result_full_df.columns[1]]
 #         print(f'{self.Y}')
 #
-#         self.plotter = AdvancedPlotter(self.X, self.Y, plot_type='plot')
+#         self.plotter = TransientAdvancedPlotter(self.X, self.Y, plot_type='plot')
 #
 #     def test_check(self):
 #         condition_list = []
@@ -133,7 +133,7 @@ class MeansEndingConditionTests(unittest.TestCase):
         self.Y = self.result_df[self.result_df.columns[1]]
         print(f'{self.Y}')
 
-        self.plotter = AdvancedPlotter(self.X, self.Y, plot_type='plot')
+        self.plotter = TransientAdvancedPlotter(self.X, self.Y, plot_type='plot')
 
     def test_check(self):
         condition_list = []

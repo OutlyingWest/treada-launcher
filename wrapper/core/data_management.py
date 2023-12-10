@@ -1005,8 +1005,10 @@ class ResultBuilder:
         pass
 
     @staticmethod
-    def file_path_with_name_build(result_path: str, stage_name: str, file_extension='txt', extra_info=''):
-        return f'{result_path.split(".")[0]}_{extra_info}_{stage_name}.{file_extension}'
+    def file_path_with_name_build(result_path: str, stage_name: str, extra_info='', file_extension='txt', ):
+        if extra_info:
+            return f'{result_path.split(".")[0]}_{extra_info}_{stage_name}.{file_extension}'
+        return f'{result_path.split(".")[0]}_{stage_name}.{file_extension}'
 
     def _dump_dataframe_to_file(self, file_path: str):
         """Dumps prepared dataframe to file"""

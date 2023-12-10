@@ -76,7 +76,7 @@ class TreadaPlotBuilder:
     Attributes:
         result_path: path to result data file
         result_full_df: result data pandas dataframe
-        plotter: AdvancedPlotter class object
+        plotter: TransientAdvancedPlotter class object
 
     Methods:
         set_descriptions(): sets plot descriptions
@@ -101,8 +101,8 @@ class TreadaPlotBuilder:
         time_column = self.result.full_df[transient_cols.time]
         current_density_column = self.result.full_df[transient_cols.current_density]
         # Create plotter object
-        # self.plotter = AdvancedPlotter(time_column*1e-12, current_density_column)
-        self.plotter = AdvancedPlotter(time_column, current_density_column)
+        # self.plotter = TransientAdvancedPlotter(time_column*1e-12, current_density_column)
+        self.plotter = TransientAdvancedPlotter(time_column, current_density_column)
         self.legends = [self.plotter.ax.get_legend()]
         self.handles = [self.plotter.handle]
         res_name = self.extract_res_name(result_path)
@@ -310,7 +310,7 @@ class SimplePlotter:
 
     def set_window_title(self, title='window title'):
         window = self.fig.canvas.manager.window
-        # For QtAgg
+        # If Plotter was called by Qt - use QtAgg
         backend_name = matplotlib.get_backend()
         if backend_name == 'QtAgg':
             window.setWindowTitle(title)
@@ -373,12 +373,12 @@ class SpecialPointsMixin:
                      arrowprops=dict(arrowstyle='->', color='black'))
 
 
-class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
+class TransientAdvancedPlotter(SpecialPointsMixin, SimplePlotter):
     """
     Class that extends the abilities of SimplePlotter.
     """
     def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
-        super().__init__(x, y, 'transient')
+        super().__init__(x, y, 'transient', plot_type)
         # self.ax.set_yscale('log', base=10)
         # self.ax.set_xscale('log', base=10)
 
@@ -507,6 +507,14 @@ class WWDataPlotter(SimplePlotter):
     @classmethod
     def interactive_mode_enable(cls):
         plt.ion()
+
+
+class SmallSignalPlotter(SimplePlotter):
+    """
+    Class that extends the abilities of SimplePlotter.
+    """
+    def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
+        super().__init__(x, y, 'small signal info', plot_type)
 
 
 if __name__ == '__main__':

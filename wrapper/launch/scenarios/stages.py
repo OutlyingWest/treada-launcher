@@ -37,11 +37,28 @@ class Stages:
         results_data = perform_fields_integral_finding(scenario, config, mtut_vars)
         save_integral_results(results_data, mtut_vars)
 
-    def capacity_third(self, config: Config, scenario_stage: Stage):
-        treada = TreadaRunner(config, self.relative_time)
-        treada.run(scenario_stage, config.paths.result.temporary.raw)
+    def repeating_capacity_info_collecting(self, config: Config, scenario_stage: Stage):
+        while True:
+            self.capacity_info_collecting(config, scenario_stage)
 
     def capacity_info_collecting(self, config: Config, scenario_stage: Stage):
+        treada = TreadaRunner(config, self.relative_time)
+        treada.run(scenario_stage, config.paths.result.temporary.raw, is_show_stage_name=False)
+        capacity_result_build(config, scenario_stage)
+
+
+class CapacityInfoStage:
+    """
+    Manage of information collection on info stage.
+    """
+    def __init__(self, relative_time: float):
+        self.relative_time = relative_time
+
+    def repeat_info_collecting(self, config: Config, scenario_stage: Stage):
+        while True:
+            self.info_collecting(config, scenario_stage)
+
+    def info_collecting(self, config: Config, scenario_stage: Stage):
         treada = TreadaRunner(config, self.relative_time)
         scenario_stage.name = ''
         treada.run(scenario_stage, config.paths.result.temporary.raw)

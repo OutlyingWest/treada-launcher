@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from wrapper.core.data_management import UdrmVectorManager, FileManager, TransientOutputParser, TransientResultDataCollector, \
     transient_cols, MtutManager, MtutDataFrameManager, SmallSignalInfoOutputParser
 from wrapper.config.config_build import load_config
-from wrapper.ui.plotting import AdvancedPlotter
+from wrapper.ui.plotting import TransientAdvancedPlotter
 
 
 @unittest.skip
@@ -131,7 +131,7 @@ class ResultDataCollectorTests(unittest.TestCase):
         # print(type(density_mean_times))
 
         # init plotter
-        self.plotter = AdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
+        self.plotter = TransientAdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
         # Plot rough transient ending point
         self.plotter.add_special_point(ending_time, ending_current_density,
                                        label='Rough transient ending point')
@@ -162,7 +162,7 @@ class ResultDataCollectorTests(unittest.TestCase):
     @unittest.skip
     def test_means_dataframe(self):
         # init plotter
-        self.plotter = AdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
+        self.plotter = TransientAdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
         # Plot mean current densities
         self.plotter.ax.scatter(self.rdc.mean_dataframe[self.rdc.time_col_name],
                                 self.rdc.mean_dataframe[self.rdc.current_density_col_name],
