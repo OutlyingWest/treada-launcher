@@ -14,7 +14,7 @@ from wrapper.ui.plotting import TransientAdvancedPlotter, run_res_plotting
 
 def launcher_mode_selection(config: Config):
     if len(sys.argv) < 2:
-        treada_running_loop_n(config)
+        treada_running_loop(config)
     elif '--plot-res' in sys.argv:
         run_res_plotting(config)
     elif '--plot-fields-integral' in sys.argv:
@@ -31,29 +31,6 @@ def launcher_mode_selection(config: Config):
 
 
 def treada_running_loop(config: Config):
-    mtut_stage_configer = MtutStageConfiger(config.paths.treada_core.mtut)
-    states_machine = StatesMachine()
-    states_machine.flush_state()
-    state_statuses = StateStatuses
-
-    running_flag = True
-    while running_flag:
-        # Updates current machine state in accordance with defined in config treada's modes
-        state_status = states_machine.update_state()
-        # Check state machine status
-        if state_status == state_statuses.END:
-            break
-        elif state_status == state_statuses.MANUAL:
-            running_flag = False
-
-        launch.call_active_scenario(mtut_stage_configer, config)
-
-    # Show plot
-    if config.flags.plotting.enable:
-        TransientAdvancedPlotter.show(block=False)
-
-
-def treada_running_loop_n(config: Config):
     mtut_stage_configer = MtutStageConfiger(config.paths.treada_core.mtut)
     states_machine = states.BaseStatesMachine(config, state_dataclass=states.BaseState)
     states_machine.run(treada_launch_function=launch.call_active_scenario,

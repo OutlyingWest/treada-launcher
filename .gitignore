@@ -24,6 +24,7 @@ wrapper/states/*.json
 
 # Ignore other txt files
 wrapper/misc/*.txt
+wrapper/ui/tests/*.txt
 
 # Ignore subtasks data-collection scripts
 wrapper/misc/*
