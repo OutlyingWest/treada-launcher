@@ -55,6 +55,6 @@ def capacity_scenario(scenario, config: Config, mtut_stage_configer: MtutStageCo
     stages.transient(mtut_stage_configer, config, scenario.stages.capacity_third, save_result=True)
 
     print(f'{scenario.stages.capacity_info=} in capacity_scenario()')
-    stages.capacity_info_collecting(config, scenario.stages.capacity_info)
+    stages.impedance_info_collecting(config, scenario.stages.capacity_info)
 
 

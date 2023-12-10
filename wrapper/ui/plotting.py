@@ -15,7 +15,9 @@ import pandas as pd
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(project_path)
 
-from wrapper.core.data_management import TransientResultData, transient_cols, FileManager, TransientParameters, MtutManager
+from wrapper.core.data_management import (
+    TransientResultData, transient_cols, FileManager, TransientParameters, MtutManager, small_signal_cols
+)
 from wrapper.config.config_build import load_config, Config
 from wrapper.misc import lin_alg as la
 
@@ -46,7 +48,7 @@ def run_res_plotting(config: Config):
         if not plot_builder:
             try:
                 # Creation of plot builder object
-                plot_builder = TreadaPlotBuilder(mtut_path=full_mtut_path, result_path=full_result_path)
+                plot_builder = TransientPlotBuilder(mtut_path=full_mtut_path, result_path=full_result_path)
             except FileNotFoundError:
                 print('Wrong file path or name.')
             plot_builder.set_loaded_info()
@@ -68,7 +70,7 @@ def run_res_plotting(config: Config):
         plot_builder.plotter.show(block=False)
 
 
-class TreadaPlotBuilder:
+class TransientPlotBuilder:
     """
     Download result data of treada-launcher from file and build plot.
     Can save plot picture to file.
@@ -101,7 +103,6 @@ class TreadaPlotBuilder:
         time_column = self.result.full_df[transient_cols.time]
         current_density_column = self.result.full_df[transient_cols.current_density]
         # Create plotter object
-        # self.plotter = TransientAdvancedPlotter(time_column*1e-12, current_density_column)
         self.plotter = TransientAdvancedPlotter(time_column, current_density_column)
         self.legends = [self.plotter.ax.get_legend()]
         self.handles = [self.plotter.handle]
@@ -117,6 +118,15 @@ class TreadaPlotBuilder:
                                    runtime_result_data.transient.corrected_density)
             self.set_transient_ending_point(ending_point_coords, f'Transient ending point')
 
+    def set_descriptions(self, stage_name: str):
+        # Set titles
+        plot_title = self.construct_plot_title()
+        window_title = f'Udrm = {self.result.udrm} V stage: {stage_name}'
+        self.plotter.set_plot_title(plot_title)
+        self.plotter.set_window_title(window_title)
+        # Set axes labels
+        self.plotter.set_plot_axes_labels(x_label='time (ps)', y_label='I (mA/cm²)')
+
     def construct_plot_title(self):
         udrm = float(self.result.udrm)
         jpush = int(self.result.jpush)
@@ -128,15 +138,6 @@ class TreadaPlotBuilder:
         else:
             plot_title = f'Udrm = {udrm} V'
         return plot_title
-
-    def set_descriptions(self, stage_name: str):
-        # Set titles
-        plot_title = self.construct_plot_title()
-        window_title = f'Udrm = {self.result.udrm} V stage: {stage_name}'
-        self.plotter.set_plot_title(plot_title)
-        self.plotter.set_window_title(window_title)
-        # Set axes labels
-        self.plotter.set_plot_axes_labels(x_label='time (ps)', y_label='I (mA/cm²)')
 
     def change_descriptions(self, plot_title, window_title, x_label='time (ps)', y_label='I (mA/cm²)'):
         # Set titles
@@ -332,6 +333,13 @@ class SimplePlotter:
     def legend(self, *args, **kwargs):
         self.ax.legend(*args, **kwargs)
 
+    @classmethod
+    def show(cls, block=True):
+        try:
+            plt.show(block=block)
+        except KeyboardInterrupt:
+            pass
+
 
 class SpecialPointsMixin:
     """
@@ -457,13 +465,6 @@ class TransientAdvancedPlotter(SpecialPointsMixin, SimplePlotter):
                         label='WW measures points')
         self.ax.legend()
 
-    @classmethod
-    def show(cls, block=True):
-        try:
-            plt.show(block=block)
-        except KeyboardInterrupt:
-            pass
-
 
 class WWDataPlotter(SimplePlotter):
     def __init__(self, ww_dict: dict, stage_name: str, plot_type='plot', backend='TkAgg'):
@@ -497,12 +498,7 @@ class WWDataPlotter(SimplePlotter):
         else:
             return legends_list
 
-    @classmethod
-    def show(cls, block=True):
-        try:
-            plt.show(block=block)
-        except KeyboardInterrupt:
-            pass
+
 
     @classmethod
     def interactive_mode_enable(cls):
@@ -515,6 +511,73 @@ class SmallSignalPlotter(SimplePlotter):
     """
     def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
         super().__init__(x, y, 'small signal info', plot_type)
+
+
+class ImpedancePlotBuilder:
+    """
+    Download result data of treada-launcher from file and build plot.
+    Can save plot picture to file.
+
+    Attributes:
+
+    Methods:
+
+    """
+    def __init__(self,
+                 result_path: str,
+                 skip_rows=None):
+        self.result_df = self.load_result(result_path, skip_rows)
+        # Create plotter objects
+        self.plotters = self.create_plotters()
+        self.set_descriptions()
+
+    @staticmethod
+    def load_result(result_path, skip_rows) -> pd.DataFrame:
+        df = pd.read_csv(result_path, skiprows=skip_rows, header=0, sep='\s+')
+        return df
+
+    def create_plotters(self):
+        z_parameter_real, z_parameter_img = self.calculate_z_parameter()
+        inverted_z_parameter_img = -z_parameter_img
+        impedance_plotter = SmallSignalPlotter(x=z_parameter_real,
+                                               y=inverted_z_parameter_img)
+
+        frequency_hz = 1e9 * self.result_df[small_signal_cols.frequency]
+        y_img_frequency_plotter = SmallSignalPlotter(x=frequency_hz,
+                                                     y=self.result_df[small_signal_cols.y22.img])
+        plotters = {
+            'impedance': impedance_plotter,
+            'y.img': y_img_frequency_plotter,
+        }
+        return plotters
+
+    def calculate_z_parameter(self):
+        y22_real = self.result_df[small_signal_cols.y22.real]
+        y22_img = self.result_df[small_signal_cols.y22.img]
+        z_real = y22_real / (y22_real**2 + y22_img**2)
+        z_img = y22_img / (y22_real**2 + y22_img**2)
+        return z_real, z_img
+
+    def set_descriptions(self):
+        self.set_impedance_descriptions()
+        self.set_y_img_descriptions()
+
+    def set_impedance_descriptions(self):
+        # self.plotters['impedance'].set_window_title()
+        self.plotters['impedance'].set_plot_title()
+        self.plotters['impedance'].set_plot_axes_labels(x_label='Re(Z), Om', y_label='Im(Z), Om')
+
+    def set_y_img_descriptions(self):
+        # self.plotters['y.img'].set_window_title()
+        self.plotters['y.img'].set_plot_title()
+        self.plotters['y.img'].set_plot_axes_labels(x_label='F, Hz', y_label='Im(Y), Om^-1')
+
+    def show(self):
+        self.plotters['impedance'].show()
+
+    @classmethod
+    def save_plot(cls, plot_path: str):
+        plt.savefig(plot_path)
 
 
 if __name__ == '__main__':

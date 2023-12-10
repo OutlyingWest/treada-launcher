@@ -3,7 +3,7 @@ from typing import Union
 from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutStageConfiger
 from wrapper.core.treada_io_handling import TreadaRunner
-from wrapper.launch.result_build import transient_result_build, capacity_result_build
+from wrapper.launch.result_build import transient_result_build, impedance_result_build
 from wrapper.launch.scenarios.scenario_build import Stage
 
 
@@ -37,32 +37,34 @@ class Stages:
         results_data = perform_fields_integral_finding(scenario, config, mtut_vars)
         save_integral_results(results_data, mtut_vars)
 
-    def repeating_capacity_info_collecting(self, config: Config, scenario_stage: Stage):
-        while True:
-            self.capacity_info_collecting(config, scenario_stage)
-
-    def capacity_info_collecting(self, config: Config, scenario_stage: Stage):
-        treada = TreadaRunner(config, self.relative_time)
-        treada.run(scenario_stage, config.paths.result.temporary.raw, is_show_stage_name=False)
-        capacity_result_build(config, scenario_stage)
+    def impedance_info_collecting(self, config: Config, scenario_stage: Stage):
+        info_stage = SmallSignalInfoStage(self.relative_time)
+        info_stage.repeating_impedance_info_collecting(config, scenario_stage)
 
 
-class CapacityInfoStage:
+class SmallSignalInfoStage:
     """
     Manage of information collection on info stage.
     """
     def __init__(self, relative_time: float):
         self.relative_time = relative_time
 
-    def repeat_info_collecting(self, config: Config, scenario_stage: Stage):
-        while True:
-            self.info_collecting(config, scenario_stage)
+    def repeating_impedance_info_collecting(self, config: Config, scenario_stage: Stage):
+        # while True:
+        #     self.impedance_info(config, scenario_stage)
+        self.impedance_info(config, scenario_stage)
 
-    def info_collecting(self, config: Config, scenario_stage: Stage):
+    def impedance_info(self, config: Config, scenario_stage: Stage):
         treada = TreadaRunner(config, self.relative_time)
-        scenario_stage.name = ''
-        treada.run(scenario_stage, config.paths.result.temporary.raw)
-        capacity_result_build()
+        treada.run(scenario_stage, config.paths.result.temporary.raw, is_show_stage_name=False)
+        impedance_result_build(config, scenario_stage)
+
+    def user_input(self) -> dict:
+        pass
+
+    def set_frequency_range(self, start: float, stop: float):
+        pass
+
 
 
 

@@ -276,7 +276,7 @@ class SmallSignalAnalysisDataFrameColNames:
 
 
 small_signal_cols = SmallSignalAnalysisDataFrameColNames(
-    frequency='Frequency GHz',
+    frequency='Frequency(GHz)',
     y22='Y22',
 )
 

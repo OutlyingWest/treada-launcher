@@ -5,7 +5,7 @@ from wrapper.core.data_management import (
     TransientResultDataCollector, TransientResultBuilder, SmallSignalResultBuilder
 )
 from wrapper.launch.scenarios.scenario_build import Stage
-from wrapper.ui.plotting import TreadaPlotBuilder
+from wrapper.ui.plotting import TransientPlotBuilder, ImpedancePlotBuilder
 
 
 def transient_result_build(config: Config, stage: Stage, prev_stage_last_current: Union[float, None],
@@ -33,12 +33,12 @@ def transient_result_build(config: Config, stage: Stage, prev_stage_last_current
                                             stage_name=stage.name)
 
     # Creation of plot builder object
-    plot_builder = TreadaPlotBuilder(mtut_path=config.paths.treada_core.mtut,
-                                     result_path=result_builder.result_path,
-                                     dist_path=config.paths.result.temporary.distributions,
-                                     stage_name=stage.name,
-                                     runtime_result_data=result_builder.results,
-                                     skip_rows=result_builder.header_length)
+    plot_builder = TransientPlotBuilder(mtut_path=config.paths.treada_core.mtut,
+                                        result_path=result_builder.result_path,
+                                        dist_path=config.paths.result.temporary.distributions,
+                                        stage_name=stage.name,
+                                        runtime_result_data=result_builder.results,
+                                        skip_rows=result_builder.header_length)
 
     # Display advanced info
     if config.flags.plotting.advanced_info:
@@ -54,5 +54,8 @@ def transient_result_build(config: Config, stage: Stage, prev_stage_last_current
     plot_builder.save_plot(full_plot_path)
 
 
-def capacity_result_build(config: Config, stage: Stage):
+def impedance_result_build(config: Config, stage: Stage):
     result_builder = SmallSignalResultBuilder(result_paths=config.paths.result, stage_name=stage.name)
+
+    # plot_builder = ImpedancePlotBuilder()
+
