@@ -125,7 +125,8 @@ class TransientPlotBuilder:
         self.plotter.set_plot_title(plot_title)
         self.plotter.set_window_title(window_title)
         # Set axes labels
-        self.plotter.set_plot_axes_labels(x_label='time (ps)', y_label='I (mA/cm²)')
+        x_label, y_label = 'Время (пс)', 'I (мA/cм²)'
+        self.plotter.set_plot_axes_labels(x_label=x_label, y_label=y_label)
 
     def construct_plot_title(self):
         udrm = float(self.result.udrm)
@@ -136,7 +137,7 @@ class TransientPlotBuilder:
         if jpush == 1 and cklkrs > 1:
             plot_title = f'Reaction for voltage step: Udrm = {udrm} → {udrm + drstp} V'
         else:
-            plot_title = f'Udrm = {udrm} V'
+            plot_title = f'Напряжение на диоде = {udrm} B'
         return plot_title
 
     def change_descriptions(self, plot_title, window_title, x_label='time (ps)', y_label='I (mA/cm²)'):
@@ -149,7 +150,7 @@ class TransientPlotBuilder:
     def set_transient_ending_point(self, coords: tuple, annotation: str, xytext=(10, -20)):
         time, current_density = coords
         self.plotter.add_special_point(time, current_density)
-        self.plotter.annotate_special_point(time, current_density, annotation, xytext=xytext)
+        # self.plotter.annotate_special_point(time, current_density, annotation, xytext=xytext)
 
     def set_loaded_info(self):
         self.plotter.set_info(self.result)
@@ -386,7 +387,7 @@ class TransientAdvancedPlotter(SpecialPointsMixin, SimplePlotter):
     Class that extends the abilities of SimplePlotter.
     """
     def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
-        super().__init__(x, y, 'transient', plot_type)
+        super().__init__(x, y, '', plot_type)
         # self.ax.set_yscale('log', base=10)
         # self.ax.set_xscale('log', base=10)
 
@@ -415,7 +416,12 @@ class TransientAdvancedPlotter(SpecialPointsMixin, SimplePlotter):
             # self.add_special_point(results.transient.time, results.transient.current_density,
             #                        label='')  # Rough transient ending point
             # For report
-            self.ax.scatter([], [], c='red', label='Rough transient ending point')
+            self.ax.scatter([], [], c='red', label='Оценка времени окончания переходного процесса')
+
+            # Plot accurate transient ending point
+            self.add_special_point(corrected_time, corrected_density, color='yellow', marker='*', size=70, zorder=4,
+                                   label='Точное время окончания переходного процесса (τ)')
+            self.ax.scatter([], [], label=f'τ = {results.transient.corrected_time:.2f} пс', s=0)
 
             # Plot transient ending condition line
             last_time = mean_df[transient_cols.time].iloc[-1]
@@ -426,12 +432,12 @@ class TransientAdvancedPlotter(SpecialPointsMixin, SimplePlotter):
                                                                                       results.transient.current_density],
                                                                             line_length=lines_length)
             self.ax.plot(nearest_ending_times, nearest_ending_densities, c='red',
-                         label='Ending condition line',)
+                         label='Уровень окончания переходного процесса',)
             # Plot mean current densities
             self.ax.scatter(mean_df[transient_cols.time],
                             mean_df[transient_cols.current_density],
                             c='green', alpha=1, zorder=2,
-                            label='Mean current densities')
+                            label='Усредненная плотность тока')
             # Highlight low nearest ending point
             self.ax.scatter(ending_time_low,
                             ending_density_low,
@@ -449,10 +455,6 @@ class TransientAdvancedPlotter(SpecialPointsMixin, SimplePlotter):
                                                                                       ending_density_high],
                                                                             line_length=lines_length)
             self.ax.plot(nearest_ending_times, nearest_ending_densities, c='black')
-            # Plot accurate transient ending point
-            self.add_special_point(corrected_time, corrected_density, color='yellow', marker='*', size=70, zorder=4,
-                                   label='Accurate transient ending point')
-            self.ax.scatter([], [], label=f'Transient time = {results.transient.corrected_time:.6f} ps', s=0)
 
             self.ax.legend()
         else:
