@@ -4,10 +4,10 @@ from typing import Callable, Dict, Union
 class ConsoleUserQuestion:
     def __init__(self):
         self.descriptions = {'warning': 'Wrong command! Type "help" to see the commands list'}
-        self.commands = {}
+        self.commands = {'help': {'action': self.print_help, 'help': 'Shows the list of commands'}}
 
     def add_descriptions(self, header='', footer='', warning=''):
-        self.descriptions = {'header': header, 'footer': footer}
+        self.descriptions.update({'header': header, 'footer': footer})
         if warning:
             self.descriptions['warning'] = warning
 
@@ -41,11 +41,12 @@ class ConsoleUserQuestion:
         for command, features in self.commands.items():
             command_help = features['help']
             print(f'{f"{command}": >10}  {f"{command_help}": <10}')
+        print()
 
 
 class ConsoleUserInteractor:
     def __init__(self):
-        self.questions: Union[Dict[str, ConsoleUserQuestion], None] = None
+        self.questions: Dict[str, ConsoleUserQuestion] = {}
 
     def add_question(self, name: str, commands: Dict[str, dict], header='', footer='', warning=''):
         question = ConsoleUserQuestion()
@@ -71,10 +72,3 @@ class ConsoleUserInteractor:
                 break
             else:
                 question.print_warning()
-
-
-
-
-
-
-
