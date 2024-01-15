@@ -119,7 +119,7 @@ class BaseStatesMachine:
             print(f'To continue and run iterations push the {Fore.GREEN}Enter{Style.RESET_ALL} button.')
             input()
             for ind, input_line in self.input_df.iterrows():
-                mtut_vars = {var_name: var_value for var_name, var_value in input_line.items()}
+                mtut_vars = {var_name: var_value for var_name, var_value in input_line.items() if var_value}
                 self.states.append(self.State(index=ind,
                                               status=state_status.NOT_READY,
                                               mtut_vars=mtut_vars))
