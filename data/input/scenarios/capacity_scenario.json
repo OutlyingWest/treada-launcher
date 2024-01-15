@@ -22,6 +22,11 @@
         },
         "capacity_info": {
             "name": "capacity_info",
+            "mtut_vars": {
+                "CKLKRS": 4,
+                "KEY": 1,
+                "JPUSH": 1
+            },
             "is_capacity_info_collecting": true
         }
     }

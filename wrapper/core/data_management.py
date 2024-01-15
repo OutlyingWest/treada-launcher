@@ -3,6 +3,7 @@ import os
 import re
 import time
 from collections import defaultdict
+from enum import Enum
 from io import StringIO
 from itertools import islice
 from dataclasses import dataclass, field
@@ -398,12 +399,18 @@ class SmallSignalInfoOutputParser(TreadaOutputParser):
     """
 
     def __init__(self, raw_output_path: str):
+        self.header_data = {
+            'DIFFERENTIAL OUTPUT RESISTANCE': None,
+            'CDOM-DOMAIN CAPACITANCE': None
+        }
+        self.is_find_header_data = len(self.header_data)
         super().__init__(raw_output_path)
 
     def clean_data(self, data_list: list) -> pd.DataFrame:
         # Filter data
         params_filter = SmallSignalParamsFilter(param_names=['S22', 'Y22', 'S12', 'Y21'])
         for line_index, line in enumerate(data_list):
+            self.extract_header_data(line)
             params_filter.apply(line, line_index)
         param_indexes = params_filter.get_param_indexes()
         # Prepare raw data list to build _df
@@ -412,7 +419,6 @@ class SmallSignalInfoOutputParser(TreadaOutputParser):
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_columns', None)
         pd.set_option('display.width', None)
-        print(pure_df)
         return pure_df
 
     def build_dataframe(self, data: list, param_rows_indexes: dict) -> pd.DataFrame:
@@ -455,6 +461,21 @@ class SmallSignalInfoOutputParser(TreadaOutputParser):
                 return index
         raise ValueError(f'Unable to find position for {param=}')
 
+    def extract_header_data(self, line: str):
+        if self.is_find_header_data:
+            for key in self.header_data.keys():
+                if key in line:
+                    self.is_find_header_data -= 1
+                    self._update_header_value(key, line)
+
+    def _update_header_value(self, name: str, line: str):
+        numeric_data_pattern = r'[-+]?\d+\.\d+[eE][-+]?\d+'
+        matched_part = re.search(numeric_data_pattern, line)
+        if matched_part:
+            self.header_data[name] = matched_part.group()
+        else:
+            raise ValueError(f"Can't extract value of {name}")
+
 
 class SmallSignalParamsFilter:
     """Allows to filter parameters' values in the small signal mode raw info file."""
@@ -464,14 +485,13 @@ class SmallSignalParamsFilter:
         self.is_title_found = False
         self.is_numeric_found = False
         self.last_in_title_params = None
-        self.case = self.ParseCases.find_title
+        self.case = self.ParseCases.FIND_TITLE
 
-    @dataclass
-    class ParseCases:
+    class ParseCases(Enum):
         """Cases of small signal mode raw info file parsing, which use in apply() method"""
-        find_title = 0
-        find_numeric = 1
-        find_end = 2
+        FIND_TITLE = 0
+        FIND_NUMERIC = 1
+        FIND_END = 2
 
     def apply(self, line: str, line_index: int):
         """
@@ -479,20 +499,20 @@ class SmallSignalParamsFilter:
         :param line: line of mall signal mode raw info file.
         :param line_index: index of line in info file loaded as list.
         """
-        if self.case == self.ParseCases.find_title:
+        if self.case == self.ParseCases.FIND_TITLE:
             is_title_found, params_in_title = self.find_params_title(line)
             if is_title_found:
-                self.case = self.ParseCases.find_numeric
+                self.case = self.ParseCases.FIND_NUMERIC
                 self.last_in_title_params = tuple(params_in_title)
-        if self.case == self.ParseCases.find_numeric:
+        if self.case == self.ParseCases.FIND_NUMERIC:
             is_numeric_found = self.find_numeric_line(line)
             if is_numeric_found:
-                self.case = self.ParseCases.find_end
+                self.case = self.ParseCases.FIND_END
                 self._param_indexes[self.last_in_title_params].update(start=line_index)
-        if self.case == self.ParseCases.find_end:
+        if self.case == self.ParseCases.FIND_END:
             is_ending_found = self.find_params_ending(line)
             if is_ending_found:
-                self.case = self.ParseCases.find_title
+                self.case = self.ParseCases.FIND_TITLE
                 self._param_indexes[self.last_in_title_params].update(end=line_index)
                 self.last_in_title_params = None
 
@@ -1101,8 +1121,9 @@ class TransientResultBuilder(ResultBuilder):
 
 
 class SmallSignalResultBuilder(ResultBuilder):
-    def __init__(self, result_paths: ResultPaths, stage_name='none_stage'):
+    def __init__(self, result_paths: ResultPaths, stage_name='none_stage', is_repeated_stage=False):
         super(SmallSignalResultBuilder, self).__init__()
+        self.is_repeated_stage = is_repeated_stage
         small_signal_parser = SmallSignalInfoOutputParser(result_paths.temporary.raw)
         self.dataframe = small_signal_parser.get_prepared_dataframe()
         self.result_path = self.file_path_with_name_build(result_path=result_paths.main, stage_name=stage_name)
@@ -1114,9 +1135,54 @@ class SmallSignalResultBuilder(ResultBuilder):
         self._dump_dataframe_to_file(self.result_path)
 
     def _dump_dataframe_to_file(self, file_path: str):
-        with open(file_path, 'a') as res_file:
+        is_dump = False
+        is_empty_res_file = False
+        is_equal = False
+        if not self.is_repeated_stage:
+            is_dump = True
+        elif self.is_repeated_stage:
+            try:
+                old_df = pd.read_csv(file_path, dtype=np.float64, sep='\s+')
+                is_equal = self._compare_dataframe_with_old_data(old_df, file_path)
+            except pd.errors.EmptyDataError:
+                is_empty_res_file = True
+            if not is_empty_res_file and not is_equal:
+                self._update_dataframe(old_df)
+            if is_empty_res_file or not is_equal:
+                is_dump = True
+
+        if is_dump:
             # Save dataframe without indexes to file
-            res_file.write(self.dataframe.to_string(index=False))
+            df_str = self.dataframe.to_string(index=False, float_format='{:.6e}'.format)
+            with open(file_path, 'w') as res_file:
+                res_file.write(df_str)
+
+    def _compare_dataframe_with_old_data(self, old_df: pd.DataFrame, file_path: str):
+        # Precision of float numbers in dataframes
+        precision = 20
+        old_df_rounded = old_df.round(precision)
+        dataframe_rounded = self.dataframe.round(precision)
+        print('old_df_rounded')
+        print(old_df_rounded)
+        print('dataframe_rounded')
+        print(dataframe_rounded)
+
+        if old_df_rounded.equals(dataframe_rounded):
+            print('Equal')
+            return True
+        else:
+            print('Not eq')
+            return False
+
+    def _update_dataframe(self, old_df: pd.DataFrame):
+        """
+        Add current dataframe to old and sort resulting dataframe by freauency.
+        :param old_df: old data loaded from result file
+        """
+        self.dataframe = pd.concat([old_df, self.dataframe])
+        self.dataframe.sort_values(by=small_signal_cols.frequency, inplace=True)
+        print('updated dataframe')
+        print(self.dataframe)
 
 
 class UdrmVectorManager:
@@ -1170,24 +1236,27 @@ class MtutDataFrameManager:
             print(f'Define MTUT vars in mtut_dataframe.csv file if necessary or set "mtut_dataframe" option to "false" '
                   f'in config.json.')
             raise SystemExit
+        # print(df)
+        # input()
         replaced_df = df.applymap(lambda element: self.replace_comma_float_string(element))
         return replaced_df
 
     @staticmethod
-    def replace_comma_float_string(element: str) -> str:
+    def replace_comma_float_string(element) -> str:
         """
         Replace float like values in string, which separated by comma to float strings separated by dots.
-        :param element: input string, which can contains float like substrings are separated by commas.
+        :param element: input string or None, which can contains float like substrings are separated by commas.
         :return: element string with replaced float likes.
         """
-        match_part = re.search('\d+,\d+', element)
-        if match_part:
-            match_str = match_part.group()
-            replaced_str = match_str.replace(',', '.')
-            replaced_element = element.replace(match_str, replaced_str)
-            return replaced_element
-        else:
-            return element
+        if element:
+            match_part = re.search('\d+,\d+', element)
+            if match_part:
+                match_str = match_part.group()
+                replaced_str = match_str.replace(',', '.')
+                replaced_element = element.replace(match_str, replaced_str)
+                return replaced_element
+            else:
+                return element
 
     def get(self):
         """Returns self dataframe"""
