@@ -47,11 +47,10 @@ class TreadaRunner:
         """
         Runs Treada's program working stage.
         :param output_file_path: path to raw Treada's program output file
-        :param stage_name: Treada's working stage name
+        :param stage: Treada's working scenario stage
+        :param is_show_stage_name: Is show stage name in console
         """
-        self.capturer.set_stage_data(stage)
-        if is_show_stage_name:
-            self.capturer.set_runtime_console_info(f'   {stage.name}')
+        self.capturer.set_stage_data(stage, is_show_stage_name)
         if output_file_path:
             self.capturer.stream_management(self.temp_range, path_to_output=output_file_path)
         else:
@@ -263,15 +262,16 @@ class StdoutCapturer:
         :return:
         """
         if self.is_capacity_info_collecting and self.is_auto_ending:
-            for _ in range(10):
+            for _ in range(100):
                 try:
                     self.process.stdin.write('\n')
                     self.process.stdin.flush()
                 except OSError:
                     break
 
-    def set_stage_data(self, stage: Stage):
-        self.set_runtime_console_info(f'   {stage.name}')
+    def set_stage_data(self, stage: Stage, is_show_stage_name=True):
+        if is_show_stage_name:
+            self.set_runtime_console_info(f'   {stage.name}')
         self.is_capacity_info_collecting = stage.is_capacity_info_collecting
 
     def set_runtime_console_info(self, info: str):

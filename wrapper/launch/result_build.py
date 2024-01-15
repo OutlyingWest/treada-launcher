@@ -54,8 +54,9 @@ def transient_result_build(config: Config, stage: Stage, prev_stage_last_current
     plot_builder.save_plot(full_plot_path)
 
 
-def impedance_result_build(config: Config, stage: Stage):
-    result_builder = SmallSignalResultBuilder(result_paths=config.paths.result, stage_name=stage.name)
-
-    # plot_builder = ImpedancePlotBuilder()
+def impedance_result_build(config: Config, stage: Stage, is_repeated: bool):
+    result_builder = SmallSignalResultBuilder(result_paths=config.paths.result, stage_name=stage.name,
+                                              is_repeated_stage=is_repeated)
+    plot_builder = ImpedancePlotBuilder(result_path=result_builder.result_path)
+    plot_builder.show()
 

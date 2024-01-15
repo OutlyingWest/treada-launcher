@@ -37,9 +37,10 @@ class Stages:
         results_data = perform_fields_integral_finding(scenario, config, mtut_vars)
         save_integral_results(results_data, mtut_vars)
 
-    def impedance_info_collecting(self, config: Config, scenario_stage: Stage):
-        info_stage = SmallSignalInfoStage(self.relative_time)
-        info_stage.repeating_impedance_info_collecting(config, scenario_stage)
+    def impedance_info_collecting(self, config: Config, scenario_stage: Stage, is_repeated: bool):
+        treada = TreadaRunner(config, self.relative_time)
+        treada.run(scenario_stage, config.paths.result.temporary.raw, is_show_stage_name=False)
+        impedance_result_build(config, scenario_stage, is_repeated)
 
 
 class SmallSignalInfoStage:
@@ -64,6 +65,10 @@ class SmallSignalInfoStage:
 
     def set_frequency_range(self, start: float, stop: float):
         pass
+
+
+
+
 
 
 

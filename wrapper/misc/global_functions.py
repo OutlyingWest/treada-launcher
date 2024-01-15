@@ -15,8 +15,8 @@ def create_dir(file_path: str, with_file=False):
     dir_path = os.path.dirname(file_path)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
-    if with_file:
-        open(file_path, 'w').close()
+        if with_file:
+            open(file_path, 'w').close()
 
 
 def dict_from_nested_dataclass(dclass) -> dict:

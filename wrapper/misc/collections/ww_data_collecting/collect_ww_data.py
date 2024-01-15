@@ -11,8 +11,7 @@ import pandas as pd
 from PySide6.QtCore import QObject, Slot, Signal, QThread
 from PySide6.QtWidgets import QApplication
 
-
-# Add path to "project" directory in environ variable - PYTHONPATH
+# Add path to "project" directory in environ variable - PYTHONPATH (for independent script launch)
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.sep.join([".."] * 4)))
 sys.path.append(project_path)
 
