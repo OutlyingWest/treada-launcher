@@ -80,6 +80,7 @@ class TreadaOutputParserTests(unittest.TestCase):
 
     def test_small_signal_clean_data(self):
         small_signal_parser = SmallSignalInfoOutputParser(self.config.paths.result.temporary.raw)
+        print(small_signal_parser.header_data)
 
 
 @unittest.skip
