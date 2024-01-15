@@ -387,9 +387,7 @@ class TransientAdvancedPlotter(SpecialPointsMixin, SimplePlotter):
     Class that extends the abilities of SimplePlotter.
     """
     def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
-        super().__init__(x, y, '', plot_type)
-        # self.ax.set_yscale('log', base=10)
-        # self.ax.set_xscale('log', base=10)
+        super().__init__(x, y, plot_type=plot_type)
 
     def set_info(self, loaded_result):
         self.ax.scatter([], [], label=f'EMINI = {loaded_result.emini}', s=0)
@@ -512,7 +510,7 @@ class SmallSignalPlotter(SimplePlotter):
     Class that extends the abilities of SimplePlotter.
     """
     def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
-        super().__init__(x, y, 'small signal info', plot_type)
+        super().__init__(x, y, '', plot_type)
 
 
 class ImpedancePlotBuilder:
@@ -529,6 +527,7 @@ class ImpedancePlotBuilder:
                  result_path: str,
                  skip_rows=None):
         self.result_df = self.load_result(result_path, skip_rows)
+        self.freq_direction = ''
         # Create plotter objects
         self.plotters = self.create_plotters()
         self.set_descriptions()
@@ -540,6 +539,7 @@ class ImpedancePlotBuilder:
 
     def create_plotters(self):
         z_parameter_real, z_parameter_img = self.calculate_z_parameter()
+        self.freq_direction = self.define_frequency_direction(z_parameter_real)
         inverted_z_parameter_img = -z_parameter_img
         impedance_plotter = SmallSignalPlotter(x=z_parameter_real,
                                                y=inverted_z_parameter_img)
@@ -553,12 +553,24 @@ class ImpedancePlotBuilder:
         }
         return plotters
 
-    def calculate_z_parameter(self):
+    def calculate_z_parameter(self) -> tuple:
         y22_real = self.result_df[small_signal_cols.y22.real]
         y22_img = self.result_df[small_signal_cols.y22.img]
         z_real = y22_real / (y22_real**2 + y22_img**2)
-        z_img = y22_img / (y22_real**2 + y22_img**2)
+        z_img = -y22_img / (y22_real**2 + y22_img**2)
+        print(pd.DataFrame({'z_real': z_real, 'z_img': z_img, }))
         return z_real, z_img
+
+    @staticmethod
+    def define_frequency_direction(z_real: pd.Series) -> str:
+        z_diff = z_real.iloc[-1] - z_real.iloc[0]
+        if z_diff > 0:
+            frequency_direction = '▶'
+        elif z_diff < 0:
+            frequency_direction = '◀'
+        else:
+            raise ValueError('Wrong Z parameter vector.')
+        return frequency_direction
 
     def set_descriptions(self):
         self.set_impedance_descriptions()
@@ -566,8 +578,10 @@ class ImpedancePlotBuilder:
 
     def set_impedance_descriptions(self):
         # self.plotters['impedance'].set_window_title()
+        self.plotters['impedance'].ax.scatter([], [], label=f'Freq. growth direction {self.freq_direction}', s=0)
+        self.plotters['impedance'].ax.legend()
         self.plotters['impedance'].set_plot_title()
-        self.plotters['impedance'].set_plot_axes_labels(x_label='Re(Z), Om', y_label='Im(Z), Om')
+        self.plotters['impedance'].set_plot_axes_labels(x_label='Re(Z), Om', y_label='-Im(Z), Om')
 
     def set_y_img_descriptions(self):
         # self.plotters['y.img'].set_window_title()
@@ -575,7 +589,7 @@ class ImpedancePlotBuilder:
         self.plotters['y.img'].set_plot_axes_labels(x_label='F, Hz', y_label='Im(Y), Om^-1')
 
     def show(self):
-        self.plotters['impedance'].show()
+        plt.show(block=False)
 
     @classmethod
     def save_plot(cls, plot_path: str):
