@@ -19,7 +19,6 @@ class Stage:
     is_capacity_info_collecting: bool = field(default=False)
 
 
-
 #############################################
 # Dark to light scenario description classes
 #############################################
@@ -89,6 +88,22 @@ class CapacityStages:
 @dataclass
 class CapacityScenario:
     stages: CapacityStages
+
+
+#############################################
+# Just light scenario description classes
+#############################################
+@dataclass
+class JustLightStages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
+    light: Stage
+
+
+@dataclass
+class JustLightScenario:
+    stages: JustLightStages
 
 
 def load_scenario(scenarios_path: str,

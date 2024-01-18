@@ -3,6 +3,7 @@ from wrapper.core.data_management import MtutStageConfiger
 from wrapper.launch.scenarios.scenario_management import scenario_function
 from wrapper.launch.scenarios.stages import Stages
 from wrapper.launch.scenarios import scenario_build as sb
+from wrapper.ui.user_interactors import create_impedance_scenario_interactor
 
 
 @scenario_function(data_class=sb.DarkToLightScenario)
@@ -57,4 +58,40 @@ def capacity_scenario(scenario, config: Config, mtut_stage_configer: MtutStageCo
     print(f'{scenario.stages.capacity_info=} in capacity_scenario()')
     stages.impedance_info_collecting(config, scenario.stages.capacity_info)
 
+    def run_full_scenario():
+        # Stage 1 - transient
+        stages.transient(mtut_stage_configer, config, scenario.stages.capacity_first, save_result=True)
 
+        # Stage 2 - transient
+        stages.transient(mtut_stage_configer, config, scenario.stages.capacity_second, save_result=True)
+
+        # Stage 3 - transient
+        stages.transient(mtut_stage_configer, config, scenario.stages.capacity_third, save_result=True)
+
+        stages.impedance_info_collecting(config, scenario.stages.capacity_info, is_repeated=False)
+
+    def repeat_info_collecting_stage():
+        stages.impedance_info_collecting(config, scenario.stages.capacity_info, is_repeated=True)
+
+    def exit_action():
+        raise SystemExit
+
+    user_interactor = create_impedance_scenario_interactor(actions=[
+        run_full_scenario,
+        repeat_info_collecting_stage,
+        exit_action
+    ])
+
+    while True:
+        try:
+            user_interactor.ask_question(name='choose-calculation')
+        except SystemExit:
+            break
+
+
+@scenario_function(data_class=sb.JustLightScenario)
+def just_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
+    stages = Stages(kwargs.get('relative_time'))
+
+    # Stage 1 - with light
+    stages.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
