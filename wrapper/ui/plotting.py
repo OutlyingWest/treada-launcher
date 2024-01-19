@@ -1,14 +1,21 @@
 import os
 import re
 import sys
-from dataclasses import dataclass
 from typing import Union, Iterable, Dict, Any, List
 
-import matplotlib
 from colorama import Fore, Style
 
-matplotlib.use('TkAgg')
+import matplotlib
+matplotlib.use('QtAgg')
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
+
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit, QLabel, QHBoxLayout, QPushButton
+)
+
+
 import pandas as pd
 
 # Add path to "project" directory in environ variable - PYTHONPATH
@@ -26,6 +33,7 @@ def main():
 
 
 def run_res_plotting(config: Config):
+    app = QApplication()
     result_path = os.path.split(config.paths.result.main)[0] + os.sep
     print(f'{result_path=}')
     run_flag = True
@@ -38,6 +46,7 @@ def run_res_plotting(config: Config):
             print('Enter file name to load data from data/result/. Example: "res_u(-0.45).txt"')
             res_name = input()
             if res_name == '':
+                app.quit()
                 break
 
         full_result_path = os.path.join(project_path, result_path, res_name)
@@ -64,8 +73,9 @@ def run_res_plotting(config: Config):
             stage_name = plot_builder.extract_stage_name(full_result_path)
             plot_builder.set_short_info(f'Udrm={result.udrm}B {stage_name}',
                                         (result.transient.corrected_time, result.transient.corrected_density))
+            plot_builder.plotter.fig.canvas.draw()
         # Show plot
-        plot_builder.plotter.show(block=False)
+        plot_builder.plot_window.show()
 
 
 class TreadaPlotBuilder:
@@ -108,6 +118,8 @@ class TreadaPlotBuilder:
         res_name = self.extract_res_name(result_path)
         self.res_params = ResParams(name=res_name, last_time=time_column.iloc[-1])
         self.res_names_list = [res_name]
+        # Create Qt plot window object
+        self.plot_window = PlotWindow(self.plotter.fig, self.plotter.ax)
         # Construct plot
         self.set_descriptions(stage_name)
         self.runtime_result_data = None
@@ -134,14 +146,14 @@ class TreadaPlotBuilder:
         plot_title = self.construct_plot_title()
         window_title = f'Udrm = {self.result.udrm} V stage: {stage_name}'
         self.plotter.set_plot_title(plot_title)
-        self.plotter.set_window_title(window_title)
+        self.plot_window.setWindowTitle(window_title)
         # Set axes labels
         self.plotter.set_plot_axes_labels(x_label='time (ps)', y_label='I (mA/cm²)')
 
     def change_descriptions(self, plot_title, window_title, x_label='time (ps)', y_label='I (mA/cm²)'):
         # Set titles
         self.plotter.set_plot_title(plot_title)
-        self.plotter.set_window_title(window_title)
+        self.plot_window.setWindowTitle(window_title)
         # Set axes labels
         self.plotter.set_plot_axes_labels(x_label=x_label, y_label=y_label)
 
@@ -312,6 +324,7 @@ class SimplePlotter:
         window = self.fig.canvas.manager.window
         # For QtAgg
         backend_name = matplotlib.get_backend()
+        print(backend_name)
         if backend_name == 'QtAgg':
             window.setWindowTitle(title)
         elif backend_name == 'TkAgg':
@@ -373,14 +386,92 @@ class SpecialPointsMixin:
                      arrowprops=dict(arrowstyle='->', color='black'))
 
 
+class PlotWindow(QWidget):
+    def __init__(self, fig, ax, window_title=None):
+        super().__init__()
+        # self.setWindowTitle(window_title)
+        self.setGeometry(100, 100, 800, 600)  # Set window size
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        # Create a custom toolbar with the "Graph Type" drop-down menu
+        canvas = FigureCanvas(fig)
+        custom_toolbar = MyCustomToolbar(canvas, self, fig, ax)
+        layout.addWidget(canvas)
+        layout.addWidget(custom_toolbar)
+
+
+class MyCustomToolbar(NavigationToolbar):
+    def __init__(self, canvas, parent, fig, ax):
+        super().__init__(canvas, parent)
+        self.fig = fig
+        self.ax = ax
+    #     self.x_low_limit, self.x_high_limit = ax.get_xlim()
+    #     self.y_low_limit, self.y_high_limit = ax.get_ylim()
+    #
+    #     limits_label = QLabel('Limits')
+    #
+    #     self.x_limits_widget = LimitsLineWidget(name='x:', limits=f'{self.x_low_limit:.3e}, {self.x_high_limit:.3e}')
+    #     self.y_limits_widget = LimitsLineWidget(name='y:', limits=f'{self.y_low_limit:.3e}, {self.y_high_limit:.3e}')
+    #     self.reset_button = QPushButton(text='Reset limits')
+    #
+    #     self.x_limits_widget.line_edit.textEdited.connect(self.update_x_limits)
+    #     self.y_limits_widget.line_edit.textEdited.connect(self.update_y_limits)
+    #     self.reset_button.clicked.connect(self.reset_limits)
+    #
+    #     self.addWidget(limits_label)
+    #     self.addWidget(self.x_limits_widget)
+    #     self.addWidget(self.y_limits_widget)
+    #     self.addWidget(self.reset_button)
+    #
+    # def update_x_limits(self):
+    #     x_limits = self.x_limits_widget.line_edit.text()
+    #     try:
+    #         low_limit, high_limit = re.split(r'\s*,\s*', x_limits)
+    #         low_limit_number = float(low_limit)
+    #         high_limit_number = float(high_limit)
+    #     except ValueError:
+    #         return
+    #     self.ax.set_xlim(low_limit_number, high_limit_number)
+    #     self.fig.canvas.draw()
+    #
+    # def update_y_limits(self):
+    #     y_limits = self.y_limits_widget.line_edit.text()
+    #     try:
+    #         low_limit, high_limit = re.split(r'\s*,\s*', y_limits)
+    #         low_limit_number = float(low_limit)
+    #         high_limit_number = float(high_limit)
+    #     except ValueError:
+    #         return
+    #     self.ax.set_ylim(low_limit_number, high_limit_number)
+    #     self.fig.canvas.draw()
+
+    # def reset_limits(self):
+    #     # Reset plot canvas limits
+    #     self.ax.set_xlim(self.x_low_limit, self.x_high_limit)
+    #     self.ax.set_ylim(self.y_low_limit, self.y_high_limit)
+    #     # Reset line edit text
+    #     self.x_limits_widget.line_edit.setText(f'{self.x_low_limit:.3e}, {self.x_high_limit:.3e}')
+    #     self.y_limits_widget.line_edit.setText(f'{self.y_low_limit:.3e}, {self.y_high_limit:.3e}')
+    #     self.fig.canvas.draw()
+
+
+class LimitsLineWidget(QWidget):
+    def __init__(self, name: str, limits: str):
+        super().__init__()
+        label = QLabel(name)
+        self.line_edit = QLineEdit(limits)
+
+        layout = QHBoxLayout(self)
+        layout.addWidget(label)
+        layout.addWidget(self.line_edit)
+
+
 class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
     """
     Class that extends the abilities of SimplePlotter.
     """
     def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
         super().__init__(x, y, 'transient')
-        # self.ax.set_yscale('log', base=10)
-        # self.ax.set_xscale('log', base=10)
 
     def set_info(self, loaded_result):
         self.ax.scatter([], [], label=f'EMINI = {loaded_result.emini}', s=0)
