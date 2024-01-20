@@ -11,6 +11,7 @@ from scipy.signal import find_peaks, peak_widths
 import matplotlib
 
 from wrapper.misc.global_functions import create_dir
+from wrapper.ui.console import quit_user_warning_dialogue
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -21,8 +22,8 @@ project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.s
 sys.path.append(project_path)
 
 from wrapper.core.data_management import MtutManager
-from wrapper.config.config_builder import load_config, Config
-from wrapper.launch.scenarios.scenario_builder import DarkToLightScenario, load_scenario
+from wrapper.config.config_build import load_config, Config
+from wrapper.launch.scenarios.scenario_build import DarkToLightScenario, load_scenario
 from wrapper.misc.collections.ww_data_collecting.collect_ww_data import WWDataCollector
 
 
@@ -36,6 +37,7 @@ def run_fields_integral_finding(config: Config):
     scenario = load_scenario(config.paths.scenarios, config.scenario.active_name, DarkToLightScenario)
     mtut_vars = load_mtut_vars(config.paths.treada_core.mtut)
     perform_fields_integral_finding(scenario, config, mtut_vars, is_plot=True)
+    quit_user_warning_dialogue()
 
 
 @dataclass
@@ -219,7 +221,6 @@ def perform_fields_integral_finding(scenario, config: Config, mtut_vars: MtutVar
         plt.show(block=True)
 
     return results
-
 
 
 if __name__ == '__main__':

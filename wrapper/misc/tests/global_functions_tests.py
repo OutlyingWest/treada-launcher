@@ -3,7 +3,7 @@ from timeit import timeit
 from dataclasses import dataclass
 
 from wrapper.misc.global_functions import dict_to_nested_dataclass, create_dirs
-from wrapper.config.config_builder import load_config
+from wrapper.config.config_build import load_config
 
 
 @dataclass

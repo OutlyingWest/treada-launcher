@@ -11,12 +11,11 @@ import pandas as pd
 from PySide6.QtCore import QObject, Slot, Signal, QThread
 from PySide6.QtWidgets import QApplication
 
-
-# Add path to "project" directory in environ variable - PYTHONPATH
+# Add path to "project" directory in environ variable - PYTHONPATH (for independent script launch)
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.sep.join([".."] * 4)))
 sys.path.append(project_path)
 
-from wrapper.config.config_builder import load_config, Config
+from wrapper.config.config_build import load_config, Config
 from wrapper.ui.plotting import WWDataPlotter
 from wrapper.misc.collections.ww_data_collecting.ui.main_window import MainWindow
 
@@ -48,7 +47,7 @@ class WWDataCollector:
     def load_descriptions(descriptions_path: str) -> pd.DataFrame:
         df = pd.read_csv(descriptions_path, header=0, sep='\s\s\s+', encoding='windows-1251', engine='python',
                          usecols=['description', 'df_col_name'], dtype={'df_col_name': str})
-        # df.replace(to_replace='NaN', value=None, inplace=True)
+        # _df.replace(to_replace='NaN', value=None, inplace=True)
         df.index += 1
         return df
 
@@ -343,6 +342,7 @@ class WWDataCmdUserInteractor(WWDataUserInteractor):
 
 
 class ExtractWorker(QObject):
+    """Performs ww data extraction in a separate Qt thread"""
     statusbar_message_signal = Signal(str)
 
     def __init__(self):
@@ -364,7 +364,6 @@ class InterfaceDataManager(QObject):
     def __init__(self, user_interactor: WWDataUserInteractor):
         super().__init__()
         self.user_interactor = user_interactor
-
         self.extract_worker = ExtractWorker()
         self.extraction_thread = QThread()
         self.extract_worker.moveToThread(self.extraction_thread)
@@ -372,15 +371,15 @@ class InterfaceDataManager(QObject):
         self.extraction_thread.start()
 
     @Slot(dict)
-    def plot_slot(self, plotting_dict: dict):
+    def plot_slot(self, plot_settings: dict):
         # Set plot flags
-        self.user_interactor.is_add_to_exists = plotting_dict['is_add']
-        self.user_interactor.is_log_scale = plotting_dict['is_log']
+        self.user_interactor.is_add_to_exists = plot_settings['is_add']
+        self.user_interactor.is_log_scale = plot_settings['is_log']
         # Unpack plot variables
-        ww_number = plotting_dict['ww_number']
+        ww_number = plot_settings['ww_number']
         df_col_name = self.user_interactor.data_collector.descriptions['df_col_name'].loc[ww_number]
         # Plot data
-        for stage_name, ww_dir_list in plotting_dict['dirs'].items():
+        for stage_name, ww_dir_list in plot_settings['dirs'].items():
             self.user_interactor.plot(stage_name=stage_name,
                                       ww_dir_numbers_list=ww_dir_list,
                                       ww_number=ww_number,

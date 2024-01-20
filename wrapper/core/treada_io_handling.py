@@ -7,10 +7,11 @@ from typing import Union
 
 import numpy as np
 
-from wrapper.config.config_builder import Config
-from wrapper.core.ending_conditions import current_value_prepare
+from wrapper.config.config_build import Config
+from wrapper.core.ending_conditions import retrieve_current_value
 from wrapper.core import ending_conditions as ec
-from wrapper.core.data_management import TreadaOutputParser, MtutManager
+from wrapper.core.data_management import TransientOutputParser, MtutManager
+from wrapper.launch.scenarios.scenario_build import Stage
 
 
 def main():
@@ -42,14 +43,14 @@ class TreadaRunner:
                                        config=config,
                                        relative_time=relative_time,)
 
-    def run(self, output_file_path='', stage_name='None Stage'):
+    def run(self, stage: Stage, output_file_path='', is_show_stage_name=True):
         """
         Runs Treada's program working stage.
         :param output_file_path: path to raw Treada's program output file
-        :param stage_name: Treada's working stage name
+        :param stage: Treada's working scenario stage
+        :param is_show_stage_name: Is show stage name in console
         """
-        self.capturer.set_stage_name(stage_name)
-        self.capturer.set_runtime_console_info(f'   {stage_name}')
+        self.capturer.set_stage_data(stage, is_show_stage_name)
         if output_file_path:
             self.capturer.stream_management(self.temp_range, path_to_output=output_file_path)
         else:
@@ -65,8 +66,8 @@ class TreadaRunner:
         """
         try:
             working_directory_path = os.path.split(exe_path)[0]
-            return subprocess.Popen(exe_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    cwd=working_directory_path)
+            return subprocess.Popen(exe_path, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    cwd=working_directory_path, encoding='utf-8')
         except FileNotFoundError:
             print('Executable file not found, Path:', exe_path)
 
@@ -75,7 +76,7 @@ class TreadaRunner:
         Can be used only after run() function.
         """
         if self.capturer.last_step_string:
-            return TreadaOutputParser.get_single_current_from_line(self.capturer.last_step_string)
+            return TransientOutputParser.get_single_current_from_line(self.capturer.last_step_string)
         else:
             return None
 
@@ -124,7 +125,7 @@ class StdoutCapturer:
         # Running of the executable file
         self.process = process
         # Init auto ending prerequisites
-        self.auto_ending = config.flags.auto_ending
+        self.is_auto_ending = config.flags.auto_ending
         condition_params = config.advanced_settings.runtime.ending_condition
         self.ending_condition = ec.EndingCondition(chunk_size=condition_params.chunk_size,
                                                    equal_values_to_stop=condition_params.equal_values_to_stop,
@@ -137,13 +138,14 @@ class StdoutCapturer:
         #                                              chunk_size=100,
         #                                              big_step_multiplier=100,
         #                                              low_step_border=100)
-
+        # Flag for enable capacity info collecting mode
+        self.is_capacity_info_collecting = False
         # Distributions variables:
         # Preserve temporary Treada's files flag
         self.is_preserve_temp_distributions = config.flags.preserve_distributions
         if self.is_preserve_temp_distributions:
             self.stage_name = ''
-            self.temporary_dumping_begins = False
+            self.distribution_dumping_begins = False
             self.distribution_filenames = config.distribution_filenames
             self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
             self.distribution_destination_path = config.paths.result.temporary.distributions
@@ -167,16 +169,20 @@ class StdoutCapturer:
         self.ilumen = mtut_vars['ILUMEN']
         self.stage_number = mtut_vars['CKLKRS']
 
+
         if self.is_consider_fixed_light_time:
             self.light_impulse_time_ps = config.advanced_settings.runtime.light_impulse.fixed_time_ps
 
+        self.stage_number = mtut_vars['CKLKRS']
         if self.is_consider_fixed_dark_time:
             if self.stage_number not in config.advanced_settings.runtime.dark_impulse.for_stages:
                 self.is_consider_fixed_dark_time = False
             else:
                 self.dark_impulse_time_ps = config.advanced_settings.runtime.dark_impulse.fixed_time_ps
+
         # io_loop variables:
         self.running_flag = True
+        self.is_currents_line = False
         self.str_counter = 0
         if self.stage_number < 2:
             self.currents_str_counter = 0
@@ -198,7 +204,7 @@ class StdoutCapturer:
             if path_to_output.count(os.path.sep) <= 2:
                 path_to_output = path_to_output.strip(os.path.sep)
                 path_to_output = f'{path_to_output.split(".")[0]}_raw_output.txt'
-
+        self.capacity_info_stage_automatic_input()
         if not path_to_output:
             self.__io_loop()
         else:
@@ -211,55 +217,33 @@ class StdoutCapturer:
         self.process.terminate()
 
     def __io_loop(self, output_file=None):
-
         if len(sys.argv) > 2:
             num_of_str = int(sys.argv[2])
         else:
             num_of_str = None
 
-        clean_decoded_output = None
         start_time = time.time()
         while self.running_flag:
             try:
                 if num_of_str and num_of_str <= self.str_counter:
                     break
-                # Get line from process object
-                treada_output: bytes = self.process.stdout.readline()
-                if treada_output == b'' and self.process.poll() is not None:
+                try:
+                    # Get line from process object
+                    treada_output: str = self.process.stdout.readline()
+                except UnicodeDecodeError as e:
+                    treada_output = ''
+                    print(e)
+                if treada_output == '' and self.process.poll() is not None:
                     break
                 if treada_output:
-                    try:
-                        decoded_output = treada_output.decode('utf-8')
-                        clean_decoded_output = decoded_output.strip('\n ')
-                        # Check ending condition
-                        if self.auto_ending:
-                            current_value = current_value_prepare(currents_string=clean_decoded_output)
-                            # if current_value and self.ending_condition.check(self.str_counter, current_value):
-                            if current_value and self.ending_condition.check(current_value):
-                                self.running_flag = False
-                        transient_time = self.calculate_current_transient_time()
-                        if self.is_preserve_temp_distributions:
-                            self.preserve_distributions(transient_time, output_string=clean_decoded_output)
-                        if self.is_consider_fixed_light_time:
-                            self.check_light_impulse_time_condition(transient_time,
-                                                                    self.light_impulse_time_ps,
-                                                                    self.ilumen)
-                        if self.is_consider_fixed_dark_time:
-                            self.check_dark_impulse_time_condition(transient_time,
-                                                                   self.dark_impulse_time_ps,
-                                                                   self.ilumen)
-                        # Pure current lines' indexes counting
-                        if TreadaOutputParser.keep_currents_line_regex(string=clean_decoded_output):
-                            self.currents_str_counter += 1  # increment must be after all additional loop conditions
-                            # Preserve last step string
-                            self.last_step_string = clean_decoded_output
-                        # Write *.exe output to file
-                        if output_file:
-                            output_file.write(clean_decoded_output)
-                    except UnicodeDecodeError:
-                        decoded_output = treada_output
+                    printable_output = treada_output.strip('\n')
+                    clean_output = treada_output.lstrip(' ')
+                    self.conditional_io_loop_features(clean_output)
                     # Copy *.exe output to its own stdout
-                    print(decoded_output.rstrip() + self.runtime_console_info)
+                    print(printable_output + self.runtime_console_info)
+                    # Write *.exe output to file
+                    if output_file:
+                        output_file.write(clean_output)
                     self.str_counter += 1
             except KeyboardInterrupt:
                 self.running_flag = False
@@ -272,11 +256,63 @@ class StdoutCapturer:
     async def keyboard_catch(self):
         pass
 
+    def capacity_info_stage_automatic_input(self):
+        """
+        For capacity_scenario on "capacity_info" stage only.
+        If auto_ending option: true, inputs Enter button commands to Treada's stdin automatically.
+        :return:
+        """
+        if self.is_capacity_info_collecting and self.is_auto_ending:
+            for _ in range(100):
+                try:
+                    self.process.stdin.write('\n')
+                    self.process.stdin.flush()
+                except OSError:
+                    break
+
+    def set_stage_data(self, stage: Stage, is_show_stage_name=True):
+        if is_show_stage_name:
+            self.set_runtime_console_info(f'   {stage.name}')
+        self.is_capacity_info_collecting = stage.is_capacity_info_collecting
+
     def set_runtime_console_info(self, info: str):
         self.runtime_console_info = info.title()
 
-    def set_stage_name(self, stage_name: str):
-        self.stage_name = stage_name
+    def conditional_io_loop_features(self, clean_decoded_output):
+        if self.is_capacity_info_collecting:
+            pass
+        else:
+            self.transient_io_loop_features(clean_decoded_output)
+
+    def transient_io_loop_features(self, clean_decoded_output):
+        current_value = retrieve_current_value(currents_string=clean_decoded_output)
+        if current_value:
+            self.is_currents_line = True
+        else:
+            self.is_currents_line = False
+        # Check ending condition of transient process
+        if self.is_auto_ending:
+            if self.is_currents_line and self.ending_condition.check(current_value):
+                self.running_flag = False
+        current_transient_time = self.calculate_current_transient_time()
+        if self.is_preserve_temp_distributions:
+            self.preserve_distributions(current_transient_time, output_string=clean_decoded_output)
+        if self.is_consider_fixed_light_time:
+            self.check_light_impulse_time_condition(current_transient_time,
+                                                    self.light_impulse_time_ps,
+                                                    self.ilumen)
+        if self.is_consider_fixed_dark_time:
+            self.check_dark_impulse_time_condition(current_transient_time,
+                                                   self.dark_impulse_time_ps,
+                                                   self.ilumen)
+        # Pure current lines' indexes counting
+        if self.is_currents_line:
+            self.currents_str_counter += 1  # increment must be after all additional loop conditions
+            # Preserve last step's string
+            self.last_step_string = clean_decoded_output
+
+    def capacity_io_loop_features(self, clean_decoded_output):
+        pass
 
     def preserve_distributions(self, transient_time: float, output_string: str):
         """
@@ -287,13 +323,14 @@ class StdoutCapturer:
             if not self.distribution_range['start'] <= transient_time <= self.distribution_range['stop']:
                 return
         # Find the beginning line of temporary results dumping info
-        if (TreadaOutputParser.temporary_results_line_found(output_string) and
-           not self.temporary_dumping_begins):
-            self.temporary_dumping_begins = True
-        if self.temporary_dumping_begins:
-            # Check is dumping has ended
-            if TreadaOutputParser.keep_currents_line_regex(output_string):
-                self.temporary_dumping_begins = False
+        if not self.is_currents_line:
+            if (TransientOutputParser.temporary_results_line_found(output_string) and
+               not self.distribution_dumping_begins):
+                self.distribution_dumping_begins = True
+        if self.distribution_dumping_begins:
+            # Check has dumping already ended
+            if self.is_currents_line:
+                self.distribution_dumping_begins = False
                 print(f'{self.currents_str_counter=}')
                 self.copy_distribution_files()
 
@@ -342,7 +379,7 @@ class StdoutCapturer:
     def check_light_impulse_time_condition(self, current_transient_time: float,
                                            light_impulse_time: float,
                                            ilumen: float):
-        if current_transient_time > light_impulse_time and ilumen and not self.temporary_dumping_begins:
+        if current_transient_time > light_impulse_time and ilumen and not self.distribution_dumping_begins:
             print('Stopped by fixed light impulse time condition.')
             self.running_flag = False
         elif not self.running_flag and ilumen:
@@ -351,7 +388,7 @@ class StdoutCapturer:
     def check_dark_impulse_time_condition(self, current_transient_time: float,
                                           dark_impulse_time: float,
                                           ilumen: float):
-        if current_transient_time > dark_impulse_time and not ilumen and not self.temporary_dumping_begins:
+        if current_transient_time > dark_impulse_time and not ilumen and not self.distribution_dumping_begins:
             print('Stopped by fixed dark impulse time condition.')
             self.running_flag = False
         elif not self.running_flag and not ilumen:

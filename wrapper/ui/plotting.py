@@ -22,8 +22,10 @@ import pandas as pd
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(project_path)
 
-from wrapper.core.data_management import ResultData, col_names, FileManager, TransientData, MtutManager
-from wrapper.config.config_builder import load_config, Config
+from wrapper.core.data_management import (
+    TransientResultData, transient_cols, FileManager, TransientParameters, MtutManager, small_signal_cols
+)
+from wrapper.config.config_build import load_config, Config
 from wrapper.misc import lin_alg as la
 
 
@@ -55,7 +57,7 @@ def run_res_plotting(config: Config):
         if not plot_builder:
             try:
                 # Creation of plot builder object
-                plot_builder = TreadaPlotBuilder(mtut_path=full_mtut_path, result_path=full_result_path)
+                plot_builder = TransientPlotBuilder(mtut_path=full_mtut_path, result_path=full_result_path)
             except FileNotFoundError:
                 print('Wrong file path or name.')
             plot_builder.set_loaded_info()
@@ -65,11 +67,11 @@ def run_res_plotting(config: Config):
             plot_builder.change_descriptions(plot_title='', window_title=f'Multiple res plot')
             result = plot_builder.load_result(mtut_path=full_mtut_path, result_path=full_result_path, skip_rows=15)
             # Correct time seria if it is from next stage of same result
-            time_seria = plot_builder.correct_time_seria(result.full_df[col_names.time],
+            time_seria = plot_builder.correct_time_seria(result.full_df[transient_cols.time],
                                                          full_result_path)
             plot_builder.result = result
-            # plot_builder.add_plot(x=time_seria*1e-12, y=result.full_df[col_names.current_density]*0.0022)
-            plot_builder.add_plot(x=time_seria, y=result.full_df[col_names.current_density])
+            # plot_builder.add_plot(x=time_seria*1e-12, y=result.full_df[transient_cols.current_density]*0.0022)
+            plot_builder.add_plot(x=time_seria, y=result.full_df[transient_cols.current_density])
             stage_name = plot_builder.extract_stage_name(full_result_path)
             plot_builder.set_short_info(f'Udrm={result.udrm}B {stage_name}',
                                         (result.transient.corrected_time, result.transient.corrected_density))
@@ -78,7 +80,7 @@ def run_res_plotting(config: Config):
         plot_builder.plot_window.show()
 
 
-class TreadaPlotBuilder:
+class TransientPlotBuilder:
     """
     Download result data of treada-launcher from file and build plot.
     Can save plot picture to file.
@@ -86,7 +88,7 @@ class TreadaPlotBuilder:
     Attributes:
         result_path: path to result data file
         result_full_df: result data pandas dataframe
-        plotter: AdvancedPlotter class object
+        plotter: TransientAdvancedPlotter class object
 
     Methods:
         set_descriptions(): sets plot descriptions
@@ -108,11 +110,10 @@ class TreadaPlotBuilder:
         # Load result data from file
         self.result = self.load_result(mtut_path, result_path, skip_rows)
         # Extract result data
-        time_column = self.result.full_df[col_names.time]
-        current_density_column = self.result.full_df[col_names.current_density]
+        time_column = self.result.full_df[transient_cols.time]
+        current_density_column = self.result.full_df[transient_cols.current_density]
         # Create plotter object
-        # self.plotter = AdvancedPlotter(time_column*1e-12, current_density_column)
-        self.plotter = AdvancedPlotter(time_column, current_density_column)
+        self.plotter = TransientAdvancedPlotter(time_column, current_density_column)
         self.legends = [self.plotter.ax.get_legend()]
         self.handles = [self.plotter.handle]
         res_name = self.extract_res_name(result_path)
@@ -138,7 +139,7 @@ class TreadaPlotBuilder:
         if jpush == 1 and cklkrs > 1:
             plot_title = f'Reaction for voltage step: Udrm = {udrm} → {udrm + drstp} V'
         else:
-            plot_title = f'Udrm = {udrm} V'
+            plot_title = f'Напряжение на диоде = {udrm} B'
         return plot_title
 
     def set_descriptions(self, stage_name: str):
@@ -160,7 +161,7 @@ class TreadaPlotBuilder:
     def set_transient_ending_point(self, coords: tuple, annotation: str, xytext=(10, -20)):
         time, current_density = coords
         self.plotter.add_special_point(time, current_density)
-        self.plotter.annotate_special_point(time, current_density, annotation, xytext=xytext)
+        # self.plotter.annotate_special_point(time, current_density, annotation, xytext=xytext)
 
     def set_loaded_info(self):
         self.plotter.set_info(self.result)
@@ -174,8 +175,8 @@ class TreadaPlotBuilder:
         if self.runtime_result_data and self.runtime_result_data.ww_data_indexes:
             try:
                 ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
-                self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
-                                                    dist_densities=ww_points_df[col_names.current_density])
+                self.plotter.set_distributions_info(dist_times=ww_points_df[transient_cols.time],
+                                                    dist_densities=ww_points_df[transient_cols.current_density])
             except KeyError as e:
                 print(f'{Fore.YELLOW}Using "preserve_distributions": true option with '
                       f'"select_mean_dataframe": true option.\n'
@@ -196,8 +197,8 @@ class TreadaPlotBuilder:
         # Set distributions info if it exists
         if self.runtime_result_data.ww_data_indexes:
             ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
-            self.plotter.set_distributions_info(dist_times=ww_points_df[col_names.time],
-                                                dist_densities=ww_points_df[col_names.current_density])
+            self.plotter.set_distributions_info(dist_times=ww_points_df[transient_cols.time],
+                                                dist_densities=ww_points_df[transient_cols.current_density])
 
     @staticmethod
     def _extract_udrm(res_path: str) -> Union[str, None]:
@@ -216,7 +217,7 @@ class TreadaPlotBuilder:
         return res_name.group()
 
     @staticmethod
-    def load_result(mtut_path: str, result_path: str, skip_rows: int) -> ResultData:
+    def load_result(mtut_path: str, result_path: str, skip_rows: int) -> TransientResultData:
         result_file_manager = FileManager(result_path)
         result_file_manager.load_file_head(num_lines=15)
         mtut_file_manager = MtutManager(mtut_path)
@@ -225,11 +226,11 @@ class TreadaPlotBuilder:
         transient_time = float(transient_time_str.strip(' ps'))
         transient_density_str = result_file_manager.get_var('TRANSIENT_CURRENT_DENSITY')
         transient_density = float(transient_density_str.rstrip(' mA/cm^2'))
-        transient_data = TransientData(
+        transient_data = TransientParameters(
             corrected_time=transient_time,
             corrected_density=transient_density,
         )
-        results = ResultData(
+        results = TransientResultData(
             transient=transient_data,
             udrm=result_file_manager.get_var('UDRM').strip(' V'),
             drstp=mtut_file_manager.get_var('DRSTP'),
@@ -322,7 +323,7 @@ class SimplePlotter:
 
     def set_window_title(self, title='window title'):
         window = self.fig.canvas.manager.window
-        # For QtAgg
+        # If Plotter was called by Qt - use QtAgg
         backend_name = matplotlib.get_backend()
         print(backend_name)
         if backend_name == 'QtAgg':
@@ -344,6 +345,13 @@ class SimplePlotter:
 
     def legend(self, *args, **kwargs):
         self.ax.legend(*args, **kwargs)
+
+    @classmethod
+    def show(cls, block=True):
+        try:
+            plt.show(block=block)
+        except KeyboardInterrupt:
+            pass
 
 
 class SpecialPointsMixin:
@@ -466,12 +474,12 @@ class LimitsLineWidget(QWidget):
         layout.addWidget(self.line_edit)
 
 
-class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
+class TransientAdvancedPlotter(SpecialPointsMixin, SimplePlotter):
     """
     Class that extends the abilities of SimplePlotter.
     """
     def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
-        super().__init__(x, y, 'transient')
+        super().__init__(x, y, plot_type=plot_type)
 
     def set_info(self, loaded_result):
         self.ax.scatter([], [], label=f'EMINI = {loaded_result.emini}', s=0)
@@ -488,20 +496,25 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
             corrected_density = results.transient.corrected_density
             mean_df = results.mean_df
 
-            ending_time_low = mean_df[col_names.time].loc[ending_index_low]
-            ending_time_high = mean_df[col_names.time].loc[ending_index_high]
+            ending_time_low = mean_df[transient_cols.time].loc[ending_index_low]
+            ending_time_high = mean_df[transient_cols.time].loc[ending_index_high]
 
-            ending_density_low = mean_df[col_names.current_density].loc[ending_index_low]
-            ending_density_high = mean_df[col_names.current_density].loc[ending_index_high]
+            ending_density_low = mean_df[transient_cols.current_density].loc[ending_index_low]
+            ending_density_high = mean_df[transient_cols.current_density].loc[ending_index_high]
 
             # Plot rough transient ending point
             # self.add_special_point(results.transient.time, results.transient.current_density,
             #                        label='')  # Rough transient ending point
             # For report
-            self.ax.scatter([], [], c='red', label='Rough transient ending point')
+            self.ax.scatter([], [], c='red', label='Оценка времени окончания переходного процесса')
+
+            # Plot accurate transient ending point
+            self.add_special_point(corrected_time, corrected_density, color='yellow', marker='*', size=70, zorder=4,
+                                   label='Точное время окончания переходного процесса (τ)')
+            self.ax.scatter([], [], label=f'τ = {results.transient.corrected_time:.2f} пс', s=0)
 
             # Plot transient ending condition line
-            last_time = mean_df[col_names.time].iloc[-1]
+            last_time = mean_df[transient_cols.time].iloc[-1]
             lines_length = last_time / 2
             nearest_ending_times, nearest_ending_densities = la.extend_line(x_coords=[results.transient.time,
                                                                                       ending_time_high],
@@ -509,12 +522,12 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
                                                                                       results.transient.current_density],
                                                                             line_length=lines_length)
             self.ax.plot(nearest_ending_times, nearest_ending_densities, c='red',
-                         label='Ending condition line',)
+                         label='Уровень окончания переходного процесса',)
             # Plot mean current densities
-            self.ax.scatter(mean_df[col_names.time],
-                            mean_df[col_names.current_density],
+            self.ax.scatter(mean_df[transient_cols.time],
+                            mean_df[transient_cols.current_density],
                             c='green', alpha=1, zorder=2,
-                            label='Mean current densities')
+                            label='Усредненная плотность тока')
             # Highlight low nearest ending point
             self.ax.scatter(ending_time_low,
                             ending_density_low,
@@ -532,10 +545,6 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
                                                                                       ending_density_high],
                                                                             line_length=lines_length)
             self.ax.plot(nearest_ending_times, nearest_ending_densities, c='black')
-            # Plot accurate transient ending point
-            self.add_special_point(corrected_time, corrected_density, color='yellow', marker='*', size=70, zorder=4,
-                                   label='Accurate transient ending point')
-            self.ax.scatter([], [], label=f'Transient time = {results.transient.corrected_time:.6f} ps', s=0)
 
             self.ax.legend()
         else:
@@ -547,13 +556,6 @@ class AdvancedPlotter(SpecialPointsMixin, SimplePlotter):
                         c='magenta', alpha=1, zorder=3,
                         label='WW measures points')
         self.ax.legend()
-
-    @classmethod
-    def show(cls, block=True):
-        try:
-            plt.show(block=block)
-        except KeyboardInterrupt:
-            pass
 
 
 class WWDataPlotter(SimplePlotter):
@@ -588,16 +590,102 @@ class WWDataPlotter(SimplePlotter):
         else:
             return legends_list
 
-    @classmethod
-    def show(cls, block=True):
-        try:
-            plt.show(block=block)
-        except KeyboardInterrupt:
-            pass
+
 
     @classmethod
     def interactive_mode_enable(cls):
         plt.ion()
+
+
+class SmallSignalPlotter(SimplePlotter):
+    """
+    Class that extends the abilities of SimplePlotter.
+    """
+    def __init__(self, x: Iterable, y: Iterable, plot_type='plot'):
+        super().__init__(x, y, '', plot_type)
+
+
+class ImpedancePlotBuilder:
+    """
+    Download result data of treada-launcher from file and build plot.
+    Can save plot picture to file.
+
+    Attributes:
+
+    Methods:
+
+    """
+    def __init__(self,
+                 result_path: str,
+                 skip_rows=None):
+        self.result_df = self.load_result(result_path, skip_rows)
+        self.freq_direction = ''
+        # Create plotter objects
+        self.plotters = self.create_plotters()
+        self.set_descriptions()
+
+    @staticmethod
+    def load_result(result_path, skip_rows) -> pd.DataFrame:
+        df = pd.read_csv(result_path, skiprows=skip_rows, header=0, sep='\s+')
+        return df
+
+    def create_plotters(self):
+        z_parameter_real, z_parameter_img = self.calculate_z_parameter()
+        self.freq_direction = self.define_frequency_direction(z_parameter_real)
+        inverted_z_parameter_img = -z_parameter_img
+        impedance_plotter = SmallSignalPlotter(x=z_parameter_real,
+                                               y=inverted_z_parameter_img)
+
+        frequency_hz = 1e9 * self.result_df[small_signal_cols.frequency]
+        y_img_frequency_plotter = SmallSignalPlotter(x=frequency_hz,
+                                                     y=self.result_df[small_signal_cols.y22.img])
+        plotters = {
+            'impedance': impedance_plotter,
+            'y.img': y_img_frequency_plotter,
+        }
+        return plotters
+
+    def calculate_z_parameter(self) -> tuple:
+        y22_real = self.result_df[small_signal_cols.y22.real]
+        y22_img = self.result_df[small_signal_cols.y22.img]
+        z_real = y22_real / (y22_real**2 + y22_img**2)
+        z_img = -y22_img / (y22_real**2 + y22_img**2)
+        print(pd.DataFrame({'z_real': z_real, 'z_img': z_img, }))
+        return z_real, z_img
+
+    @staticmethod
+    def define_frequency_direction(z_real: pd.Series) -> str:
+        z_diff = z_real.iloc[-1] - z_real.iloc[0]
+        if z_diff > 0:
+            frequency_direction = '▶'
+        elif z_diff < 0:
+            frequency_direction = '◀'
+        else:
+            raise ValueError('Wrong Z parameter vector.')
+        return frequency_direction
+
+    def set_descriptions(self):
+        self.set_impedance_descriptions()
+        self.set_y_img_descriptions()
+
+    def set_impedance_descriptions(self):
+        # self.plotters['impedance'].set_window_title()
+        self.plotters['impedance'].ax.scatter([], [], label=f'Freq. growth direction {self.freq_direction}', s=0)
+        self.plotters['impedance'].ax.legend()
+        self.plotters['impedance'].set_plot_title()
+        self.plotters['impedance'].set_plot_axes_labels(x_label='Re(Z), Om', y_label='-Im(Z), Om')
+
+    def set_y_img_descriptions(self):
+        # self.plotters['y.img'].set_window_title()
+        self.plotters['y.img'].set_plot_title()
+        self.plotters['y.img'].set_plot_axes_labels(x_label='F, Hz', y_label='Im(Y), Om^-1')
+
+    def show(self):
+        plt.show(block=False)
+
+    @classmethod
+    def save_plot(cls, plot_path: str):
+        plt.savefig(plot_path)
 
 
 if __name__ == '__main__':

@@ -2,8 +2,10 @@ import os
 import unittest
 import numpy as np
 import pandas as pd
-from wrapper.core.ending_conditions import EndingCondition
-from wrapper.config.config_builder import load_config
+
+from wrapper.core.treada_io_handling import EndingCondition
+from wrapper.ui.plotting import plot_builder
+from wrapper.config.config_build import load_config
 
 
 class EndingConditionTests(unittest.TestCase):

@@ -6,8 +6,8 @@ import dacite
 import pandas as pd
 from colorama import Fore, Style
 
-from wrapper.config.config_builder import Config
-from wrapper.core.data_management import MtutStageConfiger, InputDataFrameManager, MtutManager
+from wrapper.config.config_build import Config
+from wrapper.core.data_management import MtutStageConfiger, MtutDataFrameManager, MtutManager
 
 
 @dataclass(frozen=True)
@@ -94,6 +94,7 @@ class BaseStatesMachine:
         self.State = state_dataclass
         self.State.states_file_path = self.config.paths.input.states
         self.init_machine()
+        self.plot_windows = []
 
     def run(self, treada_launch_function: Callable[[MtutStageConfiger, Config], None], mtut_stage_configer, config):
         for state in self.states:
@@ -102,7 +103,8 @@ class BaseStatesMachine:
             if state.status == state_status.READY:
                 self.states[state.index].status = state_status.RUN
                 try:
-                    treada_launch_function(mtut_stage_configer, config)
+                    scenario_plots = treada_launch_function(mtut_stage_configer, config)
+                    self.plot_windows.append(scenario_plots)
                     self.states[state.index].status = state_status.END
                 except Exception as e:
                     self.states[state.index].status = state_status.ERROR
@@ -112,14 +114,14 @@ class BaseStatesMachine:
 
     def init_machine(self):
         if self.config.modes.mtut_dataframe:
-            input_df_manager = InputDataFrameManager(self.config.paths.input.mtut_dataframe)
-            self.input_df = input_df_manager.get_df()
+            input_df_manager = MtutDataFrameManager(self.config.paths.input.mtut_dataframe)
+            self.input_df = input_df_manager.get()
             print(f'You run "treada_launcher" in mtut_dataframe mode. MTUT vars to iterate below:')
             print(f'{self.input_df}')
             print(f'To continue and run iterations push the {Fore.GREEN}Enter{Style.RESET_ALL} button.')
             input()
             for ind, input_line in self.input_df.iterrows():
-                mtut_vars = {var_name: var_value for var_name, var_value in input_line.items()}
+                mtut_vars = {var_name: var_value for var_name, var_value in input_line.items() if var_value}
                 self.states.append(self.State(index=ind,
                                               status=state_status.NOT_READY,
                                               mtut_vars=mtut_vars))

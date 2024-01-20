@@ -1,18 +1,24 @@
+import json
 import os
 import re
 import time
+from collections import defaultdict
+from enum import Enum
+from io import StringIO
+from itertools import islice
 from dataclasses import dataclass, field
-from typing import Union, List, Tuple, Dict
+from pprint import pprint
+from typing import Union, List, Tuple, Dict, Iterable
 
 from colorama import Fore, Style
 
 import pandas as pd
 import numpy as np
 
-from wrapper.launch.scenarios.scenario_builder import Stage
+from wrapper.launch.scenarios.scenario_build import Stage
 
 try:
-    from wrapper.config.config_builder import Paths, ResultPaths, ResultSettings, Config
+    from wrapper.config.config_build import Paths, ResultPaths, ResultSettings, Config
     from wrapper.misc.global_functions import create_dir
     from wrapper.misc import lin_alg as alg
 except ModuleNotFoundError:
@@ -25,16 +31,11 @@ class MtutStageConfiger:
     def __init__(self, mtut_path: str):
         self.mtut_manager = MtutManager(mtut_path)
 
-    def light_off(self, light_off_setup: dict):
+    def set_stage_mtut_vars(self, mtut_vars_setup: dict):
+        if not mtut_vars_setup:
+            mtut_vars_setup = dict()
         self.mtut_manager.load_file()
-        for key, value in light_off_setup.items():
-            if key != 'name':
-                self.mtut_manager.set_var(key, str(value))
-        self.mtut_manager.save_file()
-
-    def light_on(self, light_on_setup: dict):
-        self.mtut_manager.load_file()
-        for key, value in light_on_setup.items():
+        for key, value in mtut_vars_setup.items():
             if key != 'name':
                 self.mtut_manager.set_var(key, str(value))
         self.mtut_manager.save_file()
@@ -238,33 +239,62 @@ def find_relative_time(mtut_manager: MtutManager) -> float:
 
 
 @dataclass
-class DataFrameColNames:
+class TransientDataFrameColNames:
     """
     Treada's result datafame col names.
     """
-    time:  str
+    time: str
     source_current: str
     current_density: str
     mean_density: str
 
 
-col_names = DataFrameColNames(
+transient_cols = TransientDataFrameColNames(
     time='time(ps)',
     source_current='TSRS(mA)',
-    current_density ='I(mA/cm^2)',
+    current_density='I(mA/cm^2)',
     mean_density='mean_density',
+)
+
+
+@dataclass
+class ComplexParamNameParts:
+    name: str
+    real: str
+    img: str
+
+
+class SmallSignalAnalysisDataFrameColNames:
+    """
+    Treada's small signal mode dataframe col names.
+    """
+    __slots__ = ('frequency', 'y21', 'y22')
+
+    def __init__(self, frequency: str, **kwargs):
+        self.frequency = frequency
+        for param, name in kwargs.items():
+            setattr(self, param, ComplexParamNameParts(name=name, real=f'{name}.real', img=f'{name}.img'))
+
+
+small_signal_cols = SmallSignalAnalysisDataFrameColNames(
+    frequency='Frequency(GHz)',
+    y22='Y22',
 )
 
 
 class TreadaOutputParser:
     """
-    Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
-    Extract data. That includes:
-        1) Source current vector and saving it to the dataframe
-        2) RELATIVE TIME
+    Base class that parses and cleans "Treada's" output, which is dumped to treada_raw_output.txt file.
+    How to use:
+        1) Create an instance (performs parsing of raw "Treada's" output file)
+        2) Get a prepared data by get_prepared_dataframe() method
     Attributes:
-
+        raw_output_path: path to Treada's raw output file
     Methods:
+        prepare_data() -> pd.DataFrame
+        load_raw_file(raw_file_path: str) -> list
+        clean_data(data_list: list) -> pd.DataFrame
+        get_prepared_dataframe() -> pd.DataFrame
     """
 
     def __init__(self, raw_output_path: str):
@@ -272,7 +302,7 @@ class TreadaOutputParser:
         prepared_dataframe = self.prepare_data()
         self.dataframe: pd.DataFrame = prepared_dataframe
 
-    def prepare_data(self):
+    def prepare_data(self) -> pd.DataFrame:
         # Load raw treada output file
         data_list = self.load_raw_file(self.raw_output_path)
         # Create prepared dataframe with source currents
@@ -285,21 +315,44 @@ class TreadaOutputParser:
             data = file.readlines()
         return data
 
-    def clean_data(self, data_list: list):
-        start_time = time.time()
-        # Get pure source current list
-        keep_line_regex_func = self.keep_currents_line_regex
-        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if keep_line_regex_func(line)]
+    def clean_data(self, data_list: list) -> pd.DataFrame:
+        """
+        Cleans raw data loaded as list
+        :param data_list: list of raw data lines
+        :return: pandas dataframe of cleaned data
+        """
+        pass
 
-        end_time = time.time()
-        execution_time = end_time - start_time
-        # print(f'Time of file cleaning:{execution_time:.2f}s')
+    def get_prepared_dataframe(self) -> pd.DataFrame:
+        return self.dataframe
 
-        # Creation of dataframe with current in numeric format
-        pure_df = pd.DataFrame({col_names.source_current: pure_data_lines})
-        pure_df[col_names.source_current] = pure_df[col_names.source_current].astype(float)
 
+class TransientOutputParser(TreadaOutputParser):
+    """
+    Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
+    Extracts data. That includes:
+        1) Source current vector and saving it to the dataframe
+        2) RELATIVE TIME
+    Attributes:
+
+    Methods:
+    """
+
+    def __init__(self, raw_output_path: str):
+        super().__init__(raw_output_path)
+
+    def clean_data(self, data_list: list) -> pd.DataFrame:
+        # Get pure source currents list
+        pure_data_lines = [line.split(' ', 1)[0] for line in data_list if self.find_currents_line(line)]
+        # Creation of dataframe of float currents
+        pure_df = pd.DataFrame({transient_cols.source_current: pure_data_lines}).astype(np.float64)
         return pure_df
+
+    def extract_current_value(self, line):
+        if self.find_currents_line(line):
+            return line.split(' ', 1)[0]
+        else:
+            return None
 
     @staticmethod
     def get_single_current_from_line(current_line: str):
@@ -322,8 +375,8 @@ class TreadaOutputParser:
         return relative_time
 
     @staticmethod
-    def keep_currents_line_regex(string: str) -> bool:
-        numeric_data_pattern = r"[-+]?\d+\.\d+[eE][-+]?\d+\s+\d+\."
+    def find_currents_line(string: str) -> bool:
+        numeric_data_pattern = r'\s*[-+]?\d+\.\d+[eE][-+]?\d+\s+\d+\.'
         match = re.match(numeric_data_pattern, string)
         if match:
             return True
@@ -338,11 +391,173 @@ class TreadaOutputParser:
         else:
             return False
 
-    def get_prepared_dataframe(self):
-        return self.dataframe
+
+class SmallSignalInfoOutputParser(TreadaOutputParser):
+    """
+    Parse and clean "Treada's" output, which is dumped to treada_raw_output.txt file.
+    Extracts parameters of capacity info stage
+    """
+
+    def __init__(self, raw_output_path: str):
+        self.header_data = {
+            'DIFFERENTIAL OUTPUT RESISTANCE': None,
+            'CDOM-DOMAIN CAPACITANCE': None
+        }
+        self.is_find_header_data = len(self.header_data)
+        super().__init__(raw_output_path)
+
+    def clean_data(self, data_list: list) -> pd.DataFrame:
+        # Filter data
+        params_filter = SmallSignalParamsFilter(param_names=['S22', 'Y22', 'S12', 'Y21'])
+        for line_index, line in enumerate(data_list):
+            self.extract_header_data(line)
+            params_filter.apply(line, line_index)
+        param_indexes = params_filter.get_param_indexes()
+        # Prepare raw data list to build _df
+        split_data_list = [line.rstrip('\n').split('  ') for line in data_list]
+        pure_df = self.build_dataframe(split_data_list, param_indexes)
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', None)
+        return pure_df
+
+    def build_dataframe(self, data: list, param_rows_indexes: dict) -> pd.DataFrame:
+        params_data = self.init_params_data(data, param_rows_indexes)
+        for params, rows_indexes in param_rows_indexes.items():
+            self.update_params_data(data, params_data, params, rows_indexes)
+        df = pd.DataFrame(params_data).astype(np.float64)
+        return df
+
+    @staticmethod
+    def init_params_data(data: list, param_rows_indexes: dict):
+        """Creates params data dict and fills essential FREQUENCY parameter"""
+        first_key = next(iter(param_rows_indexes.keys()))
+        rows_range = param_rows_indexes[first_key]
+        actual_data = data[rows_range['start']:rows_range['end']]
+        params_data = {small_signal_cols.frequency: [row[0] for row in actual_data]}
+        return params_data
+
+    def update_params_data(self, data: list, params_data: dict, params: tuple, rows_range: dict):
+        """
+        Updates the params_data dictionary from "data" list with strings that split to numbers.
+        That performs according to the current params contains as tuple of param names and
+        rows_range - as a dict of indexes
+        """
+        for param in params:
+            col = self.define_param_col_index(param)
+            actual_data = data[rows_range['start']:rows_range['end']]
+            params_data.update({f'{param}.real': [row[col] for row in actual_data]})
+            params_data.update({f'{param}.img': [row[col+1] for row in actual_data]})
+
+    @staticmethod
+    def define_param_col_index(param: str):
+        positions = {
+            ('11', '21'): 1,
+            ('12', '22'): 3,
+        }
+        param = param[1:]
+        for params_key, index in positions.items():
+            if param in params_key:
+                return index
+        raise ValueError(f'Unable to find position for {param=}')
+
+    def extract_header_data(self, line: str):
+        if self.is_find_header_data:
+            for key in self.header_data.keys():
+                if key in line:
+                    self.is_find_header_data -= 1
+                    self._update_header_value(key, line)
+
+    def _update_header_value(self, name: str, line: str):
+        numeric_data_pattern = r'[-+]?\d+\.\d+[eE][-+]?\d+'
+        matched_part = re.search(numeric_data_pattern, line)
+        if matched_part:
+            self.header_data[name] = matched_part.group()
+        else:
+            raise ValueError(f"Can't extract value of {name}")
 
 
-class TransientData:
+class SmallSignalParamsFilter:
+    """Allows to filter parameters' values in the small signal mode raw info file."""
+    def __init__(self, param_names: Iterable):
+        self.param_names = sorted(param_names)
+        self._param_indexes = defaultdict(dict)
+        self.is_title_found = False
+        self.is_numeric_found = False
+        self.last_in_title_params = None
+        self.case = self.ParseCases.FIND_TITLE
+
+    class ParseCases(Enum):
+        """Cases of small signal mode raw info file parsing, which use in apply() method"""
+        FIND_TITLE = 0
+        FIND_NUMERIC = 1
+        FIND_END = 2
+
+    def apply(self, line: str, line_index: int):
+        """
+        Applies the filtering rules. Must be called in loop.
+        :param line: line of mall signal mode raw info file.
+        :param line_index: index of line in info file loaded as list.
+        """
+        if self.case == self.ParseCases.FIND_TITLE:
+            is_title_found, params_in_title = self.find_params_title(line)
+            if is_title_found:
+                self.case = self.ParseCases.FIND_NUMERIC
+                self.last_in_title_params = tuple(params_in_title)
+        if self.case == self.ParseCases.FIND_NUMERIC:
+            is_numeric_found = self.find_numeric_line(line)
+            if is_numeric_found:
+                self.case = self.ParseCases.FIND_END
+                self._param_indexes[self.last_in_title_params].update(start=line_index)
+        if self.case == self.ParseCases.FIND_END:
+            is_ending_found = self.find_params_ending(line)
+            if is_ending_found:
+                self.case = self.ParseCases.FIND_TITLE
+                self._param_indexes[self.last_in_title_params].update(end=line_index)
+                self.last_in_title_params = None
+
+    def find_params_title(self, line: str):
+        is_found = False
+        params_in_title = list()
+        for param_name in self.param_names:
+            within_line_index = line.find(param_name)
+            if within_line_index >= 0:
+                params_in_title.append(param_name)
+                is_found = True
+        return is_found, params_in_title
+
+    @staticmethod
+    def find_params_ending(line: str):
+        if line == '\n':
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def find_numeric_line(string: str) -> bool:
+        numeric_data_pattern = r'[-+]?\d+\.\d+[eE][-+]?\d+'
+        match = re.match(numeric_data_pattern, string)
+        if match:
+            return True
+        else:
+            return False
+
+    def get_param_indexes(self) -> Dict[tuple, dict]:
+        """
+        Returns the dictionary where keys: tuples of param_names and values: dicts(start=int, end=int)
+        Here start, end - are the starting index and the ending index of ranges that contain parameters' values
+        in the raw file loaded as list.
+        """
+        for params, indexes in self._param_indexes.items():
+            if not indexes.get('end'):
+                self._param_indexes[params].update(end=None)
+        if self._param_indexes:
+            return self._param_indexes
+        else:
+            raise ValueError('param_indexes not exists')
+
+
+class TransientParameters:
     """
     Class that contains data about transient process results.
     Provides the safe access to its own attributes.
@@ -474,18 +689,18 @@ class TransientData:
     window_size_denominator = property(fset=set_window_size_denominator, fget=get_window_size_denominator)
 
 
-class ResultDataCollector:
+class TransientResultDataCollector:
     def __init__(self, mtut_file_path, result_paths: ResultPaths, relative_time: float):
         self.mtut_manager = MtutManager(mtut_file_path)
         self.mtut_manager.load_file()
         self.relative_time = relative_time
-        self.treada_parser = TreadaOutputParser(result_paths.temporary.raw)
+        self.transient_parser = TransientOutputParser(result_paths.temporary.raw)
         # Set dataframe col names
-        self.dataframe = self.treada_parser.get_prepared_dataframe()
+        self.dataframe = self.transient_parser.get_prepared_dataframe()
         # Create dataframe which contains mean current densities and its dependencies
         self.mean_dataframe = pd.DataFrame()
         # Result data
-        self.transient = TransientData()
+        self.transient = TransientParameters()
         self.result_dataframe = None
         # Additional result
         self.last_mean_time = None
@@ -503,11 +718,13 @@ class ResultDataCollector:
         self.current_density_col_calculate()
         self.transient.time = self.find_transient_time()
         # print(self.dataframe)
-        self.result_dataframe = self.dataframe[[col_names.time, col_names.source_current, col_names.current_density]]
+        self.result_dataframe = self.dataframe[
+            [transient_cols.time, transient_cols.source_current, transient_cols.current_density]
+        ]
         self.correct_transient_time(window_size=self.transient.window_size)
 
         self.last_mean_time, self.last_mean_current_density = (
-            self.mean_dataframe[[col_names.time, col_names.current_density]].tail(50).mean()
+            self.mean_dataframe[[transient_cols.time, transient_cols.current_density]].tail(50).mean()
         )
         self.ww_data_indexes = self.set_distributions_indexes(stage.name)
         # pd.set_option('display.max_rows', None)
@@ -574,7 +791,7 @@ class ResultDataCollector:
         if skip_initial_time_step:
             operating_time_step_const = operating_time_step * self.relative_time
             self.dataframe[
-                col_names.time
+                transient_cols.time
             ] = (
                     self.dataframe.index.values * operating_time_step_const
             )
@@ -584,11 +801,11 @@ class ResultDataCollector:
             incremented_initial_steps_number = initial_steps_number + 1
             self.dataframe.loc[
                 self.dataframe.index.values < incremented_initial_steps_number,
-                col_names.time
+                transient_cols.time
             ] = self.dataframe.index.values[:incremented_initial_steps_number] * initial_time_step_const
 
             try:
-                last_initial_time = self.dataframe[col_names.time].iloc[initial_steps_number]
+                last_initial_time = self.dataframe[transient_cols.time].iloc[initial_steps_number]
             except IndexError as e:
                 print(f'{e.__class__.__name__}: {e} Maybe number of initial time steps: {initial_steps_number=}'
                       f' more then steps in current stage.\n'
@@ -597,7 +814,7 @@ class ResultDataCollector:
 
             self.dataframe.loc[
                 self.dataframe.index.values >= incremented_initial_steps_number,
-                col_names.time
+                transient_cols.time
             ] = (
                     (self.dataframe.index.values[incremented_initial_steps_number:] - initial_steps_number) *
                     operating_time_step_const + last_initial_time
@@ -619,7 +836,7 @@ class ResultDataCollector:
             self.transient.window_size = int(dataframe_length / window_size_denominator)
         # Calculating
         mean_densities = (
-            self.dataframe[col_names.current_density]
+            self.dataframe[transient_cols.current_density]
             .rolling(window=self.transient.window_size, step=self.transient.window_size, center=True)
             .mean()
         )
@@ -632,8 +849,8 @@ class ResultDataCollector:
         # Get HY
         hy = float(self.mtut_manager.get_var('HY').rstrip(')').split('(')[1])
         # Calculate density col
-        self.dataframe[col_names.current_density] = (
-                self.dataframe[col_names.source_current] / (2 * hy * device_width * 1e-8)
+        self.dataframe[transient_cols.current_density] = (
+                self.dataframe[transient_cols.source_current] / (2 * hy * device_width * 1e-8)
         )
 
     def find_transient_time(self) -> float:
@@ -643,31 +860,31 @@ class ResultDataCollector:
         """
         window_size_denominator = self.transient.get_window_size_denominator()
         # Fill mean_dataframe
-        self.mean_dataframe[col_names.current_density] = (
+        self.mean_dataframe[transient_cols.current_density] = (
             self.get_mean_current_density_seria(window_size_denominator)
         )
-        self.mean_dataframe[col_names.time] = (
-            self.dataframe[col_names.time].iloc[self.mean_dataframe.index]
+        self.mean_dataframe[transient_cols.time] = (
+            self.dataframe[transient_cols.time].iloc[self.mean_dataframe.index]
         )
         self.mean_dataframe.drop(self.mean_dataframe.index[-1], inplace=True)
         tr_criteria_dict = self.transient_criteria_calculate()
         self.transient_criteria_apply(tr_criteria_dict)
         # print(f'{self.transient.ending_index_low=}')
         # print(f'{self.transient.ending_index_high=}')
-        return self.mean_dataframe[col_names.time].loc[self.transient.ending_index]
+        return self.mean_dataframe[transient_cols.time].loc[self.transient.ending_index]
 
     def transient_criteria_calculate(self) -> dict:
         # Excluding of anomaly values if it necessary
         start, stop, step = self.transient.get_criteria_calculating_df_slice()
         dropped_mean_dataframe = self.mean_dataframe.iloc[start:stop:step]
         # Get max and min current from col
-        max_density = dropped_mean_dataframe[col_names.current_density].max()
-        min_density = dropped_mean_dataframe[col_names.current_density].min()
+        max_density = dropped_mean_dataframe[transient_cols.current_density].max()
+        min_density = dropped_mean_dataframe[transient_cols.current_density].min()
         ending_difference = 0.01 * (max_density - min_density)
         # Get last value in current col and calculate criteria of transient ending
         tr_criteria = dict()
         try:
-            last_density_value = dropped_mean_dataframe[col_names.current_density].iloc[-1]
+            last_density_value = dropped_mean_dataframe[transient_cols.current_density].iloc[-1]
         except IndexError as e:
             print(f'{e.__class__.__name__}: {e} Maybe too small transient.window_size={self.transient.window_size}.')
             raise e
@@ -681,9 +898,9 @@ class ResultDataCollector:
         # Calculation of transient ending criteria
         self.mean_dataframe['compare_plus'] = 0
         self.mean_dataframe['compare_minus'] = 0
-        self.mean_dataframe.loc[self.mean_dataframe[col_names.current_density] > tr_criteria['minus'],
+        self.mean_dataframe.loc[self.mean_dataframe[transient_cols.current_density] > tr_criteria['minus'],
                                 'compare_minus'] = 1
-        self.mean_dataframe.loc[self.mean_dataframe[col_names.current_density] < tr_criteria['plus'],
+        self.mean_dataframe.loc[self.mean_dataframe[transient_cols.current_density] < tr_criteria['plus'],
                                 'compare_plus'] = 1
 
         # Get indexes on which ending criteria satisfied
@@ -704,7 +921,7 @@ class ResultDataCollector:
             print(f'{Fore.YELLOW}Unable to calculate transient time. Either too fast transient or direct current.'
                   f'{Style.RESET_ALL}')
             self.transient.ending_index = 1
-            self.transient.current_density = self.mean_dataframe[col_names.current_density].iloc[1]
+            self.transient.current_density = self.mean_dataframe[transient_cols.current_density].iloc[1]
         else:
             raise ValueError('transient_ending_index does not found.')
 
@@ -727,10 +944,10 @@ class ResultDataCollector:
         ending_center_index = self.transient.get_ending_index()
 
         ending_next_time = (
-            self.mean_dataframe[col_names.time].loc[ending_center_index + window_size]
+            self.mean_dataframe[transient_cols.time].loc[ending_center_index + window_size]
         )
         ending_next_index = (
-            self.mean_dataframe.loc[ending_next_time == self.mean_dataframe[col_names.time]].index.values[0]
+            self.mean_dataframe.loc[ending_next_time == self.mean_dataframe[transient_cols.time]].index.values[0]
         )
 
         self.transient.ending_index_low = ending_center_index
@@ -739,10 +956,10 @@ class ResultDataCollector:
         # Get borders' times and densities
         ending_index_low, ending_index_high = self.transient.get_ending_indexes()
         ending_time_low, ending_density_low = (
-            self.mean_dataframe[[col_names.time, col_names.current_density]].loc[ending_index_low]
+            self.mean_dataframe[[transient_cols.time, transient_cols.current_density]].loc[ending_index_low]
         )
         ending_time_high, ending_density_high = (
-            self.mean_dataframe[[col_names.time, col_names.current_density]].loc[ending_index_high]
+            self.mean_dataframe[[transient_cols.time, transient_cols.current_density]].loc[ending_index_high]
         )
 
         # print(self.mean_dataframe)
@@ -780,14 +997,14 @@ class ResultDataCollector:
         except FileNotFoundError:
             return None
         ww_data_indexes: list = sorted(ww_data_indexes_iter)
-        # Select only indexes within size of current df in case if old results remain
+        # Select only indexes within size of current _df in case if old results remain
         actual_ww_data_indexes = [index for index in ww_data_indexes if index <= self.dataframe.index[-1]]
         return actual_ww_data_indexes
 
 
 @dataclass
-class ResultData:
-    transient: TransientData
+class TransientResultData:
+    transient: TransientParameters
     udrm: str
     emini: str
     emaxi: str
@@ -800,18 +1017,39 @@ class ResultData:
 
 
 class ResultBuilder:
-    def __init__(self, result_collector: ResultDataCollector, result_paths: ResultPaths,
-                 result_settings: ResultSettings, stage_name='light'):
+    def __init__(self):
+        pass
+
+    def save_data(self):
+        """Adds related information and saves dataframe to file"""
+        pass
+
+    @staticmethod
+    def file_path_with_name_build(result_path: str, stage_name: str, extra_info='', file_extension='txt', ):
+        if extra_info:
+            return f'{result_path.split(".")[0]}_{extra_info}_{stage_name}.{file_extension}'
+        return f'{result_path.split(".")[0]}_{stage_name}.{file_extension}'
+
+    def _dump_dataframe_to_file(self, file_path: str):
+        """Dumps prepared dataframe to file"""
+        pass
+
+
+class TransientResultBuilder(ResultBuilder):
+    def __init__(self, result_collector: TransientResultDataCollector, result_paths: ResultPaths,
+                 result_settings: ResultSettings, stage_name='none_stage'):
+        super(TransientResultBuilder, self).__init__()
         self.result_collector = result_collector
         self.results = self._extract_results()
-        self.result_path = self.file_name_build(result_paths.main, stage_name=stage_name)
+        self.result_path = self.file_path_with_name_build(result_paths.main, stage_name=stage_name,
+                                                          extra_info=f'u({self.results.udrm})')
         self.result_settings = result_settings
-        header = self._header_build()
-        self.header_length = len(header)
-        self.save_data(header)
+        self.header = self._header_build()
+        self.header_length = len(self.header)
+        self.save_data()
 
-    def _extract_results(self) -> ResultData:
-        results = ResultData(
+    def _extract_results(self) -> TransientResultData:
+        results = TransientResultData(
             transient=self.result_collector.transient,
             udrm=self.result_collector.mtut_manager.get_var('UDRM'),
             emini=self.result_collector.mtut_manager.get_var('EMINI'),
@@ -822,18 +1060,14 @@ class ResultBuilder:
         )
         return results
 
-    def file_name_build(self, result_path: str, stage_name: str, file_extension='txt'):
-        return f'{result_path.split(".")[0]}u({self.results.udrm})_{stage_name}.{file_extension}'
-
-    def save_data(self, header) -> int:
+    def save_data(self):
         # Create output dir if it does not exist
         create_dir(self.result_path)
-        self._header_dump_to_file(header)
-        self._dump_dataframe_to_file()
-        return len(header)
+        self._header_dump_to_file(self.result_path, self.header)
+        self._dump_dataframe_to_file(self.result_path)
 
     def _header_build(self):
-        header: list = [
+        header = [
             'Diode biased at:',
             f'UDRM = {self.results.udrm} V',
             '',
@@ -860,31 +1094,95 @@ class ResultBuilder:
         for line in header:
             print(line.rstrip())
 
-    def _header_dump_to_file(self, header: list):
-        with open(self.result_path, 'w') as res_file:
+    @staticmethod
+    def _header_dump_to_file(file_path: str, header: list):
+        with open(file_path, 'w') as res_file:
             res_file.writelines(header)
 
-    def _dump_dataframe_to_file(self):
-        # self.results.full_df[col_names.current_density] = self.results.full_df[col_names.current_density] * -1
-        self.results.full_df[col_names.current_density] = self.results.full_df[col_names.current_density]
-        # self.results.mean_df[col_names.current_density] = self.results.mean_df[col_names.current_density] * -1
-        self.results.mean_df[col_names.current_density] = self.results.mean_df[col_names.current_density]
+    def _dump_dataframe_to_file(self, file_path: str):
+        self.results.full_df[transient_cols.current_density] = self.results.full_df[transient_cols.current_density]
+        self.results.mean_df[transient_cols.current_density] = self.results.mean_df[transient_cols.current_density]
         if self.result_settings.select_mean_dataframe:
-            settings = self.result_settings.mean_dataframe
+            selected_settings = self.result_settings.mean_dataframe
         else:
-            settings = self.result_settings.dataframe
-        save_col_names = list()
-        for col_key, col_name in col_names.__dict__.items():
-            if settings.__dict__.get(col_key):
-                save_col_names.append(col_name)
+            selected_settings = self.result_settings.dataframe
+        col_names_for_output = list()
+        for col_key, col_name in transient_cols.__dict__.items():
+            if selected_settings.__dict__.get(col_key):
+                col_names_for_output.append(col_name)
 
-        with open(self.result_path, 'a') as res_file:
+        with open(file_path, 'a') as res_file:
             # Save dataframe without indexes to file
             if self.result_settings.select_mean_dataframe:
-                df = self.results.mean_df[save_col_names]
+                df = self.results.mean_df[col_names_for_output]
                 res_file.write(df.to_string(index=False))
             else:
-                res_file.write(self.results.full_df[save_col_names].to_string(index=False))
+                res_file.write(self.results.full_df[col_names_for_output].to_string(index=False))
+
+
+class SmallSignalResultBuilder(ResultBuilder):
+    def __init__(self, result_paths: ResultPaths, stage_name='none_stage', is_repeated_stage=False):
+        super(SmallSignalResultBuilder, self).__init__()
+        self.is_repeated_stage = is_repeated_stage
+        small_signal_parser = SmallSignalInfoOutputParser(result_paths.temporary.raw)
+        self.dataframe = small_signal_parser.get_prepared_dataframe()
+        self.result_path = self.file_path_with_name_build(result_path=result_paths.main, stage_name=stage_name)
+        self.save_data()
+
+    def save_data(self):
+        # Create output dir if it does not exist
+        create_dir(self.result_path)
+        self._dump_dataframe_to_file(self.result_path)
+
+    def _dump_dataframe_to_file(self, file_path: str):
+        is_dump = False
+        is_empty_res_file = False
+        is_equal = False
+        if not self.is_repeated_stage:
+            is_dump = True
+        elif self.is_repeated_stage:
+            try:
+                old_df = pd.read_csv(file_path, dtype=np.float64, sep='\s+')
+                is_equal = self._compare_dataframe_with_old_data(old_df, file_path)
+            except pd.errors.EmptyDataError:
+                is_empty_res_file = True
+            if not is_empty_res_file and not is_equal:
+                self._update_dataframe(old_df)
+            if is_empty_res_file or not is_equal:
+                is_dump = True
+
+        if is_dump:
+            # Save dataframe without indexes to file
+            df_str = self.dataframe.to_string(index=False, float_format='{:.6e}'.format)
+            with open(file_path, 'w') as res_file:
+                res_file.write(df_str)
+
+    def _compare_dataframe_with_old_data(self, old_df: pd.DataFrame, file_path: str):
+        # Precision of float numbers in dataframes
+        precision = 20
+        old_df_rounded = old_df.round(precision)
+        dataframe_rounded = self.dataframe.round(precision)
+        print('old_df_rounded')
+        print(old_df_rounded)
+        print('dataframe_rounded')
+        print(dataframe_rounded)
+
+        if old_df_rounded.equals(dataframe_rounded):
+            print('Equal')
+            return True
+        else:
+            print('Not eq')
+            return False
+
+    def _update_dataframe(self, old_df: pd.DataFrame):
+        """
+        Add current dataframe to old and sort resulting dataframe by freauency.
+        :param old_df: old data loaded from result file
+        """
+        self.dataframe = pd.concat([old_df, self.dataframe])
+        self.dataframe.sort_values(by=small_signal_cols.frequency, inplace=True)
+        print('updated dataframe')
+        print(self.dataframe)
 
 
 class UdrmVectorManager:
@@ -923,12 +1221,12 @@ class UdrmVectorManager:
             raise ValueError('max_index not calculated yet')
 
 
-class InputDataFrameManager:
+class MtutDataFrameManager:
     """
     Allow to load input dataframe, which contains iterable MTUT var values.
     """
     def __init__(self, input_df_path: str):
-        self.df = self.load_input_df(input_df_path)
+        self._df = self.load_input_df(input_df_path)
 
     def load_input_df(self, df_path: str):
         try:
@@ -938,27 +1236,31 @@ class InputDataFrameManager:
             print(f'Define MTUT vars in mtut_dataframe.csv file if necessary or set "mtut_dataframe" option to "false" '
                   f'in config.json.')
             raise SystemExit
+        # print(df)
+        # input()
         replaced_df = df.applymap(lambda element: self.replace_comma_float_string(element))
         return replaced_df
 
     @staticmethod
-    def replace_comma_float_string(element: str) -> str:
+    def replace_comma_float_string(element) -> str:
         """
         Replace float like values in string, which separated by comma to float strings separated by dots.
-        :param element: input string, which can contains float like substrings are separated by commas.
+        :param element: input string or None, which can contains float like substrings are separated by commas.
         :return: element string with replaced float likes.
         """
-        match_part = re.search('\d+,\d+', element)
-        if match_part:
-            match_str = match_part.group()
-            replaced_str = match_str.replace(',', '.')
-            replaced_element = element.replace(match_str, replaced_str)
-            return replaced_element
-        else:
-            return element
+        if element:
+            match_part = re.search('\d+,\d+', element)
+            if match_part:
+                match_str = match_part.group()
+                replaced_str = match_str.replace(',', '.')
+                replaced_element = element.replace(match_str, replaced_str)
+                return replaced_element
+            else:
+                return element
 
-    def get_df(self):
-        return self.df
+    def get(self):
+        """Returns self dataframe"""
+        return self._df
 
 
 if __name__ == '__main__':

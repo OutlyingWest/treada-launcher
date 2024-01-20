@@ -1,5 +1,5 @@
 from wrapper.launch.scenarios import scenarios
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutStageConfiger
 
 
@@ -13,6 +13,6 @@ def call_active_scenario(mtut_stage_configer: MtutStageConfiger, config: Config)
                 active_scenario_function = scenario_attr
                 break
     if active_scenario_function:
-        active_scenario_function(config, mtut_stage_configer)
+        return active_scenario_function(config, mtut_stage_configer)
     else:
         raise AttributeError(f'active scenario function with name: "{config.scenario.active_name}" not found')

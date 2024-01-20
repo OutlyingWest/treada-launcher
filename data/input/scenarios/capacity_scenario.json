@@ -1,20 +1,33 @@
 {
     "stages": {
-        "1": {
-            "name": "first",
+        "capacity_first": {
+            "name": "capacity_first",
             "mtut_vars": {
                 "CKLKRS": 1,
                 "KEY": 1,
                 "JPUSH": 0
             }
         },
-        "2": {
-            "name": "second",
+        "capacity_second": {
+            "name": "capacity_second",
             "mtut_vars": {
                 "CKLKRS": 2,
-                "JPUSH": 0
+                "JPUSH": 1
             },
             "skip_initial_time_step": true
+        },
+        "capacity_third": {
+            "name": "capacity_third",
+            "skip_initial_time_step": true
+        },
+        "capacity_info": {
+            "name": "capacity_info",
+            "mtut_vars": {
+                "CKLKRS": 4,
+                "KEY": 1,
+                "JPUSH": 1
+            },
+            "is_capacity_info_collecting": true
         }
     }
 }

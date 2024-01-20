@@ -8,14 +8,15 @@ from typing import Union
 
 from dacite import from_dict
 
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 
 
 @dataclass
 class Stage:
     name: str
-    mtut_vars: dict
+    mtut_vars: dict = field(default=None)
     skip_initial_time_step: bool = field(default=False)
+    is_capacity_info_collecting: bool = field(default=False)
 
 
 #############################################
@@ -23,15 +24,15 @@ class Stage:
 #############################################
 @dataclass
 class DarkToLightStages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
     dark: Stage
     light: Stage
 
 
 @dataclass
 class DarkToLightScenario:
-    """
-    Info about switching rules for "Treada" work stages.
-    """
     stages: DarkToLightStages
 
 
@@ -40,6 +41,9 @@ class DarkToLightScenario:
 #####################################################
 @dataclass
 class DarkLightDarkStages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
     dark_first: Stage
     light: Stage
     dark_second: Stage
@@ -47,9 +51,6 @@ class DarkLightDarkStages:
 
 @dataclass
 class DarkLightDarkScenario:
-    """
-    Info about switching rules for "Treada" work stages.
-    """
     stages: DarkLightDarkStages
 
 
@@ -58,23 +59,59 @@ class DarkLightDarkScenario:
 ########################################################
 @dataclass
 class TurnOnImpulseDarkStages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
     turn_off_impulse: Stage
     turn_on_impulse: Stage
 
 
 @dataclass
 class TurnOnImpulseDarkScenario:
+    stages: TurnOnImpulseDarkStages
+
+
+########################################################
+# Capacity
+########################################################
+@dataclass
+class CapacityStages:
     """
     Info about switching rules for "Treada" work stages.
     """
-    stages: TurnOnImpulseDarkStages
+    capacity_first: Stage
+    capacity_second: Stage
+    capacity_third: Stage
+    capacity_info: Stage
+
+
+@dataclass
+class CapacityScenario:
+    stages: CapacityStages
+
+
+#############################################
+# Just light scenario description classes
+#############################################
+@dataclass
+class JustLightStages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
+    light: Stage
+
+
+@dataclass
+class JustLightScenario:
+    stages: JustLightStages
 
 
 def load_scenario(scenarios_path: str,
                   scenario_file_name: str,
                   scenario_dataclass: dataclass) -> Union[DarkToLightScenario,
                                                           DarkLightDarkScenario,
-                                                          TurnOnImpulseDarkScenario]:
+                                                          TurnOnImpulseDarkScenario,
+                                                          CapacityScenario]:
     """
     Returns scenario dataclass
     :param scenarios_path: path to scenarios folder

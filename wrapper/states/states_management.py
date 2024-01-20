@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from typing import Union
 
-from wrapper.config.config_builder import Config, load_config
+from wrapper.config.config_build import Config, load_config
 from wrapper.core.data_management import MtutManager, UdrmVectorManager
 
 

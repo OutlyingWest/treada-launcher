@@ -11,10 +11,10 @@ import pandas as pd
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from wrapper.core.data_management import UdrmVectorManager, FileManager, TreadaOutputParser, ResultDataCollector, \
-    col_names, MtutManager, InputDataFrameManager
-from wrapper.config.config_builder import load_config
-from wrapper.ui.plotting import AdvancedPlotter
+from wrapper.core.data_management import UdrmVectorManager, FileManager, TransientOutputParser, TransientResultDataCollector, \
+    transient_cols, MtutManager, MtutDataFrameManager, SmallSignalInfoOutputParser
+from wrapper.config.config_build import load_config
+from wrapper.ui.plotting import TransientAdvancedPlotter
 
 
 @unittest.skip
@@ -65,53 +65,31 @@ class MtutManagerTests(unittest.TestCase):
         self.assertEqual(type(var_list[0]), float)
 
 
-@unittest.skip
 class TreadaOutputParserTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
         self.mtut = FileManager(self.config.paths.treada_core.mtut)
         self.mtut.load_file()
-        self.parser = TreadaOutputParser(self.config.paths.result.temporary.raw)
+        self.transient_parser = TransientOutputParser(self.config.paths.result.temporary.raw)
 
-    # def test_prepare_data_speed(self):
-    #     prepare_data_time = timeit.repeat('parser.prepare_data()',
-    #                                       setup=f"from wrapper.core.data_management import TreadaOutputParser;"
-    #                                             f"parser = TreadaOutputParser(fr'{self.config.paths.output.raw}');",
-    #                                       repeat=10,
-    #                                       number=50)
-    #     print(f'{np.mean(prepare_data_time)=}')
-    #
-    # def test_load_raw_file_speed(self):
-    #     load_raw_file_time = timeit.repeat('parser.load_raw_file(raw_output_path)',
-    #                                       setup=f"from wrapper.core.data_management import TreadaOutputParser;"
-    #                                             f"parser = TreadaOutputParser(fr'{self.config.paths.output.raw}');"
-    #                                             f"raw_output_path = parser.raw_output_path"
-    #                                             f"",
-    #                                       repeat=10,
-    #                                       number=50)
-    #     print(f'{np.mean(load_raw_file_time)=}')
+    @unittest.skip
+    def test_transient_clean_data_speed(self):
+        data_list = TransientOutputParser.load_raw_file(self.config.paths.result.temporary.raw)
+        clean_data_time = timeit.timeit(lambda: self.transient_parser.clean_data(data_list), number=1000)
+        print(f'{clean_data_time=}')
 
-    def test_clean_data_speed(self):
-        clean_data_time = timeit.repeat('prepared_dataframe = parser.clean_data(data_list)',
-                                          setup=f"from wrapper.core.data_management import TreadaOutputParser;"
-                                                f"parser = TreadaOutputParser(fr'{self.config.paths.result.temporary.raw}');"
-                                                f"raw_output_path = parser.raw_output_path;"
-                                                f"data_list = parser.load_raw_file(raw_output_path);"
-                                                f"",
-                                          repeat=10,
-                                          number=50)
-        print(f'{np.mean(clean_data_time)=}')
-        with open('clean_data_speeds.txt', 'a') as cd_file:
-            cd_file.write(str(np.mean(clean_data_time)) + '\n')
+    def test_small_signal_clean_data(self):
+        small_signal_parser = SmallSignalInfoOutputParser(self.config.paths.result.temporary.raw)
+        print(small_signal_parser.header_data)
 
 
 @unittest.skip
 class ResultDataCollectorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
-        self.rdc = ResultDataCollector(self.config.paths.treada_core.mtut, self.config.paths.result.temporary.raw)
+        self.rdc = TransientResultDataCollector(self.config.paths.treada_core.mtut, self.config.paths.result.temporary.raw)
         self.rdc.prepare_result_data()
-        # self.df = self.rdc.get_result_dataframe()
+        # self._df = self.rdc.get_result_dataframe()
 
     # @unittest.skip
     def test_ending_lines_intersection_algorythm(self):
@@ -154,23 +132,23 @@ class ResultDataCollectorTests(unittest.TestCase):
         # print(type(density_mean_times))
 
         # init plotter
-        self.plotter = AdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
+        self.plotter = TransientAdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
         # Plot rough transient ending point
         self.plotter.add_special_point(ending_time, ending_current_density,
                                        label='Rough transient ending point')
         # Plot mean current densities
-        self.plotter.ax.scatter(self.rdc.mean_dataframe[col_names.time],
-                                self.rdc.mean_dataframe[col_names.current_density],
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[transient_cols.time],
+                                self.rdc.mean_dataframe[transient_cols.current_density],
                                 c='green', alpha=1, zorder=2,
                                 label='Mean current densities')
         # Highlight low nearest ending point
-        self.plotter.ax.scatter(self.rdc.mean_dataframe[col_names.time].loc[ending_index_low],
-                                self.rdc.mean_dataframe[col_names.current_density].loc[ending_index_low],
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[transient_cols.time].loc[ending_index_low],
+                                self.rdc.mean_dataframe[transient_cols.current_density].loc[ending_index_low],
                                 c='black', alpha=1, zorder=3,
                                 label='Low nearest ending point')
         # Highlight high nearest ending point
-        self.plotter.ax.scatter(self.rdc.mean_dataframe[col_names.time].loc[ending_index_high],
-                                self.rdc.mean_dataframe[col_names.current_density].loc[ending_index_high],
+        self.plotter.ax.scatter(self.rdc.mean_dataframe[transient_cols.time].loc[ending_index_high],
+                                self.rdc.mean_dataframe[transient_cols.current_density].loc[ending_index_high],
                                 c='magenta', alpha=1, zorder=3,
                                 label='High nearest ending point')
         # Plot accurate transient ending point
@@ -185,7 +163,7 @@ class ResultDataCollectorTests(unittest.TestCase):
     @unittest.skip
     def test_means_dataframe(self):
         # init plotter
-        self.plotter = AdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
+        self.plotter = TransientAdvancedPlotter(self.rdc.dataframe['time(ns)'], self.rdc.dataframe['I(mA/cm^2)'])
         # Plot mean current densities
         self.plotter.ax.scatter(self.rdc.mean_dataframe[self.rdc.time_col_name],
                                 self.rdc.mean_dataframe[self.rdc.current_density_col_name],
@@ -194,13 +172,14 @@ class ResultDataCollectorTests(unittest.TestCase):
         plt.show()
 
 
+@unittest.skip
 class InputDataFrameManagerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.config = load_config('config.json')
-        self.manager = InputDataFrameManager(self.config.paths.input.mtut_dataframe)
+        self.manager = MtutDataFrameManager(self.config.paths.input.mtut_dataframe)
 
     def test_load_input_df(self):
-        df = self.manager.get_df()
+        df = self.manager.get()
         print(df)
         print(df['CMOB2IL'])
         vars_seria: pd.Series = df.iloc[0]

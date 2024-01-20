@@ -1,6 +1,6 @@
 import unittest
 
-from wrapper.config.config_builder import load_config
+from wrapper.config.config_build import load_config
 from wrapper.states.states_management import StatesMachine
 from wrapper.core.data_management import MtutManager
 

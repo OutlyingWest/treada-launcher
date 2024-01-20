@@ -1,6 +1,6 @@
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutManager, find_relative_time
-from wrapper.launch.scenarios.scenario_builder import load_scenario
+from wrapper.launch.scenarios.scenario_build import load_scenario
 from wrapper.misc.global_functions import dict_from_nested_dataclass
 
 
@@ -11,6 +11,8 @@ def scenario_function(data_class):
             scenario = load_scenario(config.paths.scenarios, config.scenario.active_name, data_class)
             # Preserve mtut vars
             mtut_scenario_vars = dict_from_nested_dataclass(scenario.stages)['mtut_vars']
+            if not mtut_scenario_vars:
+                mtut_scenario_vars = dict()
             mtut_initial_manager = MtutManager(config.paths.treada_core.mtut)
             mtut_initial_manager.load_file()
             # Define relative time

@@ -5,7 +5,7 @@ __pycache__
 # Ignore rules of pure "Treada" folder
 TreadaTx_C/**
 !TreadaTx_C/README.txt
-!wrapper/core/treada_io_handler.py
+!wrapper/core/treada_io_handling.py
 
 # Ignore rules of data folder and scenarios
 data/*
@@ -24,6 +24,7 @@ wrapper/states/*.json
 
 # Ignore other txt files
 wrapper/misc/*.txt
+wrapper/ui/tests/*.txt
 
 # Ignore subtasks data-collection scripts
 wrapper/misc/*

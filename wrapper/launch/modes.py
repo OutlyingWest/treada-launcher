@@ -1,22 +1,21 @@
 import sys
-
-from colorama import Fore, Style
+from itertools import chain
 
 from PySide6.QtWidgets import QApplication
 
-from wrapper.config.config_builder import Config
+from wrapper.config.config_build import Config
 from wrapper.launch.scenarios import launch
 from wrapper.core.data_management import MtutStageConfiger
 from wrapper.misc.collections.fields_integral.fields_integral_calculation import run_fields_integral_finding
 from wrapper.misc.collections.ww_data_collecting.collect_ww_data import run_ww_collecting
 from wrapper.states import states
-from wrapper.states.states_management import StatesMachine, StateStatuses
-from wrapper.ui.plotting import AdvancedPlotter, run_res_plotting
+from wrapper.ui.console import quit_user_warning_dialogue
+from wrapper.ui.plotting import run_res_plotting
 
 
 def launcher_mode_selection(config: Config):
     if len(sys.argv) < 2:
-        treada_running_loop(config)
+        treada_main_cli(config)
     elif '--plot-res' in sys.argv:
         run_res_plotting(config)
     elif '--plot-fields-integral' in sys.argv:
@@ -27,19 +26,17 @@ def launcher_mode_selection(config: Config):
         print('Wrong command line argument.')
         return -1
 
-    print(f'To complete the program, push the {Fore.GREEN}Enter{Style.RESET_ALL} button. '
-          f'{Fore.YELLOW}Be careful! All interactive plots will be destroyed.{Style.RESET_ALL}')
-    input()
 
-
-def treada_running_loop(config: Config):
+def treada_main_cli(config: Config):
     app = QApplication()
     mtut_stage_configer = MtutStageConfiger(config.paths.treada_core.mtut)
     states_machine = states.BaseStatesMachine(config, state_dataclass=states.BaseState)
     states_machine.run(treada_launch_function=launch.call_active_scenario,
                        mtut_stage_configer=mtut_stage_configer,
                        config=config)
-    # Show plot
-    if config.flags.plotting.enable:
-        AdvancedPlotter.show(block=False)
+    for plot in chain.from_iterable(states_machine.plot_windows):
+        if plot:
+            plot.show()
+    quit_user_warning_dialogue()
     app.quit()
+
