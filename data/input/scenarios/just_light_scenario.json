@@ -3,7 +3,6 @@
         "light": {
             "name": "light",
             "mtut_vars": {
-                "CKLKRS": 1,
                 "ILUMEN": 1
             }
         }
