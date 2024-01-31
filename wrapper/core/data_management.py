@@ -808,7 +808,7 @@ class TransientResultDataCollector:
                 last_initial_time = self.dataframe[transient_cols.time].iloc[initial_steps_number]
             except IndexError as e:
                 print(f'{e.__class__.__name__}: {e} Maybe number of initial time steps: {initial_steps_number=}'
-                      f' more then steps in current stage.\n'
+                      f' more than steps in current stage.\n'
                       f'Try to decrease number of initial time steps or time step.')
                 raise e
 
@@ -1230,7 +1230,7 @@ class MtutDataFrameManager:
 
     def load_input_df(self, df_path: str):
         try:
-            df = pd.read_csv(df_path, header=0, sep='\s\s\s+', dtype=str, engine='python')
+            df = pd.read_csv(df_path, header=0, sep='\s\s+', dtype=str, engine='python')
         except pd.errors.EmptyDataError:
             print(f'{Fore.RED}Error:{Style.RESET_ALL} Empty mtut_dataframe.csv.')
             print(f'Define MTUT vars in mtut_dataframe.csv file if necessary or set "mtut_dataframe" option to "false" '
@@ -1244,7 +1244,7 @@ class MtutDataFrameManager:
     @staticmethod
     def replace_comma_float_string(element) -> str:
         """
-        Replace float like values in string, which separated by comma to float strings separated by dots.
+        Replace float like values in string, which separated by comma to float like strings separated by dots.
         :param element: input string or None, which can contains float like substrings are separated by commas.
         :return: element string with replaced float likes.
         """
