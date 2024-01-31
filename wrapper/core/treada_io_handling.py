@@ -5,8 +5,6 @@ import time
 import shutil
 from typing import Union
 
-import numpy as np
-
 from wrapper.config.config_build import Config
 from wrapper.core.ending_conditions import retrieve_current_value
 from wrapper.core import ending_conditions as ec
@@ -15,12 +13,7 @@ from wrapper.launch.scenarios.scenario_build import Stage
 
 
 def main():
-    path_to_executable = sys.argv[1]
-    runner = TreadaRunner
-    exec_process = runner.exe_runner(exe_path=path_to_executable)
-    capturer = StdoutCapturer(process=exec_process)
-    output_path = path_to_executable.strip('. ').split('.')[0]
-    capturer.stream_management(path_to_output=output_path)
+    pass
 
 
 class TreadaRunner:
@@ -168,7 +161,6 @@ class StdoutCapturer:
 
         self.ilumen = mtut_vars['ILUMEN']
         self.stage_number = mtut_vars['CKLKRS']
-
 
         if self.is_consider_fixed_light_time:
             self.light_impulse_time_ps = config.advanced_settings.runtime.light_impulse.fixed_time_ps
@@ -400,7 +392,6 @@ if __name__ == '__main__':
     wrapper_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     sys.path.append(wrapper_path)
     from misc.global_functions import create_dir
-
     main()
 else:
     from wrapper.misc.global_functions import create_dir, read_line_from_file_end
