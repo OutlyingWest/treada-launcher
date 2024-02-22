@@ -8,7 +8,10 @@ from typing import Union, Dict
 
 from dacite import from_dict, Config
 
-from wrapper.misc.global_functions import dict_from_nested_dataclass, dict_to_nested_dataclass
+try:
+    from wrapper.misc.global_functions import dict_from_nested_dataclass, dict_to_nested_dataclass
+except ModuleNotFoundError:
+    from misc.global_functions import dict_from_nested_dataclass, dict_to_nested_dataclass
 
 
 @dataclass
@@ -127,6 +130,7 @@ class ResultSettings:
     select_mean_dataframe: bool
     dataframe: DataFrameCols
     mean_dataframe: MeanDataFrameCols
+    extra_variables: list
 
 
 @dataclass

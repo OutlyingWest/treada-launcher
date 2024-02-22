@@ -8,8 +8,6 @@ from typing import Union
 
 from dacite import from_dict
 
-from wrapper.config.config_build import Config
-
 
 @dataclass
 class Stage:
