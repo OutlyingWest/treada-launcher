@@ -1,6 +1,6 @@
 {
     "scenario": {
-        "active_name": "dark_light_dark_scenario"
+        "active_name": "just_light_scenario"
     },
     "modes": {
         "udrm_vector_mode": false,
@@ -21,18 +21,18 @@
         "runtime": {
             "find_relative_time": true,
             "light_impulse": {
-                "consider_fixed_time": true,
-                "fixed_time_ps": 5000
+                "consider_fixed_time": false,
+                "fixed_time_ps": 100000
             },
             "dark_impulse": {
                 "for_stages": [3],
                 "consider_fixed_time": false,
-                "fixed_time_ps": 120e6
+                "fixed_time_ps": 55e6
             },
             "ending_condition": {
                 "chunk_size": 1000,
-                "equal_values_to_stop": 5,
-                "deviation": 1e-4
+                "equal_values_to_stop": 20,
+                "deviation": 1e-6
             },
             "distributions": {
                 "enable_preserving_ranges": false,
@@ -41,7 +41,6 @@
                 }
             }
         },
-
         "transient": {
             "window_size": 10,
             "window_size_denominator": null,
@@ -49,8 +48,16 @@
         },
         "result": {
             "select_mean_dataframe": false,
-            "dataframe": {"time": true, "source_current": true, "current_density": true},
-            "mean_dataframe": {"time": true, "current_density": true}
+            "dataframe": {
+                "time": true,
+                "source_current": true,
+                "current_density": true
+            },
+            "mean_dataframe": {
+                "time": true,
+                "current_density": true
+            },
+            "extra_variables": []
         }
     },
     "paths": {
@@ -65,7 +72,7 @@
             "states": "wrapper\\states\\current_states.json"
         },
         "result": {
-            "main": "data\\result\\res_.txt",
+            "main": "data\\result\\res.txt",
             "plots": "data\\result\\plots\\res_.txt",
             "temporary": {
                 "raw": "data\\result\\temp\\raw\\treada_raw_output.txt",
