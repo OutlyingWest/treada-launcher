@@ -144,8 +144,10 @@ class StdoutCapturer:
             self.distribution_destination_path = config.paths.result.temporary.distributions
             self.is_distribution_range_enabled = config.advanced_settings.runtime.distributions.enable_preserving_ranges
             self.distribution_range = None
+        else:
+            self.is_distribution_range_enabled = None
 
-        # Can be defined by setter
+            # Can be defined by setter
         self.runtime_console_info = ''
 
         # Time variables:

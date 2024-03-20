@@ -104,12 +104,26 @@ class JustLightScenario:
     stages: JustLightStages
 
 
+#############################################
+# Just light with correction scenario description classes
+#############################################
+@dataclass
+class JustLightWithCorrectionStages:
+    """
+    Info about switching rules for "Treada" work stages.
+    """
+    light: Stage
+    light_correction: Stage
+
+
+@dataclass
+class JustLightWithCorrectionScenario:
+    stages: JustLightWithCorrectionStages
+
+
 def load_scenario(scenarios_path: str,
                   scenario_file_name: str,
-                  scenario_dataclass: dataclass) -> Union[DarkToLightScenario,
-                                                          DarkLightDarkScenario,
-                                                          TurnOnImpulseDarkScenario,
-                                                          CapacityScenario]:
+                  scenario_dataclass: dataclass) -> dataclass:
     """
     Returns scenario dataclass
     :param scenarios_path: path to scenarios folder

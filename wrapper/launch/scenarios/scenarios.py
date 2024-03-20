@@ -96,3 +96,15 @@ def just_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStage
     # Stage 1 - with light
     stages.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
     return stages.plots
+
+
+@scenario_function(data_class=sb.JustLightWithCorrectionScenario)
+def just_light_with_correction_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger,
+                                        **kwargs) -> list:
+    stages = Stages(kwargs.get('relative_time'))
+
+    # Stage 1 - with light
+    stages.transient(mtut_stage_configer, config, scenario.stages.light, save_result=False)
+    # Stage 2 - with light
+    stages.transient(mtut_stage_configer, config, scenario.stages.light_correction, stage_type='light')
+    return stages.plots

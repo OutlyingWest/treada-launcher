@@ -1,0 +1,19 @@
+{
+    "stages": {
+        "light": {
+            "name": "light",
+            "mtut_vars": {
+                "ILUMEN": 1,
+                "CKLKRS": 1,
+                "TSTEP": 1E-4
+            }
+        },
+        "light_correction": {
+            "name": "light_correction",
+            "mtut_vars": {
+                "TSTEP": 5E-5,
+                "CKLKRS": 2
+            }
+        }
+    }
+}

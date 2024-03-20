@@ -28,6 +28,10 @@ except ModuleNotFoundError:
     from misc import lin_alg as alg
 
 
+# Global settings
+pd.set_option('display.float_format', '{:0.6e}'.format)
+
+
 class MtutStageConfiger:
     def __init__(self, mtut_path: str):
         self.mtut_manager = MtutManager(mtut_path)
