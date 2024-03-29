@@ -359,7 +359,8 @@ class StdoutCapturer:
         mtut_manager = MtutManager(mtut_file_path)
         mtut_manager.load_file()
         mtut_vars = {
-            'TSTEP': float(mtut_manager.get_var('TSTEP')),
+            # TODO: special convertion function for TSTEP var is needed
+            'TSTEP': mtut_manager.get_var('TSTEP'),
             'ILUMEN': float(mtut_manager.get_var('ILUMEN')),
             'CKLKRS': float(mtut_manager.get_var('CKLKRS')),
         }
