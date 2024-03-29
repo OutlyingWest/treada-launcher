@@ -786,10 +786,6 @@ class TransientResultDataCollector:
         return state
 
     def time_col_calculate(self, skip_initial_time_step=False):
-        # Get initial time step from MTUT file
-        initial_time_step = float(self.mtut_manager.get_var('TSTEPH'))
-        # Number of Time Seps Before the Change Initial/Operating Time Step.
-        initial_steps_number = int(self.mtut_manager.get_var('NMBPZ0'))
         # Get operating time step from MTUT file
         operating_time_step = float(self.mtut_manager.get_var('TSTEP'))
         # Calculate timestep constants
@@ -801,6 +797,10 @@ class TransientResultDataCollector:
                     self.dataframe.index.values * operating_time_step_const
             )
         else:
+            # Get initial time step from MTUT file
+            initial_time_step = float(self.mtut_manager.get_var('TSTEPH'))
+            # Number of Time Seps Before the Change Initial/Operating Time Step.
+            initial_steps_number = int(self.mtut_manager.get_var('NMBPZ0'))
             initial_time_step_const = initial_time_step * self.relative_time
             operating_time_step_const = operating_time_step * self.relative_time
             incremented_initial_steps_number = initial_steps_number + 1
