@@ -1,9 +1,11 @@
+from typing import Callable
+
 from wrapper.launch.scenarios import scenarios
 from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutStageConfiger
 
 
-def call_active_scenario(mtut_stage_configer: MtutStageConfiger, config: Config):
+def call_active_scenario(mtut_stage_configer: MtutStageConfiger, config: Config) -> Callable:
     all_scenario_module_names = dir(scenarios)
     active_scenario_function = None
     for attr_name in all_scenario_module_names:

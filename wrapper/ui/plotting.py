@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 
 import pandas as pd
 
-# Add path to "project" directory in environ variable - PYTHONPATH
+# Add path to "project" directory in environ variable - PYTHONPATH for cases of independent launch
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(project_path)
 

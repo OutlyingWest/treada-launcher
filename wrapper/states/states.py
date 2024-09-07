@@ -104,6 +104,7 @@ class BaseStatesMachine:
                 self.states[state.index].status = state_status.RUN
                 try:
                     scenario_plots = treada_launch_function(mtut_stage_configer, config)
+                    print(f'{scenario_plots=}')
                     self.plot_windows.append(scenario_plots)
                     self.states[state.index].status = state_status.END
                 except Exception as e:

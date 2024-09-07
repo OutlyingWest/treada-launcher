@@ -136,9 +136,9 @@ class StdoutCapturer:
         # Distributions variables:
         # Preserve temporary Treada's files flag
         self.is_preserve_temp_distributions = config.flags.preserve_distributions
+        self.distribution_dumping_begins = False
         if self.is_preserve_temp_distributions:
             self.stage_name = ''
-            self.distribution_dumping_begins = False
             self.distribution_filenames = config.distribution_filenames
             self.distribution_initial_path = os.path.split(config.paths.treada_core.exe)[0]
             self.distribution_destination_path = config.paths.result.temporary.distributions
