@@ -1,77 +1,79 @@
 from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutStageConfiger
 from wrapper.launch.scenarios.scenario_management import scenario_function
-from wrapper.launch.scenarios.stages import Stages
+from wrapper.launch.scenarios.stage import Stage
 from wrapper.launch.scenarios import scenario_build as sb
 from wrapper.ui.user_interactors import create_impedance_scenario_interactor
 
 
 @scenario_function(data_class=sb.DarkToLightScenario)
 def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
-    stages = Stages(kwargs.get('relative_time'))
-    # Stage 1 - without light
-    stages.transient(mtut_stage_configer, config, scenario.stages.dark, stage_type='dark')
+    stage = Stage(kwargs.get('relative_time'))
+    # StageData 1 - without light
+    stage.transient(mtut_stage_configer, config, scenario.stages.dark, stage_type='dark')
 
-    # Stage 2 - with light
-    stages.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
+    # StageData 2 - with light
+    stage.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
 
-    # Stage 3 (additional) - fields integral calculation
+    # StageData 3 (additional) - fields integral calculation
     if config.flags.fields_calculation:
-        stages.fields_integral_calculation(scenario, config)
+        stage.fields_integral_calculation(scenario, config)
 
 
 @scenario_function(data_class=sb.DarkLightDarkScenario)
 def dark_light_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
-    stages = Stages(kwargs.get('relative_time'))
-    # Stage 1 - without light
-    stages.transient(mtut_stage_configer, config, scenario.stages.dark_first, stage_type='dark')
+    stage = Stage(kwargs.get('relative_time'))
+    # StageData 1 - without light
+    stage.transient(mtut_stage_configer, config, scenario.stages.dark_first, stage_type='dark')
 
-    # Stage 2 - with light
-    stages.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
+    # StageData 2 - with light
+    stage.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
 
-    # Stage 3 - without light
-    stages.transient(mtut_stage_configer, config, scenario.stages.dark_second, stage_type='dark')
+    # StageData 3 - without light
+    stage.transient(mtut_stage_configer, config, scenario.stages.dark_second, stage_type='dark')
+    return stage.plots
 
 
 @scenario_function(data_class=sb.TurnOnImpulseDarkScenario)
 def turn_on_impulse_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
-    stages = Stages(kwargs.get('relative_time'))
-    # Stage 1 - turned-off diode, without light
-    stages.transient(mtut_stage_configer, config, scenario.stages.turn_off_impulse, stage_type='dark')
+    stage = Stage(kwargs.get('relative_time'))
+    # StageData 1 - turned-off diode, without light
+    stage.transient(mtut_stage_configer, config, scenario.stages.turn_off_impulse, stage_type='dark')
 
-    # Stage 2 - turned-on diode, without light
-    stages.transient(mtut_stage_configer, config, scenario.stages.turn_on_impulse, stage_type='dark')
+    # StageData 2 - turned-on diode, without light
+    stage.transient(mtut_stage_configer, config, scenario.stages.turn_on_impulse, stage_type='dark')
+    return stage.plots
 
 
 @scenario_function(data_class=sb.CapacityScenario)
 def capacity_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
-    stages = Stages(kwargs.get('relative_time'))
-    # Stage 1 - transient
-    stages.transient(mtut_stage_configer, config, scenario.stages.capacity_first, save_result=True)
+    stage = Stage(kwargs.get('relative_time'))
+    # StageData 1 - transient
+    stage.transient(mtut_stage_configer, config, scenario.stages.capacity_first, save_result=True)
 
-    # Stage 2 - transient
-    stages.transient(mtut_stage_configer, config, scenario.stages.capacity_second, save_result=True)
+    # StageData 2 - transient
+    stage.transient(mtut_stage_configer, config, scenario.stages.capacity_second, save_result=True)
 
-    # Stage 3 - transient
-    stages.transient(mtut_stage_configer, config, scenario.stages.capacity_third, save_result=True)
+    # StageData 3 - transient
+    stage.transient(mtut_stage_configer, config, scenario.stages.capacity_third, save_result=True)
 
     print(f'{scenario.stages.capacity_info=} in capacity_scenario()')
-    stages.impedance_info_collecting(config, scenario.stages.capacity_info)
+    stage.impedance_info_collecting(config, scenario.stages.capacity_info, is_repeated=False)
 
     def run_full_scenario():
-        # Stage 1 - transient
-        stages.transient(mtut_stage_configer, config, scenario.stages.capacity_first, save_result=True)
+        # StageData 1 - transient
+        stage.transient(mtut_stage_configer, config, scenario.stages.capacity_first, save_result=True)
 
-        # Stage 2 - transient
-        stages.transient(mtut_stage_configer, config, scenario.stages.capacity_second, save_result=True)
+        # StageData 2 - transient
+        stage.transient(mtut_stage_configer, config, scenario.stages.capacity_second, save_result=True)
 
-        # Stage 3 - transient
-        stages.transient(mtut_stage_configer, config, scenario.stages.capacity_third, save_result=True)
+        # StageData 3 - transient
+        stage.transient(mtut_stage_configer, config, scenario.stages.capacity_third, save_result=True)
 
-        stages.impedance_info_collecting(config, scenario.stages.capacity_info, is_repeated=False)
+        stage.impedance_info_collecting(config, scenario.stages.capacity_info, is_repeated=False)
 
     def repeat_info_collecting_stage():
-        stages.impedance_info_collecting(config, scenario.stages.capacity_info, is_repeated=True)
+        stage.impedance_info_collecting(config, scenario.stages.capacity_info, is_repeated=True)
 
     def exit_action():
         raise SystemExit
@@ -91,20 +93,20 @@ def capacity_scenario(scenario, config: Config, mtut_stage_configer: MtutStageCo
 
 @scenario_function(data_class=sb.JustLightScenario)
 def just_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs) -> list:
-    stages = Stages(kwargs.get('relative_time'))
+    stage = Stage(kwargs.get('relative_time'))
 
-    # Stage 1 - with light
-    stages.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
-    return stages.plots
+    # StageData 1 - with light
+    stage.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
+    return stage.plots
 
 
 @scenario_function(data_class=sb.JustLightWithCorrectionScenario)
 def just_light_with_correction_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger,
                                         **kwargs) -> list:
-    stages = Stages(kwargs.get('relative_time'))
+    stage = Stage(kwargs.get('relative_time'))
 
-    # Stage 1 - with light
-    stages.transient(mtut_stage_configer, config, scenario.stages.light, save_result=False)
-    # Stage 2 - with light
-    stages.transient(mtut_stage_configer, config, scenario.stages.light_correction, stage_type='light')
-    return stages.plots
+    # StageData 1 - with light
+    stage.transient(mtut_stage_configer, config, scenario.stages.light, save_result=False)
+    # StageData 2 - with light
+    stage.transient(mtut_stage_configer, config, scenario.stages.light_correction, stage_type='light')
+    return stage.plots

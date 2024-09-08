@@ -1,14 +1,15 @@
 from typing import Union
+from logging import Logger
 
 from wrapper.config.config_build import Config
 from wrapper.core.data_management import (
     TransientResultDataCollector, TransientResultBuilder, SmallSignalResultBuilder
 )
-from wrapper.launch.scenarios.scenario_build import Stage
+from wrapper.launch.scenarios.scenario_build import StageData
 from wrapper.ui.plotting import TransientPlotBuilder, ImpedancePlotBuilder
 
 
-def transient_result_build(config: Config, stage: Stage, prev_stage_last_current: Union[float, None],
+def transient_result_build(config: Config, stage: StageData, prev_stage_last_current: Union[float, None],
                            relative_time: float):
     # Collect result
     result_collector = TransientResultDataCollector(mtut_file_path=config.paths.treada_core.mtut,
@@ -55,7 +56,7 @@ def transient_result_build(config: Config, stage: Stage, prev_stage_last_current
         return plot_builder.plot_window
 
 
-def impedance_result_build(config: Config, stage: Stage, is_repeated: bool):
+def impedance_result_build(config: Config, stage: StageData, is_repeated: bool):
     result_builder = SmallSignalResultBuilder(result_paths=config.paths.result, stage_name=stage.name,
                                               is_repeated_stage=is_repeated)
     plot_builder = ImpedancePlotBuilder(result_path=result_builder.result_path)

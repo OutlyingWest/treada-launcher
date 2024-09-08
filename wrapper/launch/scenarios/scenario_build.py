@@ -10,7 +10,7 @@ from dacite import from_dict
 
 
 @dataclass
-class Stage:
+class StageData:
     name: str
     mtut_vars: dict = field(default=None)
     skip_initial_time_step: bool = field(default=False)
@@ -25,8 +25,8 @@ class DarkToLightStages:
     """
     Info about switching rules for "Treada" work stages.
     """
-    dark: Stage
-    light: Stage
+    dark: StageData
+    light: StageData
 
 
 @dataclass
@@ -42,9 +42,9 @@ class DarkLightDarkStages:
     """
     Info about switching rules for "Treada" work stages.
     """
-    dark_first: Stage
-    light: Stage
-    dark_second: Stage
+    dark_first: StageData
+    light: StageData
+    dark_second: StageData
 
 
 @dataclass
@@ -60,8 +60,8 @@ class TurnOnImpulseDarkStages:
     """
     Info about switching rules for "Treada" work stages.
     """
-    turn_off_impulse: Stage
-    turn_on_impulse: Stage
+    turn_off_impulse: StageData
+    turn_on_impulse: StageData
 
 
 @dataclass
@@ -77,10 +77,10 @@ class CapacityStages:
     """
     Info about switching rules for "Treada" work stages.
     """
-    capacity_first: Stage
-    capacity_second: Stage
-    capacity_third: Stage
-    capacity_info: Stage
+    capacity_first: StageData
+    capacity_second: StageData
+    capacity_third: StageData
+    capacity_info: StageData
 
 
 @dataclass
@@ -96,7 +96,7 @@ class JustLightStages:
     """
     Info about switching rules for "Treada" work stages.
     """
-    light: Stage
+    light: StageData
 
 
 @dataclass
@@ -112,8 +112,8 @@ class JustLightWithCorrectionStages:
     """
     Info about switching rules for "Treada" work stages.
     """
-    light: Stage
-    light_correction: Stage
+    light: StageData
+    light_correction: StageData
 
 
 @dataclass

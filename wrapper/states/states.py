@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass, asdict, field
-from typing import Callable, Union
+from typing import Callable, Union, Any
 
 import dacite
 import pandas as pd
@@ -96,15 +96,14 @@ class BaseStatesMachine:
         self.init_machine()
         self.plot_windows = []
 
-    def run(self, treada_launch_function: Callable[[MtutStageConfiger, Config], None], mtut_stage_configer, config):
+    def run(self, call_scenario_function: Callable[[MtutStageConfiger, Config], Any], mtut_stage_configer, config):
         for state in self.states:
             if self.config.modes.mtut_dataframe:
                 self.set_mtut_vars(state.index)
             if state.status == state_status.READY:
                 self.states[state.index].status = state_status.RUN
                 try:
-                    scenario_plots = treada_launch_function(mtut_stage_configer, config)
-                    print(f'{scenario_plots=}')
+                    scenario_plots = call_scenario_function(mtut_stage_configer, config)
                     self.plot_windows.append(scenario_plots)
                     self.states[state.index].status = state_status.END
                 except Exception as e:
@@ -112,6 +111,7 @@ class BaseStatesMachine:
                     print(f'State with index={state.index} raise an Exception: {e}')
                     input()
                     raise e
+        return self.plot_windows
 
     def init_machine(self):
         if self.config.modes.mtut_dataframe:

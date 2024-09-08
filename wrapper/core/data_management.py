@@ -17,7 +17,7 @@ import numpy as np
 
 
 try:
-    from wrapper.launch.scenarios.scenario_build import Stage
+    from wrapper.launch.scenarios.scenario_build import StageData
     from wrapper.config.config_build import Paths, ResultPaths, ResultSettings, Config
     from wrapper.misc.global_functions import create_dir
     from wrapper.misc import lin_alg as alg
@@ -716,7 +716,7 @@ class TransientResultDataCollector:
         # Define Treada's MTUT vars on current stage
         self.treada_state = self._treada_state_definition()
 
-    def prepare_result_data(self, stage: Stage, prev_stage_last_current: Union[float, None]):
+    def prepare_result_data(self, stage: StageData, prev_stage_last_current: Union[float, None]):
         self.add_null_current_on_first_stage()
         self.add_previous_last_current_on_stage(prev_stage_last_current)
         self.time_col_calculate(stage.skip_initial_time_step)
@@ -1105,8 +1105,7 @@ class TransientResultBuilder(ResultBuilder):
             res_file.writelines(header)
 
     def _dump_dataframe_to_file(self, file_path: str):
-        self.results.full_df[transient_cols.current_density] = self.results.full_df[transient_cols.current_density]
-        self.results.mean_df[transient_cols.current_density] = self.results.mean_df[transient_cols.current_density]
+
         if self.result_settings.select_mean_dataframe:
             selected_settings = self.result_settings.mean_dataframe
         else:
@@ -1115,14 +1114,13 @@ class TransientResultBuilder(ResultBuilder):
         for col_key, col_name in transient_cols.__dict__.items():
             if selected_settings.__dict__.get(col_key):
                 col_names_for_output.append(col_name)
-
         with open(file_path, 'a') as res_file:
             # Save dataframe without indexes to file
             if self.result_settings.select_mean_dataframe:
                 df = self.results.mean_df[col_names_for_output]
-                res_file.write(df.to_string(index=False))
+                res_file.write(df.to_string(index=False, float_format='%.6e'))
             else:
-                res_file.write(self.results.full_df[col_names_for_output].to_string(index=False))
+                res_file.write(self.results.full_df[col_names_for_output].to_string(index=False, float_format='%.6e'))
 
 
 class SmallSignalResultBuilder(ResultBuilder):

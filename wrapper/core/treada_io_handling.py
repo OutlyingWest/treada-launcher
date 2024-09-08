@@ -9,7 +9,7 @@ from wrapper.config.config_build import Config
 from wrapper.core.ending_conditions import retrieve_current_value
 from wrapper.core import ending_conditions as ec
 from wrapper.core.data_management import TransientOutputParser, MtutManager
-from wrapper.launch.scenarios.scenario_build import Stage
+from wrapper.launch.scenarios.scenario_build import StageData
 
 
 def main():
@@ -36,14 +36,14 @@ class TreadaRunner:
                                        config=config,
                                        relative_time=relative_time,)
 
-    def run(self, stage: Stage, output_file_path='', is_show_stage_name=True):
+    def run(self, stage_data: StageData, output_file_path='', is_show_stage_name=True):
         """
         Runs Treada's program working stage.
         :param output_file_path: path to raw Treada's program output file
-        :param stage: Treada's working scenario stage
+        :param stage_data: Treada's working scenario stage data
         :param is_show_stage_name: Is show stage name in console
         """
-        self.capturer.set_stage_data(stage, is_show_stage_name)
+        self.capturer.set_stage_data(stage_data, is_show_stage_name)
         if output_file_path:
             self.capturer.stream_management(self.temp_range, path_to_output=output_file_path)
         else:
@@ -77,10 +77,10 @@ class TreadaRunner:
     def apply_ranged_temporaries_dumping(cls, rel_time: float, ranges: dict,
                                          mtut_file_path: str) -> Union[dict, None]:
         """
-        Calculates and sets variable TIME in MTUT file, which responsible for period of dumping temporary results to
+        Calculate and set variable TIME in MTUT file, which responsible for period of dumping temporary results to
         hard disk. That performs in accordance with set time range from config.json
         :param rel_time: previously calculated relative time
-        :param ranges: time ranges from config.json
+        :param ranges: time ranges from config.json, where (start, stop, step) are set in picoseconds
         :param mtut_file_path: path to MTUT
         :returns: corrected temp_range, old TIME variable value
         """
@@ -264,10 +264,11 @@ class StdoutCapturer:
                 except OSError:
                     break
 
-    def set_stage_data(self, stage: Stage, is_show_stage_name=True):
+    def set_stage_data(self, stage: StageData, is_show_stage_name=True):
         if is_show_stage_name:
             self.set_runtime_console_info(f'   {stage.name}')
         self.is_capacity_info_collecting = stage.is_capacity_info_collecting
+        self.stage_name = stage.name
 
     def set_runtime_console_info(self, info: str):
         self.runtime_console_info = info.title()

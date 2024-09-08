@@ -14,13 +14,14 @@ from wrapper.ui.plotting import run_res_plotting
 
 
 def launcher_mode_selection(config: Config):
+    argv_set = set(sys.argv)
     if len(sys.argv) < 2:
         treada_main_cli(config)
-    elif '--plot-res' in sys.argv:
+    elif {'--plot-res', '-r'} & argv_set:
         run_res_plotting(config)
-    elif '--plot-fields-integral' in sys.argv:
+    elif {'--plot-fields-integral', '-f'} & argv_set:
         run_fields_integral_finding(config)
-    elif '--collect-distr' in sys.argv:
+    elif {'--collect-distr', '-d'} & argv_set:
         run_ww_collecting(config)
     else:
         print('Wrong command line argument.')
@@ -31,10 +32,10 @@ def treada_main_cli(config: Config):
     app = QApplication()
     mtut_stage_configer = MtutStageConfiger(config.paths.treada_core.mtut)
     states_machine = states.BaseStatesMachine(config, state_dataclass=states.BaseState)
-    states_machine.run(treada_launch_function=launch.call_active_scenario,
-                       mtut_stage_configer=mtut_stage_configer,
-                       config=config)
-    for plot in chain.from_iterable(states_machine.plot_windows):
+    plot_windows = states_machine.run(call_scenario_function=launch.call_active_scenario,
+                                      mtut_stage_configer=mtut_stage_configer,
+                                      config=config)
+    for plot in chain.from_iterable(plot_windows):
         if plot:
             plot.show()
     quit_user_warning_dialogue()

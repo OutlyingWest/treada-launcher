@@ -9,8 +9,3 @@ def init_dirs(paths: Paths, is_remove_distributions: bool):
     if is_remove_distributions:
         to_remove_dirs_iter = os.scandir(paths.result.temporary.distributions)
         remove_dirs([to_remove_dir.path for to_remove_dir in to_remove_dirs_iter])
-
-
-
-
-
