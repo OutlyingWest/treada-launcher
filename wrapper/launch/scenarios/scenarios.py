@@ -79,9 +79,9 @@ def capacity_scenario(scenario, config: Config, mtut_stage_configer: MtutStageCo
         raise SystemExit
 
     user_interactor = create_impedance_scenario_interactor(actions=[
-        run_full_scenario,
-        repeat_info_collecting_stage,
-        exit_action
+        (run_full_scenario, ),
+        (repeat_info_collecting_stage, ),
+        (exit_action, ),
     ])
 
     while True:

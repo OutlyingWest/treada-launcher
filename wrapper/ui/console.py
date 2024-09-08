@@ -1,3 +1,4 @@
+from pprint import pprint
 from typing import Callable, Dict, Union
 
 from colorama import Fore, Style
@@ -6,25 +7,27 @@ from colorama import Fore, Style
 class ConsoleUserQuestion:
     def __init__(self):
         self.descriptions = {'warning': 'Wrong command! Type "help" to see the commands list'}
-        self.commands = {'help': {'action': self.print_help, 'help': 'Shows the list of commands'}}
+        self.commands = {'help': {'action': (self.print_help, ), 'help': 'Shows the list of commands'}}
 
     def add_descriptions(self, header='', footer='', warning=''):
         self.descriptions.update({'header': header, 'footer': footer})
         if warning:
             self.descriptions['warning'] = warning
 
-    def add_command(self, command: str, action: Callable, command_help=''):
+    def add_command(self, command: str, action: tuple, command_help=''):
         self.commands[command] = {'action': action, 'help': command_help}
 
     def add_commands(self, commands: Dict[str, dict]):
-        for command, features in commands.items():
-            if isinstance(features['action'], Callable) and isinstance(features['help'], str):
-                self.commands[command] = {'action': features['action'], 'help': features['help']}
+        for command_key, features in commands.items():
+            if isinstance(features['action'][0], Callable) and isinstance(features['help'], str):
+                self.commands[command_key] = {'action': features['action'], 'help': features['help']}
 
     def execute_command(self, user_command: str) -> bool:
         features = self.commands.get(user_command)
         if features:
-            features['action']()
+            func = features['action'][0]
+            args = features['action'][1:]
+            func(*args)
             return True
         else:
             return False
@@ -77,6 +80,6 @@ class ConsoleUserInteractor:
 
 
 def quit_user_warning_dialogue():
-    print(f'To complete the program, push the {Fore.GREEN}Enter{Style.RESET_ALL} button. '
+    print(f'To complete the scenario, push the {Fore.GREEN}Enter{Style.RESET_ALL} button. '
           f'{Fore.YELLOW}Be careful! All interactive plots will be destroyed.{Style.RESET_ALL}')
     input()
