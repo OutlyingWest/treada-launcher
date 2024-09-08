@@ -1,7 +1,7 @@
 from wrapper.config.config_build import Config
 from wrapper.core.data_management import MtutStageConfiger
 from wrapper.launch.scenarios.scenario_management import scenario_function
-from wrapper.launch.scenarios.stage import Stage
+from wrapper.launch.scenarios.stages import Stage
 from wrapper.launch.scenarios import scenario_build as sb
 from wrapper.ui.user_interactors import create_impedance_scenario_interactor
 
