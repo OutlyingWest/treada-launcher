@@ -16,8 +16,8 @@ class ConsoleUserInteractorTests(unittest.TestCase):
 
         self.interactor = ConsoleUserInteractor()
         self.commands = {
-            'true-action': {'action': true_action, 'help': 'performs action'},
-            'false-action': {'action': false_action, 'help': 'performs action'},
+            'true-action': {'action': (true_action, ), 'help': 'performs action'},
+            'false-action': {'action': (false_action, ), 'help': 'performs action'},
         }
 
     # @unittest.skip
