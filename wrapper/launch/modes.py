@@ -12,7 +12,7 @@ from wrapper.misc.collections.ww_data_collecting.collect_ww_data import run_ww_c
 from wrapper.states import states
 from wrapper.ui.console import quit_user_warning_dialogue, ConsoleUserInteractor
 from wrapper.ui.plotting import run_res_plotting
-from wrapper.ui.user_interactors import create_main_console_interactor
+from wrapper.ui.user_interactors import main_console_interactor_create
 
 
 def launcher_mode_selection(config: Config):
@@ -36,7 +36,7 @@ def launcher_mode_selection(config: Config):
 
 
 def treada_cli_interaction_loop(config: Config):
-    user_interactor = create_main_console_interactor(actions=[
+    user_interactor = main_console_interactor_create(actions=[
         (treada_main_cli, config),
         (sys.exit, ),
     ])

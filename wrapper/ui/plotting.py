@@ -27,6 +27,7 @@ from wrapper.core.data_management import (
 )
 from wrapper.config.config_build import load_config, Config
 from wrapper.misc import lin_alg as la
+from wrapper.ui.console import ConsoleUserInteractor
 
 
 def main():
@@ -36,20 +37,18 @@ def main():
 
 def run_res_plotting(config: Config):
     app = QApplication()
+    user_interactor = ConsoleUserInteractor()
     result_path = os.path.split(config.paths.result.main)[0] + os.sep
     print(f'{result_path=}')
     run_flag = True
     plot_builder = None
     full_mtut_path = os.path.join(project_path, config.paths.treada_core.mtut)
     while run_flag:
-        if len(sys.argv) > 2:
-            res_name = sys.argv.pop(2)
-        else:
-            print('Enter file name to load data from data/result/. Example: "res_u(-0.45).txt"')
-            res_name = input()
-            if res_name == '':
-                app.quit()
-                break
+        print('Enter file name to load data from data/result/. Example: "res_u(-0.45).txt"')
+        res_name = input()
+        if res_name == '':
+            app.quit()
+            break
 
         full_result_path = os.path.join(project_path, result_path, res_name)
         print(f'{full_result_path=}')

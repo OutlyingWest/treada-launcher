@@ -6,7 +6,7 @@ from colorama import Fore, Style
 from wrapper.ui.console import ConsoleUserInteractor
 
 
-def create_impedance_scenario_interactor(actions: List[Tuple]) -> ConsoleUserInteractor:
+def impedance_console_interactor_create(actions: List[Tuple]) -> ConsoleUserInteractor:
     user_interactor = ConsoleUserInteractor()
     start_new_command = 'n'
     repeat_command = 'r'
@@ -31,7 +31,7 @@ def create_impedance_scenario_interactor(actions: List[Tuple]) -> ConsoleUserInt
     return user_interactor
 
 
-def create_main_console_interactor(actions: List[Tuple]) -> ConsoleUserInteractor:
+def main_console_interactor_create(actions: List[Tuple]) -> ConsoleUserInteractor:
     user_interactor = ConsoleUserInteractor()
     start_new_command = 'n'
     end_command = ''
@@ -46,6 +46,27 @@ def create_main_console_interactor(actions: List[Tuple]) -> ConsoleUserInteracto
         },
     }
     user_interactor.add_question(name='new-computation',
+                                 commands=commands,
+                                 header=header_message)
+
+    return user_interactor
+
+
+def plotting_console_interactor_create(actions: List[Tuple]) -> ConsoleUserInteractor:
+    user_interactor = ConsoleUserInteractor()
+    start_new_command = 'n'
+    end_command = ''
+    header_message = (f'Enter "a" to add new plot to the end of the last plot'
+                      f'Or .')
+    commands = {
+        start_new_command: {
+            'action': actions[0], 'help': 'Starts new computation.'
+        },
+        end_command: {
+            'action': actions[1], 'help': 'Ends program.'
+        },
+    }
+    user_interactor.add_question(name='append-or-alongside',
                                  commands=commands,
                                  header=header_message)
 
