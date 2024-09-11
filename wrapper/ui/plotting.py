@@ -284,6 +284,24 @@ def create_transient_plot_builder(mtut_path: str,
     return plot_builder
 
 
+def plot_joint_stages_data(scenario, joint_stages: list, config: Config, result_path: str):
+    """
+    Plot combined data from all stages listed by join_stages option in config.json.
+    In case if join_stages = [] - empty list, skip combined data plotting.
+    :param scenario:
+    :param joint_stages:
+    :param config:
+    :param result_path:
+    :return:
+    """
+    if not joint_stages:
+        return
+    for number, stage in enumerate(scenario.stages.__dict__.keys()):
+        if number in joint_stages:
+            create_transient_plot_builder(mtut_path=config.paths.treada_core.mtut,
+                                          result_path=result_path,)
+
+
 class ResParams:
     def __init__(self, name: str, last_time: float):
         self.names = [name]
