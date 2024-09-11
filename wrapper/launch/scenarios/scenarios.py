@@ -3,7 +3,7 @@ from wrapper.core.data_management import MtutStageConfiger
 from wrapper.launch.scenarios.scenario_management import scenario_function
 from wrapper.launch.scenarios.stages import Stage
 from wrapper.launch.scenarios import scenario_build as sb
-from wrapper.ui.user_interactors import impedance_console_interactor_create
+from wrapper.ui.user_interactors import create_impedance_console_interactor
 
 
 @scenario_function(data_class=sb.DarkToLightScenario)
@@ -78,7 +78,7 @@ def capacity_scenario(scenario, config: Config, mtut_stage_configer: MtutStageCo
     def exit_action():
         raise SystemExit
 
-    user_interactor = impedance_console_interactor_create(actions=[
+    user_interactor = create_impedance_console_interactor(actions=[
         (run_full_scenario, ),
         (repeat_info_collecting_stage, ),
         (exit_action, ),

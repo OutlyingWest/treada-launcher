@@ -6,7 +6,7 @@ from colorama import Fore, Style
 from wrapper.ui.console import ConsoleUserInteractor
 
 
-def impedance_console_interactor_create(actions: List[Tuple]) -> ConsoleUserInteractor:
+def create_impedance_console_interactor(actions: List[Tuple]) -> ConsoleUserInteractor:
     user_interactor = ConsoleUserInteractor()
     start_new_command = 'n'
     repeat_command = 'r'
@@ -31,7 +31,7 @@ def impedance_console_interactor_create(actions: List[Tuple]) -> ConsoleUserInte
     return user_interactor
 
 
-def main_console_interactor_create(actions: List[Tuple]) -> ConsoleUserInteractor:
+def create_main_console_interactor(actions: List[Tuple]) -> ConsoleUserInteractor:
     user_interactor = ConsoleUserInteractor()
     start_new_command = 'n'
     end_command = ''
@@ -52,7 +52,7 @@ def main_console_interactor_create(actions: List[Tuple]) -> ConsoleUserInteracto
     return user_interactor
 
 
-def plotting_console_interactor_create(actions: List[Tuple]) -> ConsoleUserInteractor:
+def create_plotting_console_interactor(actions: List[Tuple]) -> ConsoleUserInteractor:
     user_interactor = ConsoleUserInteractor()
     start_new_command = 'n'
     end_command = ''

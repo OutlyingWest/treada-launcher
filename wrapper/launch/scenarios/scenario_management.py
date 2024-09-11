@@ -23,6 +23,8 @@ def scenario_function(data_class):
 
             result = scenario_func(scenario, config, *args, **kwargs)
 
+            # Set additional result parameters
+
             # Recover preserved mtut vars
             mtut_after_manager = MtutManager(config.paths.treada_core.mtut)
             mtut_after_manager.load_file()

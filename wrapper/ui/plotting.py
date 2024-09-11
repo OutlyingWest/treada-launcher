@@ -53,28 +53,7 @@ def run_res_plotting(config: Config):
         full_result_path = os.path.join(project_path, result_path, res_name)
         print(f'{full_result_path=}')
 
-        if not plot_builder:
-            try:
-                # Creation of plot builder object
-                plot_builder = TransientPlotBuilder(mtut_path=full_mtut_path, result_path=full_result_path)
-            except FileNotFoundError:
-                print('Wrong file path or name.')
-            plot_builder.set_loaded_info()
-            stage_name = plot_builder.extract_stage_name(full_result_path)
-            plot_builder.legends = [f'Udrm={plot_builder.result.udrm}B {stage_name}']
-        else:
-            plot_builder.change_descriptions(plot_title='', window_title=f'Multiple res plot')
-            result = plot_builder.load_result(mtut_path=full_mtut_path, result_path=full_result_path, skip_rows=15)
-            # Correct time seria if it is from next stage of same result
-            time_seria = plot_builder.correct_time_seria(result.full_df[transient_cols.time],
-                                                         full_result_path)
-            plot_builder.result = result
-            # plot_builder.add_plot(x=time_seria*1e-12, y=result.full_df[transient_cols.current_density]*0.0022)
-            plot_builder.add_plot(x=time_seria, y=result.full_df[transient_cols.current_density])
-            stage_name = plot_builder.extract_stage_name(full_result_path)
-            plot_builder.set_short_info(f'Udrm={result.udrm}B {stage_name}',
-                                        (result.transient.corrected_time, result.transient.corrected_density))
-            plot_builder.plotter.fig.canvas.draw()
+        plot_builder = create_transient_plot_builder(full_mtut_path, full_result_path, plot_builder)
         # Show plot
         plot_builder.plot_window.show()
 
@@ -102,21 +81,21 @@ class TransientPlotBuilder:
                  dist_path: Union[str, None] = None,
                  stage_name='none',
                  runtime_result_data: Union[Any, None] = None,
-                 ending_point_coords: Union[tuple, None] = None,
-                 transient_time=-1.,
-                 skip_rows=15):
+                 skip_rows=15,
+                 x_transient_col_name=transient_cols.time,
+                 y_transient_col_name=transient_cols.current_density, ):
         self.dist_path = dist_path
         # Load result data from file
         self.result = self.load_result(mtut_path, result_path, skip_rows)
         # Extract result data
-        time_column = self.result.full_df[transient_cols.time]
-        current_density_column = self.result.full_df[transient_cols.current_density]
+        x_column = self.result.full_df[x_transient_col_name]
+        y_column = self.result.full_df[y_transient_col_name]
         # Create plotter object
-        self.plotter = TransientAdvancedPlotter(time_column, current_density_column)
+        self.plotter = TransientAdvancedPlotter(x_column, y_column)
         self.legends = [self.plotter.ax.get_legend()]
         self.handles = [self.plotter.handle]
         res_name = self.extract_res_name(result_path)
-        self.res_params = ResParams(name=res_name, last_time=time_column.iloc[-1])
+        self.res_params = ResParams(name=res_name, last_time=x_column.iloc[-1])
         self.res_names_list = [res_name]
         # Create Qt plot window object
         self.plot_window = PlotWindow(self.plotter.fig, self.plotter.ax)
@@ -175,7 +154,7 @@ class TransientPlotBuilder:
             try:
                 ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
                 self.plotter.set_distributions_info(dist_times=ww_points_df[transient_cols.time],
-                                                    dist_densities=ww_points_df[transient_cols.current_density])
+                                                    dist_y=ww_points_df[transient_cols.current_density])
             except KeyError as e:
                 print(f'{Fore.YELLOW}Using "preserve_distributions": true option with '
                       f'"select_mean_dataframe": true option.\n'
@@ -197,7 +176,7 @@ class TransientPlotBuilder:
         if self.runtime_result_data.ww_data_indexes:
             ww_points_df = self.result.full_df.loc[self.runtime_result_data.ww_data_indexes]
             self.plotter.set_distributions_info(dist_times=ww_points_df[transient_cols.time],
-                                                dist_densities=ww_points_df[transient_cols.current_density])
+                                                dist_y=ww_points_df[transient_cols.current_density])
 
     @staticmethod
     def _extract_udrm(res_path: str) -> Union[str, None]:
@@ -276,6 +255,33 @@ class TransientPlotBuilder:
     @classmethod
     def save_plot(cls, plot_path: str):
         plt.savefig(plot_path)
+
+
+def create_transient_plot_builder(mtut_path: str,
+                                  result_path: str,
+                                  plot_builder: Union[TransientPlotBuilder, None] = None) -> TransientPlotBuilder:
+    if plot_builder is None:
+        try:
+            # Creation of plot builder object
+            plot_builder = TransientPlotBuilder(mtut_path=mtut_path, result_path=result_path)
+        except FileNotFoundError:
+            print('Wrong file path or name.')
+        plot_builder.set_loaded_info()
+        stage_name = plot_builder.extract_stage_name(result_path)
+        plot_builder.legends = [f'Udrm={plot_builder.result.udrm}B {stage_name}']
+    else:
+        plot_builder.change_descriptions(plot_title='', window_title=f'Multiple res plot')
+        result = plot_builder.load_result(mtut_path=mtut_path, result_path=result_path, skip_rows=15)
+        # Correct time seria if it is from next stage of same result
+        time_seria = plot_builder.correct_time_seria(result.full_df[transient_cols.time],
+                                                     result_path)
+        plot_builder.result = result
+        plot_builder.add_plot(x=time_seria, y=result.full_df[transient_cols.current_density])
+        stage_name = plot_builder.extract_stage_name(result_path)
+        plot_builder.set_short_info(f'Udrm={result.udrm}B {stage_name}',
+                                    (result.transient.corrected_time, result.transient.corrected_density))
+        plot_builder.plotter.fig.canvas.draw()
+    return plot_builder
 
 
 class ResParams:
@@ -549,9 +555,9 @@ class TransientAdvancedPlotter(SpecialPointsMixin, SimplePlotter):
         else:
             raise ValueError('Results data does not set for plotting.')
 
-    def set_distributions_info(self, dist_times: Iterable, dist_densities: Iterable):
+    def set_distributions_info(self, dist_times: Iterable, dist_y: Iterable):
         self.ax.scatter(dist_times,
-                        dist_densities,
+                        dist_y,
                         c='magenta', alpha=1, zorder=3,
                         label='WW measures points')
         self.ax.legend()
