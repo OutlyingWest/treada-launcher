@@ -35,7 +35,7 @@ def transient_result_build(config: Config, stage: StageData, prev_stage_last_cur
                                             result_settings=config.advanced_settings.result,
                                             stage_name=stage.name)
 
-    if config.flags.plotting.enable:
+    if config.plotting.enable:
         # Creation of plot builder object
         plot_builder = TransientPlotBuilder(mtut_path=config.paths.treada_core.mtut,
                                             result_path=result_builder.result_path,
@@ -44,8 +44,10 @@ def transient_result_build(config: Config, stage: StageData, prev_stage_last_cur
                                             runtime_result_data=result_builder.results,
                                             skip_rows=result_builder.header_length)
 
+        # print(f'{config.plotting.join_stages=}')
+        # input()
         # Display advanced info
-        if config.flags.plotting.advanced_info:
+        if config.plotting.advanced_info:
             plot_builder.set_advanced_info()
         else:
             plot_builder.set_loaded_info()
@@ -63,4 +65,3 @@ def impedance_result_build(config: Config, stage: StageData, is_repeated: bool):
                                               is_repeated_stage=is_repeated)
     plot_builder = ImpedancePlotBuilder(result_path=result_builder.result_path)
     plot_builder.show()
-
