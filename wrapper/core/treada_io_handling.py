@@ -118,7 +118,7 @@ class StdoutCapturer:
         # Running of the executable file
         self.process = process
         # Init auto ending prerequisites
-        self.is_auto_ending = config.flags.auto_ending
+        self.is_auto_ending = config.options.auto_ending
         condition_params = config.advanced_settings.runtime.ending_condition
         self.ending_condition = ec.EndingCondition(chunk_size=condition_params.chunk_size,
                                                    equal_values_to_stop=condition_params.equal_values_to_stop,
@@ -135,7 +135,7 @@ class StdoutCapturer:
         self.is_capacity_info_collecting = False
         # Distributions variables:
         # Preserve temporary Treada's files flag
-        self.is_preserve_temp_distributions = config.flags.preserve_distributions
+        self.is_preserve_temp_distributions = config.options.preserve_distributions
         self.distribution_dumping_begins = False
         if self.is_preserve_temp_distributions:
             self.stage_name = ''

@@ -22,7 +22,7 @@ class Stage:
                   scenario_stage_data: StageData, stage_type='light', save_result=False):
         mtut_stage_configer.set_stage_mtut_vars(scenario_stage_data.mtut_vars)
         treada = TreadaRunner(config, self.relative_time)
-        if stage_type == 'light' or config.flags.dark_result_saving and stage_type == 'dark' or save_result:
+        if stage_type == 'light' or config.options.dark_result_saving and stage_type == 'dark' or save_result:
             treada.run(scenario_stage_data, config.paths.result.temporary.raw)
             # Collect data and build result
             plot_window = transient_result_build(config, scenario_stage_data,

@@ -7,7 +7,7 @@ from wrapper.misc.initializations import init_dirs
 
 def main():
     config = load_config('config.json')
-    init_dirs(paths=config.paths, is_remove_distributions=config.flags.remove_old_distributions)
+    init_dirs(paths=config.paths, is_remove_distributions=config.options.remove_old_distributions)
     launcher_mode_selection(config)
 
 

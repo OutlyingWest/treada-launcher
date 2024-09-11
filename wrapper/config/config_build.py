@@ -29,20 +29,21 @@ class Modes:
 
 
 @dataclass
-class PlottingFlags:
+class Plotting:
     """
     Keeps flags that set rules for plotting.
     """
     enable: bool
     advanced_info: bool
+    join_stages: list
+    y_column: str
 
 
 @dataclass
-class Flags:
+class Options:
     """
-    Class that collects all flags.
+    Class that collects all Options.
     """
-    plotting: PlottingFlags
     auto_ending: bool
     dark_result_saving: bool
     preserve_distributions: bool
@@ -201,8 +202,9 @@ class Config:
     """
     scenario: Scenario
     modes: Modes
-    flags: Flags
+    options: Options
     advanced_settings: AdvancedSettings
+    plotting: Plotting
     paths: Paths
     distribution_filenames: list
 
