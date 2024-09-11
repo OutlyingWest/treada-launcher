@@ -116,6 +116,7 @@ class CommonDataFrameCols:
 @dataclass
 class DataFrameCols(CommonDataFrameCols):
     source_current: bool
+    custom: dict
 
 
 @dataclass

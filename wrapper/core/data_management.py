@@ -2,6 +2,7 @@ import json
 import os
 import re
 import time
+import warnings
 from collections import defaultdict
 from enum import Enum
 from io import StringIO
@@ -716,22 +717,23 @@ class TransientResultDataCollector:
         # Define Treada's MTUT vars on current stage
         self.treada_state = self._treada_state_definition()
 
-    def prepare_result_data(self, stage: StageData, prev_stage_last_current: Union[float, None]):
+    def prepare_result_data(self, stage: StageData,
+                            prev_stage_last_current: Union[float, None],
+                            custom_df_col_params: dict):
         self.add_null_current_on_first_stage()
         self.add_previous_last_current_on_stage(prev_stage_last_current)
         self.time_col_calculate(stage.skip_initial_time_step)
         self.current_density_col_calculate()
         self.transient.time = self.find_transient_time()
         # print(self.dataframe)
-        self.result_dataframe = self.dataframe[
-            [transient_cols.time, transient_cols.source_current, transient_cols.current_density]
-        ]
+        self.set_result_dataframe_cols()
         self.correct_transient_time(window_size=self.transient.window_size)
 
         self.last_mean_time, self.last_mean_current_density = (
             self.mean_dataframe[[transient_cols.time, transient_cols.current_density]].tail(50).mean()
         )
         self.ww_data_indexes = self.set_distributions_indexes(stage.name)
+        self.set_custom_transient_col(custom_df_col_params)
         # pd.set_option('display.max_rows', None)
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.width', None)
@@ -857,6 +859,13 @@ class TransientResultDataCollector:
         self.dataframe[transient_cols.current_density] = (
                 self.dataframe[transient_cols.source_current] / (2 * hy * device_width * 1e-8)
         )
+
+    def set_result_dataframe_cols(self):
+        self.result_dataframe = self.dataframe[
+            [transient_cols.time,
+             transient_cols.source_current,
+             transient_cols.current_density]
+        ]
 
     def find_transient_time(self) -> float:
         """
@@ -1005,6 +1014,19 @@ class TransientResultDataCollector:
         # Select only indexes within size of current _df in case if old results remain
         actual_ww_data_indexes = [index for index in ww_data_indexes if index <= self.dataframe.index[-1]]
         return actual_ww_data_indexes
+
+    def set_custom_transient_col(self, col_parameters: dict):
+        name, coefficient = col_parameters.values()
+        pure_name = name.strip()
+        if pure_name != '' and coefficient is not None:
+            transient_cols.custom = name
+            self.calculate_custom_transient_col(name, coefficient)
+
+    def calculate_custom_transient_col(self, name, multiplier):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', pd.errors.SettingWithCopyWarning)
+            self.result_dataframe[name] = self.result_dataframe[transient_cols.source_current] * multiplier
+
 
 
 @dataclass

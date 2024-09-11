@@ -25,7 +25,9 @@ def transient_result_build(config: Config, stage: StageData, prev_stage_last_cur
     )
     print(f'{prev_stage_last_current=}')
     # Prepare result
-    result_collector.prepare_result_data(stage, prev_stage_last_current)
+    result_collector.prepare_result_data(stage,
+                                         prev_stage_last_current,
+                                         config.advanced_settings.result.dataframe.custom)
 
     # Save data in result file and output in console
     result_builder = TransientResultBuilder(result_collector,

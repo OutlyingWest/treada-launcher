@@ -5,14 +5,18 @@
             "mtut_vars": {
                 "ILUMEN": 1,
                 "CKLKRS": 1,
-                "TSTEP": 1E-4
+                "TSTEP": 1E-4,
+                "TIME": 10000.0,
+                "NMBPZ0": 10000
             }
         },
         "light_correction": {
             "name": "light_correction",
             "mtut_vars": {
                 "TSTEP": 5E-5,
-                "CKLKRS": 2
+                "CKLKRS": 2,
+                "TIME": 5000.0,
+                "NMBPZ0": 5000
             }
         }
     }
