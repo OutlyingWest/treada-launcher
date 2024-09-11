@@ -1130,19 +1130,17 @@ class TransientResultBuilder(ResultBuilder):
 
         if self.result_settings.select_mean_dataframe:
             selected_settings = self.result_settings.mean_dataframe
+            selected_df = self.results.mean_df
         else:
             selected_settings = self.result_settings.dataframe
+            selected_df = self.results.full_df
         col_names_for_output = list()
         for col_key, col_name in transient_cols.__dict__.items():
             if selected_settings.__dict__.get(col_key):
                 col_names_for_output.append(col_name)
         with open(file_path, 'a') as res_file:
             # Save dataframe without indexes to file
-            if self.result_settings.select_mean_dataframe:
-                df = self.results.mean_df[col_names_for_output]
-                res_file.write(df.to_string(index=False, float_format='%.6e'))
-            else:
-                res_file.write(self.results.full_df[col_names_for_output].to_string(index=False, float_format='%.6e'))
+            res_file.write(selected_df[col_names_for_output].to_string(index=False, float_format='%.6e'))
 
 
 class SmallSignalResultBuilder(ResultBuilder):
