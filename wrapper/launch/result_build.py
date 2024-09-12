@@ -29,7 +29,7 @@ def transient_result_build(config: Config, stage: StageData, prev_stage_last_cur
                                          prev_stage_last_current,
                                          config.advanced_settings.result.dataframe.custom)
 
-    # Save data in result file and output in console
+    # Save transient_result in result file and output in console
     result_builder = TransientResultBuilder(result_collector,
                                             result_paths=config.paths.result,
                                             result_settings=config.advanced_settings.result,
@@ -42,10 +42,10 @@ def transient_result_build(config: Config, stage: StageData, prev_stage_last_cur
                                             dist_path=config.paths.result.temporary.distributions,
                                             stage_name=stage.name,
                                             runtime_result_data=result_builder.results,
-                                            skip_rows=result_builder.header_length)
+                                            skip_rows=result_builder.header_length,
+                                            y_transient_col_key=config.plotting.y_column,
+                                            is_transient_ending_point=False)
 
-        # print(f'{config.plotting.join_stages=}')
-        # input()
         # Display advanced info
         if config.plotting.advanced_info:
             plot_builder.set_advanced_info()
@@ -57,7 +57,7 @@ def transient_result_build(config: Config, stage: StageData, prev_stage_last_cur
                                                                   stage_name=stage.name,
                                                                   file_extension='png')
         plot_builder.save_plot(full_plot_path)
-        return plot_builder.plot_window
+        return plot_builder.plot_window, result_builder.result_path
 
 
 def impedance_result_build(config: Config, stage: StageData, is_repeated: bool):

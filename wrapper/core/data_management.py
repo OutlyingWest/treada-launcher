@@ -1011,11 +1011,16 @@ class TransientResultDataCollector:
         except FileNotFoundError:
             return None
         ww_data_indexes: list = sorted(ww_data_indexes_iter)
-        # Select only indexes within size of current _df in case if old results remain
+        # Select only indexes within size of current df in case if old results remain
         actual_ww_data_indexes = [index for index in ww_data_indexes if index <= self.dataframe.index[-1]]
         return actual_ww_data_indexes
 
     def set_custom_transient_col(self, col_parameters: dict):
+        """
+        Allows to set name and source_current multiplier to custom transient column in result dataframe
+        :param col_parameters:
+        :return:
+        """
         name, coefficient = col_parameters.values()
         pure_name = name.strip()
         if pure_name != '' and coefficient is not None:

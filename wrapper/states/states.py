@@ -103,8 +103,8 @@ class BaseStatesMachine:
             if state.status == state_status.READY:
                 self.states[state.index].status = state_status.RUN
                 try:
-                    scenario_plots = call_scenario_function(mtut_stage_configer, config)
-                    self.plot_windows.append(scenario_plots)
+                    scenario_result = call_scenario_function(mtut_stage_configer, config)
+                    self.plot_windows.append(scenario_result['plots'])
                     self.states[state.index].status = state_status.END
                 except Exception as e:
                     self.states[state.index].status = state_status.ERROR

@@ -16,7 +16,7 @@ class Stage:
     def __init__(self, relative_time: Union[float, None] = None):
         self.previous_stage_last_current: Union[float, None] = None
         self.relative_time = relative_time
-        self.plots = []
+        self.transient_result = {'plots': [], 'paths': []}
 
     def transient(self, mtut_stage_configer: MtutStageConfiger, config: Config,
                   scenario_stage_data: StageData, stage_type='light', save_result=False):
@@ -25,10 +25,11 @@ class Stage:
         if stage_type == 'light' or config.options.dark_result_saving and stage_type == 'dark' or save_result:
             treada.run(scenario_stage_data, config.paths.result.temporary.raw)
             # Collect data and build result
-            plot_window = transient_result_build(config, scenario_stage_data,
-                                                 self.previous_stage_last_current,
-                                                 self.relative_time)
-            self.plots.append(plot_window)
+            plot_window, result_path = transient_result_build(config, scenario_stage_data,
+                                                              self.previous_stage_last_current,
+                                                              self.relative_time)
+            self.transient_result['plots'].append(plot_window)
+            self.transient_result['paths'].append(result_path)
         else:
             treada.run(scenario_stage_data)
         self.previous_stage_last_current = treada.get_last_step_current()

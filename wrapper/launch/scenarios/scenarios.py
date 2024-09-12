@@ -18,7 +18,8 @@ def dark_to_light_scenario(scenario, config: Config, mtut_stage_configer: MtutSt
     # StageData 3 (additional) - fields integral calculation
     if config.options.fields_calculation:
         stage.fields_integral_calculation(scenario, config)
-    return stage.plots
+    return stage.transient_result
+
 
 @scenario_function(data_class=sb.DarkLightDarkScenario)
 def dark_light_dark_scenario(scenario, config: Config, mtut_stage_configer: MtutStageConfiger, **kwargs):
@@ -31,7 +32,7 @@ def dark_light_dark_scenario(scenario, config: Config, mtut_stage_configer: Mtut
 
     # StageData 3 - without light
     stage.transient(mtut_stage_configer, config, scenario.stages.dark_second, stage_type='dark')
-    return stage.plots
+    return stage.transient_result
 
 
 @scenario_function(data_class=sb.TurnOnImpulseDarkScenario)
@@ -42,7 +43,7 @@ def turn_on_impulse_dark_scenario(scenario, config: Config, mtut_stage_configer:
 
     # StageData 2 - turned-on diode, without light
     stage.transient(mtut_stage_configer, config, scenario.stages.turn_on_impulse, stage_type='dark')
-    return stage.plots
+    return stage.transient_result
 
 
 @scenario_function(data_class=sb.CapacityScenario)
@@ -97,7 +98,7 @@ def just_light_scenario(scenario, config: Config, mtut_stage_configer: MtutStage
 
     # StageData 1 - with light
     stage.transient(mtut_stage_configer, config, scenario.stages.light, stage_type='light')
-    return stage.plots
+    return stage.transient_result
 
 
 @scenario_function(data_class=sb.JustLightWithCorrectionScenario)
@@ -109,4 +110,4 @@ def just_light_with_correction_scenario(scenario, config: Config, mtut_stage_con
     stage.transient(mtut_stage_configer, config, scenario.stages.light, save_result=False)
     # StageData 2 - with light
     stage.transient(mtut_stage_configer, config, scenario.stages.light_correction, stage_type='light')
-    return stage.plots
+    return stage.transient_result
