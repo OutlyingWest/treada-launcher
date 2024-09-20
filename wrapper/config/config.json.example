@@ -1,16 +1,12 @@
 {
     "scenario": {
-        "active_name": "just_light_scenario"
+        "active_name": "dark_light_dark_scenario"
     },
     "modes": {
         "udrm_vector_mode": false,
-        "mtut_dataframe": true
+        "mtut_dataframe": false
     },
-    "flags": {
-        "plotting": {
-            "enable": true,
-            "advanced_info": false
-        },
+    "options": {
         "auto_ending": true,
         "dark_result_saving": true,
         "preserve_distributions": true,
@@ -21,23 +17,23 @@
         "runtime": {
             "find_relative_time": true,
             "light_impulse": {
-                "consider_fixed_time": false,
-                "fixed_time_ps": 100000
+                "consider_fixed_time": true,
+                "fixed_time_ps": 1e7
             },
             "dark_impulse": {
-                "for_stages": [3],
-                "consider_fixed_time": false,
-                "fixed_time_ps": 55e6
+                "for_stages": [1,3],
+                "consider_fixed_time": true,
+                "fixed_time_ps": 1e8
             },
             "ending_condition": {
                 "chunk_size": 1000,
                 "equal_values_to_stop": 20,
-                "deviation": 1e-6
+                "deviation": 1e-5
             },
             "distributions": {
-                "enable_preserving_ranges": false,
+                "enable_preserving_ranges": true,
                 "preserving_ranges": {
-                    "2": {"start": 0, "stop": 5000, "step": 5000}
+                    "2": {"start": 0, "stop": 1e7, "step": 1e7}
                 }
             }
         },
@@ -51,7 +47,8 @@
             "dataframe": {
                 "time": true,
                 "source_current": true,
-                "current_density": true
+                "current_density": true,
+                "custom": {"name": "U", "multiplier": 50}
             },
             "mean_dataframe": {
                 "time": true,
@@ -59,6 +56,12 @@
             },
             "extra_variables": []
         }
+    },
+    "plotting": {
+        "enable": true,
+        "advanced_info": false,
+        "join_stages": [2, 3],
+        "y_column": "custom"
     },
     "paths": {
         "treada_core": {
