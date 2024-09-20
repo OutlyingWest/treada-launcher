@@ -22,7 +22,7 @@
             },
             "dark_impulse": {
                 "for_stages": [1,3],
-                "consider_fixed_time": true,
+                "consider_fixed_time": false,
                 "fixed_time_ps": 1e8
             },
             "ending_condition": {
